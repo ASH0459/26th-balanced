@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "*.txt": "makefile",
+        "ins_task.h": "c",
+        "bsp_imu_pwm.h": "c"
+    }
+}
