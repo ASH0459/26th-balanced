@@ -47,12 +47,15 @@ Gimbal_Data gimbal_data;
 
 /**
   * @brief          发送轮电机控制电流(0x201,0x202)
-  * @param[in]      motor1: (0x201) 左边轮电机控制电流, 范围 [-16384,16384]
-  * @param[in]      motor2: (0x202) 右边轮电机控制电流, 范围 [-16384,16384]
+  * @param[in]      motor1: (0x201) 左边轮电机控制扭矩, 范围 [-5,5]
+  * @param[in]      motor2: (0x202) 右边轮电机控制电流, 范围 [-5,5]
   * @retval         none
   */
-	void CAN_cmd_wheel(const int16_t motor1, const int16_t motor2)
+	void CAN_cmd_wheel(const fp32 motor1, const fp32 motor2)
 	{
+		int16_t motor1_current = (int16_t)(motor1 * CONSTANT_OF_TORQUE);
+		int16_t motor2_current = (int16_t)(motor2 * CONSTANT_OF_TORQUE);
+
 		FDCAN_TxHeaderTypeDef TxHeader;
 		static uint8_t chassis_can_send_data[8];
 
@@ -66,10 +69,10 @@ Gimbal_Data gimbal_data;
 		TxHeader.TxEventFifoControl = FDCAN_NO_TX_EVENTS;
 		TxHeader.MessageMarker = 0;
 
-		chassis_can_send_data[0] = motor1 >> 8;
-		chassis_can_send_data[1] = motor1;
-		chassis_can_send_data[2] = motor2 >> 8;
-		chassis_can_send_data[3] = motor2;
+		chassis_can_send_data[0] = motor1_current >> 8;
+		chassis_can_send_data[1] = motor1_current;
+		chassis_can_send_data[2] = motor2_current >> 8;
+		chassis_can_send_data[3] = motor2_current;
 		chassis_can_send_data[4] = 0;
 		chassis_can_send_data[5] = 0;
 		chassis_can_send_data[6] = 0;
@@ -77,8 +80,6 @@ Gimbal_Data gimbal_data;
 
 		HAL_FDCAN_AddMessageToTxFifoQ(&CHASSIS_WHEEL_CAN, &TxHeader, chassis_can_send_data);
 	}
-
-
 
 /*******************************中断*******************************/
 
@@ -134,7 +135,7 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
 				{
 					static uint8_t i = 0;
 					//get motor id
-					i = rx_header.Identifier - CAN_CHASSIS_WHEEL_LEFT_ID;
+					i = rx_header.Identifier - CAN_CHASSIS_JOINT_LEFT_1_ID;
 					chassis_joint[i].get_joint_motor_measure(rx_data); //对应电机获取对应值
 					//detect_hook(CHASSIS_MOTOR1_TOE + i); // 设备检测函数，检测设备是否掉线
 					break;

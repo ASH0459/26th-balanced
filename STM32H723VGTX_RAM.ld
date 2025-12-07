@@ -126,6 +126,14 @@ SECTIONS
   /* used by the startup to initialize data */
   _sidata = LOADADDR(.data);
 
+  /*把RAM_D2部分内存定义*/
+  .ram_d2 :
+  {
+    . = ALIGN(4);
+    *(.ram_d2)
+    *(.ram_d2*)
+  } >RAM_D2
+
   /* Initialized data sections goes into RAM, load LMA copy after code */
   .data :
   {

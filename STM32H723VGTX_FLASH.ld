@@ -155,6 +155,15 @@ SECTIONS
     __bss_end__ = _ebss;
   } >RAM_D1
 
+  /* 手动添加 RAM_D2 的分配规则 */
+   .ram_d2 :
+   {
+     . = ALIGN(4);
+     *(.ram_d2)
+     *(.ram_d2*)
+     . = ALIGN(4);
+   } >RAM_D2
+
   /* User_heap_stack section, used to check that there is enough RAM left */
   ._user_heap_stack :
   {

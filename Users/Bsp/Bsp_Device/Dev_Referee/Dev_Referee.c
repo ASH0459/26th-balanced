@@ -24,7 +24,8 @@ extern fifo_s_t referee_fifo;
 extern uint8_t referee_fifo_buf[REFEREE_FIFO_BUF_LENGTH];
 extern unpack_data_t referee_unpack_obj;
 
-static uint8_t referee_rx_buf[USART_RX_BUF_LENGHT];
+/* 放在 .c 文件中，定义全局变量时 */
+__attribute__((section(".ram_d2"), aligned(4))) uint8_t referee_rx_buf[USART_RX_BUF_LENGHT];
 //QueueHandle_t xReferee_Queue;
 
 /**

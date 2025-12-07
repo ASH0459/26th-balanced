@@ -3,6 +3,15 @@
 
 #include "main.h"
 
+#define L1U		0.2055f
+#define L2U		0.2055f
+#define L1D		0.258f
+#define L2D		0.258f
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct
 {
 	const fp32 *INS_angle;
@@ -85,7 +94,7 @@ extern void wbr_jacobian_calc(wbr_leg_t *wbr);
 extern void decompose_fitted_matrix_to_K(wbr_leg_t *left_leg, wbr_leg_t *right_leg, fp32 fitted_matrix[40][6], fp32 K_matrices[4][10]);
 
 /**
-  * @brief  		将线性化的拟合矩阵根据不同腿长计算出反馈矩阵K
+  * @brief  		将线性化的拟合矩阵根据不同腿长计算出反馈矩阵A
   * @param			fitted_matrix	拟合矩阵
   * @param			A_matrices		反馈矩阵A
   * @retval     	无
@@ -99,5 +108,9 @@ extern void decompose_fitted_matrix_to_A(wbr_leg_t *left_leg, wbr_leg_t *right_l
   * @retval     	无
   */
 extern void decompose_fitted_matrix_to_B(wbr_leg_t *left_leg, wbr_leg_t *right_leg, fp32 fitted_matrix[20][6], fp32 B_matrices[10][4]);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

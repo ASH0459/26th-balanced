@@ -145,13 +145,13 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
 include_directories(Core/Inc Drivers/STM32H7xx_HAL_Driver/Inc Drivers/STM32H7xx_HAL_Driver/Inc/Legacy Middlewares/Third_Party/FreeRTOS/Source/include Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2 Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F Drivers/CMSIS/Device/ST/STM32H7xx/Include Drivers/CMSIS/Include Middlewares/ST/ARM/DSP/Inc)
 include_directories(Users/Application/Inc Users/Bsp/Bsp_Boards/Inc Components/Algorithm/Inc Components/Devices/Inc Users/Algorithm/Alg_EKF/EKF Users/Algorithm/Alg_Filter Users/Algorithm/Alg_PID Users/Algorithm/Alg_RLS Users/Algorithm/Alg_Support Users/Algorithm/Alg_VMC Users/0-APL/APL_RC_Hub Users/0-APL/APL_USART Users/2-HDL/HDL_Video_Transmission)
 include_directories(Users/Bsp/Bsp_Device/Dev_Remote_Control Users/Bsp/Bsp_Device/Dev_Can_Receive Users/Bsp/Bsp_Device/Dev_BMI088_Driver Users/Bsp/Bsp_Boards/Board_Remote_Control)
-include_directories(Users/3-HAL/HAL_USART Users/Application/App_Detect Users/Application/APP_Chassis Users/Algorithm/Alg_EKF/kalman Users/Algorithm/Alg_EKF/mahony)
+include_directories(Users/3-HAL/HAL_USART Users/Application/App_Detect Users/Application/APP_Chassis Users/Algorithm/Alg_EKF/mahony)
 include_directories(Drivers/CMSIS/Device/ST/STM32H7xx/Include Users/Upper_Communication/UC_Referee Users/Bsp/Bsp_Device/Dev_Custom Users/Bsp/Bsp_Boards/Board_CRC)
 include_directories(Users/Bsp/Bsp_Boards/Board_Buzzer Users/Bsp/Bsp_Boards/Board_CAN Users/Bsp/Bsp_Boards/Board_IMU_Pwm Users/Bsp/Bsp_Boards/Board_Remote_Control)
 include_directories(Users/Bsp/Bsp_Boards/Bsp_Led Users/Application/APP_INS Users/Application/APP_LED Users/Application/APP_Buzzer Users/Bsp/Bsp_Boards/Board_Dwt Users/Application/App_Custom)
 include_directories(Core/Inc Drivers/STM32H7xx_HAL_Driver/Inc Drivers/STM32H7xx_HAL_Driver/Inc/Legacy Drivers/CMSIS/Device/ST/STM32H7xx/Include Drivers/CMSIS/Include DSP_LIB/Include)
 include_directories(Middlewares/ST/ARM/DSP/Inc Users/Bsp/Bsp_Support/Sp_CRC8_CRC16 Users/Bsp/Bsp_Support/Sp_FIFO Users/Bsp/Bsp_Support/Sp_MEM_MANG Users/Bsp/Bsp_Support/)
-include_directories(Users/Bsp/Bsp_Device/Dev_Referee Users/Application/App_Referee Users/Bsp/Bsp_Boards/Board_USART Users/Algorithm/Alg_wbr)
+include_directories(Users/Bsp/Bsp_Device/Dev_Referee Users/Application/App_Referee Users/Bsp/Bsp_Boards/Board_USART Users/Algorithm/Alg_wbr  Users/Algorithm/Alg_EKF/kalman)
 
 # Add project symbols (macros)
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
@@ -168,3 +168,12 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
     # Add user defined libraries
 )
 
+target_link_directories(stm32cubemx INTERFACE
+        ../../Middlewares/ST/ARM/Lib
+)
+
+target_link_libraries(stm32cubemx INTERFACE
+        #        :libarm_cortexM7l_math.a
+        #:libarm_cortexM7lfdp_math.a
+        :libarm_cortexM7lfsp_math.a
+)

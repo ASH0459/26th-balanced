@@ -24,9 +24,7 @@
 #define CHASSIS_JOINT_CAN hfdcan2
 
 // 转矩系数
-#define CONSTANT_OF_TORQUE			2451456/737
-
-#define MIT_MODE					0x00
+#define CONSTANT_OF_TORQUE			3291.065087
 
 #define P_MIN 						-12.56f
 #define P_MAX 						12.56f
@@ -36,8 +34,8 @@
 #define KP_MAX 						5000.0f
 #define KD_MIN 						0.0f
 #define KD_MAX 						100.0f
-#define T_MIN 						-60.0f
-#define T_MAX 						60.0f
+#define T_MIN 						-40.0f
+#define T_MAX 						40.0f
 
 /** * @brief 结构体 */
 typedef enum
@@ -64,7 +62,16 @@ typedef enum
 /** * @brief CPP部分 */ 
 #ifdef __cplusplus
 
-static uint16_t float_to_uint(fp32 x_float, fp32 x_min, fp32 x_max, uint16_t bits);
+static uint16_t float_to_uint(fp32 x_float, fp32 x_min, fp32 x_max, uint16_t bits) {
+    fp32 span = x_max - x_min;
+    fp32 offset = x_min;
+    if (x_float < x_min)
+        x_float = x_min;
+    else if (x_float > x_max)
+        x_float = x_max;
+
+    return (int32_t) ((x_float - offset) * (fp32)((1 << bits) - 1) / span);
+}
 
 class Wheel_Motor_Measure {
 public:
@@ -81,6 +88,8 @@ public:
     int16_t given_current;//电流值
     uint8_t temperate;//温度值
     int16_t last_ecd;//上一次编码值
+    int16_t total_ecd;//总编码值
+    int32_t count;
 
     /**
     * @brief 获取该对象电机测量数据
@@ -90,6 +99,12 @@ public:
     {
         this->last_ecd = this->ecd;
         this->ecd = (uint16_t)((data)[0] << 8 | (data)[1]);
+        if (this->ecd - this->last_ecd >= 4096) {
+            this->count--;
+        } else if (this->ecd - this->last_ecd <= -4096){
+            this->count++;
+        }
+        this->total_ecd = 8192 * this->count + this->ecd;
         this->speed_rpm = (uint16_t)((data)[2] << 8 | (data)[3]);
         this->given_current = (uint16_t)((data)[4] << 8 | (data)[5]);
         this->temperate = (data)[6];
@@ -249,10 +264,12 @@ private:
 class Gimbal_Data {
     public:
     int16_t chassis_vx;
-    int16_t chassis_vy;
+    int16_t chassis_leg_set;
     uint8_t chassis_mode;
     uint8_t super_cap_state;
-    uint32_t yaw_relative_angle;
+
+    uint16_t d_yaw_set;
+    uint16_t yaw_relative_angle;
 
     /**
     * @brief 获取云台对象数据
@@ -261,7 +278,7 @@ class Gimbal_Data {
     void get_Gimbal_Data(uint8_t data[8])
     {
         this->chassis_vx = (uint16_t)((data)[2] << 8 | (data)[3]);
-        this->chassis_vy = -(uint16_t)((data)[0] << 8 | (data)[1]);
+        this->chassis_leg_set = -(uint16_t)((data)[0] << 8 | (data)[1]);
         this->yaw_relative_angle = (uint16_t)(data)[6] << 8 | (data)[7];
         this->chassis_mode = (data)[4];
         this->super_cap_state = (data)[5];
@@ -298,7 +315,7 @@ extern Wheel_Motor_Measure chassis_wheel[2];
 
 extern Gimbal_Data gimbal_data;
 
-extern void CAN_cmd_wheel(const int16_t motor1, const int16_t motor2, const int16_t motor3, const int16_t motor4);
+extern void CAN_cmd_wheel(const fp32 motor1, const fp32 motor2);
 
 extern void CAN_cmd_steering(const int16_t motor1, const int16_t motor2);
 

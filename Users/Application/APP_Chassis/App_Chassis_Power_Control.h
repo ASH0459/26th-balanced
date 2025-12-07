@@ -76,7 +76,6 @@ namespace Core
                         CAPDisConnect     = 4U
                     };
 
-                    const Chassis_Motor* motors;
 
                     uint8_t error;
 
@@ -101,13 +100,13 @@ namespace Core
 
                     */
                     //默认初始化对象
-                    Manager(const Chassis_Motor motors_[],
-                            const Division division_,
-                            RLSEnabled rlsEnabled_ = Enable,
-                            const float k1_        = 0.22f,
-                            const float k2_        = 1.2f,
-                            const float k3_        = 2.78f,
-                            const float lambda_    = 0.9999f);
+                    // Manager(const Chassis_Motor motors_[],
+                    //         const Division division_,
+                    //         RLSEnabled rlsEnabled_ = Enable,
+                    //         const float k1_        = 0.22f,
+                    //         const float k2_        = 1.2f,
+                    //         const float k3_        = 2.78f,
+                    //         const float lambda_    = 0.9999f);
 
                     Division division;
 

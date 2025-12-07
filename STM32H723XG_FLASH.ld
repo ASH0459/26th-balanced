@@ -168,6 +168,15 @@ SECTIONS
     . = ALIGN(4);
   } >DTCMRAM AT> FLASH
 
+  /* 手动添加 RAM_D2 的分配规则 */
+    .ram_d2 :
+    {
+      . = ALIGN(4);
+      *(.ram_d2)
+      *(.ram_d2*)
+      . = ALIGN(4);
+    } >RAM_D2
+
  /* Initialized TLS data section */
   .tdata : ALIGN(4)
   {

@@ -1,11 +1,14 @@
-#ifndef KALMAN_FILTER_H
+
+#ifndef KALMAN_FILTER_H  // 【第1步】防止重定义
 #define KALMAN_FILTER_H
 
 #include "main.h"
 #include "arm_math.h"
 #include "stdint.h"
 #include "stdlib.h"
-#include "CMSIS_OS.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #ifndef user_malloc
 #ifdef _CMSIS_OS_H
@@ -25,49 +28,71 @@
 
 typedef struct kf_t
 {
-    fp32 *FilteredValue;
-    fp32 *MeasuredVector;
-    fp32 *ControlVector;
+    /* ================= 外部接口指针 ================= */
+    fp32 *FilteredValue;        // 输出：滤波后的值（指向 xhat 的数据区域或用户指定的变量）
+    fp32 *MeasuredVector;       // 输入：测量向量（传感器原始数据）
+    fp32 *ControlVector;        // 输入：控制向量（如电机的电流、扭矩等控制量）
 
-    uint8_t xhatSize;
-    uint8_t uSize;
-    uint8_t zSize;
+    /* ================= 维度定义 ================= */
+    uint8_t xhatSize;           // 状态变量的维度 (n)，例如位置+速度为2维
+    uint8_t uSize;              // 控制变量的维度 (l)
+    uint8_t zSize;              // 观测（测量）变量的维度 (m)
 
-    uint8_t UseAutoAdjustment;
-    uint8_t MeasurementValidNum;
+    /* ================= 功能配置开关 ================= */
+    uint8_t UseAutoAdjustment;    // 启用自适应调整（可能用于自动调整 R 或 Q 矩阵）
+    uint8_t MeasurementValidNum;  // 当前周期有效的测量数据个数（用于传感器部分丢失的情况）
 
-    uint8_t *MeasurementMap;
-    fp32 *MeasurementDegree;
-    fp32 *MatR_DiagonalElements;
-    fp32 *StateMinVariance;
-    uint8_t *temp;
+    /* ================= 自适应/高级参数 ================= */
+    uint8_t *MeasurementMap;      // 测量映射表（用于标记哪些测量量对应哪些状态，或处理传感器冗余）
+    fp32 *MeasurementDegree;      // 测量置信度或相关系数
+    fp32 *MatR_DiagonalElements;  // 测量噪声协方差矩阵 R 的对角线元素指针（用于动态调整 R）
+    fp32 *StateMinVariance;       // 状态最小方差限制（防止 P 矩阵过度收敛导致滤波发散）
+    uint8_t *temp;                // 临时缓存区（通常用于矩阵运算库内部，如求逆时的排列）
 
-    uint8_t SkipEq1, SkipEq2, SkipEq3, SkipEq4, SkipEq5;
+    /* ================= 优化跳过标志 ================= */
+    /* 标准卡尔曼滤波有5个核心公式，这些标志位用于跳过某些步骤
+       例如：没有测量更新时，跳过公式 3,4,5 */
+    uint8_t SkipEq1; // 跳过状态预测 ( x_k|k-1 = F * x_k-1|k-1 + B * u )
+    uint8_t SkipEq2; // 跳过协方差预测 ( P_k|k-1 = F * P_k-1|k-1 * F^T + Q )
+    uint8_t SkipEq3; // 跳过卡尔曼增益计算 ( K = P * H^T * inv(H * P * H^T + R) )
+    uint8_t SkipEq4; // 跳过状态更新 ( x_k|k = x_k|k-1 + K * (z - H * x) )
+    uint8_t SkipEq5; // 跳过协方差更新 ( P_k|k = (I - K * H) * P_k|k-1 )
 
-    mat xhat;
-    mat xhatminus;
-    mat u;
-    mat z;
-    mat P;
-    mat Pminus;
-    mat F, FT;
-    mat B;
-    mat H, HT;
-    mat Q;
-    mat R;
-    mat K;
-    mat S, temp_matrix, temp_matrix1, temp_vector, temp_vector1;
+    /* ================= 矩阵实体 (Matrix 结构体) ================= */
+    mat xhat;        // 后验状态估计向量 (x_k, 维度 n*1) —— 最终结果
+    mat xhatminus;   // 先验状态估计向量 (x_k-, 维度 n*1) —— 预测值
+    mat u;           // 控制向量 (u, 维度 l*1)
+    mat z;           // 测量向量 (z, 维度 m*1)
+    mat P;           // 后验误差协方差矩阵 (P_k, 维度 n*n) —— 估计精度
+    mat Pminus;      // 先验误差协方差矩阵 (P_k-, 维度 n*n)
+    mat F, FT;       // 状态转移矩阵 (F) 及其转置 (F^T) —— 描述系统如何随时间演变
+    mat B;           // 控制输入矩阵 (B) —— 描述控制量如何影响状态
+    mat H, HT;       // 观测矩阵 (H) 及其转置 (H^T) —— 描述状态如何映射到测量值
+    mat Q;           // 过程噪声协方差矩阵 (Q) —— 系统模型的不确定性
+    mat R;           // 测量噪声协方差矩阵 (R) —— 传感器的噪声水平
+    mat K;           // 卡尔曼增益矩阵 (K) —— 相信测量值还是相信预测值的权重系数
+    mat S;           // 创新(Innovation)协方差矩阵 (S = H*P-*HT + R)
+    mat temp_matrix; // 矩阵运算过程中的临时矩阵1
+    mat temp_matrix1;// 矩阵运算过程中的临时矩阵2
+    mat temp_vector; // 矩阵运算过程中的临时向量1
+    mat temp_vector1;// 矩阵运算过程中的临时向量2
 
-    int8_t MatStatus;
+    int8_t MatStatus; // 矩阵运算状态（例如矩阵求逆是否成功，0表示成功）
 
-    void (*User_Func0_f)(struct kf_t *kf);
-    void (*User_Func1_f)(struct kf_t *kf);
-    void (*User_Func2_f)(struct kf_t *kf);
-    void (*User_Func3_f)(struct kf_t *kf);
-    void (*User_Func4_f)(struct kf_t *kf);
-    void (*User_Func5_f)(struct kf_t *kf);
-    void (*User_Func6_f)(struct kf_t *kf);
+    /* ================= 回调函数指针 (用于扩展卡尔曼滤波 EKF) ================= */
+    /* 这里的函数指针通常用于在滤波的不同阶段插入用户代码，
+       主要用于非线性系统的线性化（更新雅可比矩阵 F 和 H） */
+    void (*User_Func0_f)(struct kf_t *kf); // 初始化后/步骤1之前的回调
+    void (*User_Func1_f)(struct kf_t *kf); // 预测步骤 (Predict) 之前的回调 —— 更新 F 矩阵
+    void (*User_Func2_f)(struct kf_t *kf); // 预测步骤之后的回调
+    void (*User_Func3_f)(struct kf_t *kf); // 测量更新 (Update) 之前的回调 —— 更新 H 矩阵
+    void (*User_Func4_f)(struct kf_t *kf); // 测量更新之后的回调
+    void (*User_Func5_f)(struct kf_t *kf); // 一般保留
+    void (*User_Func6_f)(struct kf_t *kf); // 一般保留
 
+    /* ================= 矩阵数据存储区 (Data Buffers) ================= */
+    /* `mat` 结构体通常只包含行、列和指向数据的指针。
+       以下指针指向实际分配的内存区域，存放浮点数数据。 */
     fp32 *xhat_data, *xhatminus_data;
     fp32 *u_data;
     fp32 *z_data;
@@ -182,4 +207,8 @@ extern void Kalman_Filter_P_Update(KalmanFilter_t *kf);
   */
 extern fp32 *Kalman_Filter_Update(KalmanFilter_t *kf);
 
+#ifdef __cplusplus
+}
 #endif
+
+#endif // KALMAN_FILTER_H

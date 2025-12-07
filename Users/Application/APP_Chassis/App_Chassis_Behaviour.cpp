@@ -123,7 +123,7 @@ static void chassis_no_follow_yaw_control(float *vx_set, float *vy_set, float *w
   * @retval         none
   */
 
-static void chassis_open_set_control(float *vx_set, float *vy_set, float *wz_set, Chassis_Move *chassis_move_rc_to_vector);
+static void chassis_init_control(float *vx_set, float *vy_set, float *wz_set, Chassis_Move *chassis_move_rc_to_vector);
 
 
 /**
@@ -153,7 +153,7 @@ static void  chassis_gyroscope(float *vx_set, float *vy_set, float *wz_set, Chas
 static float get_changeable_gyrospeed(const unsigned int random_seed, float range_min, float range_max, float range_const, float sin_frequency);
 
 
-Chassis_Behaviour_e Chassis_Behaviour_Mode = CHASSIS_ZERO_FORCE;
+Chassis_Behaviour_e Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_ZERO_FORCE;
 
 
 /**
@@ -175,9 +175,6 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
     static int16_t spin_flag = 0;
     /* 遥控器设置模式部分:针对右侧按键开关 */
 
-    // DBUS在线
-    // if(toe_is_error(DBUS_TOE) == 0)
-    // {
         /* 若开关为中档 */
         if (switch_is_mid(chassis_move_mode->chassis_gimbal_data->chassis_mode))
         {
@@ -190,127 +187,64 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
 
                 if (spin_flag % 2 == 1)
                 {
-                    Chassis_Behaviour_Mode = CHASSIS_SPIN; // 小陀螺模式
+                    Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_GYROSCOPE; // 小陀螺模式
                 }
                 else
                 {
-                    //Chassis_Behaviour_Mode = CHASSIS_INFANTRY_FOLLOW_GIMBAL_YAW; // 底盘跟随云台
-                    Chassis_Behaviour_Mode = CHASSIS_NO_FOLLOW_YAW;
+                    Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_FOLLOW_GIMBAL_YAW;  // 底盘跟随云台
                 }
             }
 
             /* 上一个状态不是小陀螺 */
-            if (Chassis_Behaviour_Mode != CHASSIS_SPIN)
+            if (Chassis_Behaviour_Mode != CHASSIS_BEHAVIOUR_GYROSCOPE)
             {
-                //Chassis_Behaviour_Mode = CHASSIS_INFANTRY_FOLLOW_GIMBAL_YAW; // 底盘跟随云台
-                Chassis_Behaviour_Mode = CHASSIS_NO_FOLLOW_YAW;
+                Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_FOLLOW_GIMBAL_YAW;
             }
-                /* 上一个状态是小陀螺 */
-            else if (switch_is_up(last_s) && Chassis_Behaviour_Mode == CHASSIS_SPIN)
+            /* 上一个状态是小陀螺 */
+            else if (switch_is_up(last_s) && Chassis_Behaviour_Mode == CHASSIS_BEHAVIOUR_GYROSCOPE)
             {
-                //Chassis_Behaviour_Mode = CHASSIS_INFANTRY_FOLLOW_GIMBAL_YAW; // 底盘跟随云台
-                Chassis_Behaviour_Mode = CHASSIS_NO_FOLLOW_YAW;
+                Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_FOLLOW_GIMBAL_YAW;
             }
         }
         /* 若开关为下档:车车直接Die掉 */
         else if (switch_is_down(chassis_move_mode->chassis_gimbal_data->chassis_mode))
         {
-            Chassis_Behaviour_Mode = CHASSIS_NO_MOVE; // 底盘不动
+            Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_ZERO_FORCE; // 底盘断电
         }
             /* 若开关为上档:小陀螺*/
         else if (switch_is_up(chassis_move_mode->chassis_gimbal_data->chassis_mode))
         {
-            Chassis_Behaviour_Mode = CHASSIS_SPIN; // 小陀螺模式
+            Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_GYROSCOPE; // 小陀螺模式
         }
-    // }
-    // DBUS掉线，使用图传链路
-    else if (toe_is_error(VT_TOE) == 0)
-    {
-        if(chassis_move_mode->vt_rc_control->mode_sw == 1)
-        {
-            if (chassis_move_mode->vt_rc_control->key & GYROSCOPE_KEY)
-            {
-                if ((chassis_move_mode->vt_rc_control->chassis_key_last & GYROSCOPE_KEY) == 0)
-                {
-                    spin_flag++;
-                }
-
-                if (spin_flag % 2 == 1)
-                {
-                    Chassis_Behaviour_Mode = CHASSIS_SPIN; // 小陀螺模式
-                }
-                else
-                {
-                    Chassis_Behaviour_Mode = CHASSIS_INFANTRY_FOLLOW_GIMBAL_YAW; // 底盘跟随云台
-                }
-            }
-
-            /* 上一个状态不是小陀螺 */
-            if (Chassis_Behaviour_Mode != CHASSIS_SPIN)
-            {
-                Chassis_Behaviour_Mode = CHASSIS_INFANTRY_FOLLOW_GIMBAL_YAW; // 底盘跟随云台
-            }
-                /* 上一个状态是小陀螺 */
-            else if (last_mode_sw == 2 && Chassis_Behaviour_Mode == CHASSIS_SPIN)
-            {
-                Chassis_Behaviour_Mode = CHASSIS_INFANTRY_FOLLOW_GIMBAL_YAW; // 底盘跟随云台
-            }
-        }
-        else if(chassis_move_mode->vt_rc_control->mode_sw == 2)
-        {
-            Chassis_Behaviour_Mode = CHASSIS_SPIN; // 小陀螺模式
-        }
-        else if(chassis_move_mode->vt_rc_control->mode_sw == 0)
-        {
-            Chassis_Behaviour_Mode = CHASSIS_NO_MOVE; // 底盘不动
-        }
-
-        RC_Hub.vt_rc_control.chassis_key_last = RC_Hub.vt_rc_control.key;
-    }
-//    /* 当云台在某些模式下，像初始化， 底盘不动 */
-//    if (gimbal_cmd_to_chassis_stop())
-//    {
-//        Chassis_Behaviour_Mode = CHASSIS_NO_MOVE; //底盘不动
-//    }
 
     //添加自己的逻辑判断进入新模式
 
     /* 遥控器模式执行部分:根据行为模式选择一个底盘控制模式 */
 
-    if (Chassis_Behaviour_Mode == CHASSIS_ZERO_FORCE)
+    if (Chassis_Behaviour_Mode == CHASSIS_BEHAVIOUR_ZERO_FORCE)
     {
-        chassis_move_mode->chassis_mode = CHASSIS_VECTOR_RAW; // 开环输出（一般直接给电流0）
+        chassis_move_mode->chassis_mode = CHASSIS_ZERO; // 底盘无力模式
     }
-    else if (Chassis_Behaviour_Mode == CHASSIS_NO_MOVE)
+    else if (Chassis_Behaviour_Mode == CHASSIS_BEHAVIOUR_FOLLOW_GIMBAL_YAW)
     {
-        chassis_move_mode->chassis_mode = CHASSIS_VECTOR_NO_FOLLOW_YAW; // 底盘有旋转速度控制（一般直接给0速度）
+        chassis_move_mode->chassis_mode = CHASSIS_FOLLOW_GIMBAL_YAW; // 底盘会跟随云台
     }
-    else if (Chassis_Behaviour_Mode == CHASSIS_INFANTRY_FOLLOW_GIMBAL_YAW)
+    else if (Chassis_Behaviour_Mode == CHASSIS_BEHAVIOUR_FOLLOW_CHASSIS_YAW)
     {
-        chassis_move_mode->chassis_mode = CHASSIS_VECTOR_FOLLOW_GIMBAL_YAW; // 底盘会跟随云台相对角度
+        chassis_move_mode->chassis_mode = CHASSIS_FOLLOW_CHASSIS_YAW; // 底盘有底盘角度控制闭环
     }
-    else if (Chassis_Behaviour_Mode == CHASSIS_ENGINEER_FOLLOW_CHASSIS_YAW)
+    else if (Chassis_Behaviour_Mode == CHASSIS_BEHAVIOUR_INIT)
     {
-        chassis_move_mode->chassis_mode = CHASSIS_VECTOR_FOLLOW_CHASSIS_YAW; // 底盘有底盘角度控制闭环
+        chassis_move_mode->chassis_mode = CHASSIS_INIT; // 倒地自救
     }
-    else if (Chassis_Behaviour_Mode == CHASSIS_NO_FOLLOW_YAW)
+    else if (Chassis_Behaviour_Mode == CHASSIS_BEHAVIOUR_GYROSCOPE)
     {
-        chassis_move_mode->chassis_mode = CHASSIS_VECTOR_NO_FOLLOW_YAW; // 底盘有旋转速度控制（一般直接给0速度）
-    }
-    else if (Chassis_Behaviour_Mode == CHASSIS_OPEN)
-    {
-        chassis_move_mode->chassis_mode = CHASSIS_VECTOR_RAW; // 开环输出（一般直接给电流0）
-    }
-    else if (Chassis_Behaviour_Mode == CHASSIS_SPIN)
-    {
-        //chassis_move_mode->chassis_mode = CHASSIS_VECTOR_FOLLOW_CHASSIS_YAW;
         chassis_move_mode->chassis_mode = CHASSIS_GYROSCOPE; // 小陀螺
     }
-    else if (Chassis_Behaviour_Mode == CHASSIS_SENTINEL)
+    else if (Chassis_Behaviour_Mode == CHASSIS_BEHAVIOUR_JUMP)
     {
-        chassis_move_mode->chassis_mode = CHASSIS_AUTO; // 底盘烧饼模式
+        chassis_move_mode->chassis_mode = CHASSIS_JUMP; // 跳跃
     }
-
     last_s = chassis_move_mode->chassis_gimbal_data->chassis_mode;
     last_mode_sw = chassis_move_mode->vt_rc_control->mode_sw;
 }
@@ -318,46 +252,39 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
 /**
   * @brief          设置控制量.根据不同底盘控制模式，三个参数会控制不同运动.在这个函数里面，会调用不同的控制函数.
   * @param[out]     vx_set, 通常控制纵向移动.
-  * @param[out]     vy_set, 通常控制横向移动.
-  * @param[out]     wz_set, 通常控制旋转运动.
+  * @param          w_set,  旋转速度设置
+  * @param          leg_set, 腿长设置
   * @param[in]      chassis_move_rc_to_vector,  包括底盘所有信息.
   * @retval         none
   */
 
-void chassis_behaviour_control_set(float *vx_set, float *vy_set, float *angle_set, Chassis_Move *chassis_move_rc_to_vector)
+void chassis_behaviour_control_set(fp32*vx_set, fp32 *yaw_set, fp32 *d_yaw_set, fp32 *leg_set, Chassis_Move *chassis_move_rc_to_vector)
 {
-    if (vx_set == NULL || vy_set == NULL || angle_set == NULL || chassis_move_rc_to_vector == NULL)
+    if (vx_set == NULL || yaw_set == NULL || d_yaw_set == NULL || leg_set == NULL || chassis_move_rc_to_vector == NULL)
     {
         return;
     }
 
-    if (Chassis_Behaviour_Mode == CHASSIS_ZERO_FORCE)
+    //底盘无力模式
+    if (Chassis_Behaviour_Mode == CHASSIS_BEHAVIOUR_ZERO_FORCE)  //底盘无力
     {
-        chassis_zero_force_control(vx_set, vy_set, angle_set, chassis_move_rc_to_vector);
+        chassis_zero_force_control(vx_set, yaw_set, leg_set, chassis_move_rc_to_vector);
     }
-    else if (Chassis_Behaviour_Mode == CHASSIS_NO_MOVE)
+    else if (Chassis_Behaviour_Mode == CHASSIS_FOLLOW_GIMBAL_YAW)  //底盘跟随云台
     {
-        chassis_no_move_control(vx_set, vy_set, angle_set, chassis_move_rc_to_vector);
+        chassis_infantry_follow_gimbal_yaw_control(vx_set, yaw_set, leg_set, chassis_move_rc_to_vector);
     }
-    else if (Chassis_Behaviour_Mode == CHASSIS_INFANTRY_FOLLOW_GIMBAL_YAW)
+    else if (Chassis_Behaviour_Mode == CHASSIS_FOLLOW_CHASSIS_YAW) //跟随底盘yaw，没装云台时候测试
     {
-        chassis_infantry_follow_gimbal_yaw_control(vx_set, vy_set, angle_set, chassis_move_rc_to_vector);
+        chassis_no_follow_yaw_control(vx_set, d_yaw_set, leg_set, chassis_move_rc_to_vector);
     }
-    else if (Chassis_Behaviour_Mode == CHASSIS_ENGINEER_FOLLOW_CHASSIS_YAW)
+    else if (Chassis_Behaviour_Mode == CHASSIS_BEHAVIOUR_INIT) //倒地自救(后续修改)
     {
-        chassis_engineer_follow_chassis_yaw_control(vx_set, vy_set, angle_set, chassis_move_rc_to_vector);
+        chassis_init_control(vx_set, yaw_set, leg_set, chassis_move_rc_to_vector);
     }
-    else if (Chassis_Behaviour_Mode == CHASSIS_NO_FOLLOW_YAW)
+    else if (Chassis_Behaviour_Mode == CHASSIS_BEHAVIOUR_GYROSCOPE)  //小陀螺
     {
-        chassis_no_follow_yaw_control(vx_set, vy_set, angle_set, chassis_move_rc_to_vector);
-    }
-    else if (Chassis_Behaviour_Mode == CHASSIS_OPEN)
-    {
-        chassis_open_set_control(vx_set, vy_set, angle_set, chassis_move_rc_to_vector);
-    }
-    else if (Chassis_Behaviour_Mode == CHASSIS_SPIN)
-    {
-        chassis_gyroscope(vx_set, vy_set, angle_set, chassis_move_rc_to_vector);
+        chassis_gyroscope(vx_set, d_yaw_set, leg_set, chassis_move_rc_to_vector);
     }
 
 }
@@ -372,15 +299,15 @@ void chassis_behaviour_control_set(float *vx_set, float *vy_set, float *angle_se
   * @retval         返回空
   */
 
-static void chassis_zero_force_control(float *vx_can_set, float *vy_can_set, float *wz_can_set, Chassis_Move *chassis_move_rc_to_vector)
+static void chassis_zero_force_control(fp32 *v_set, fp32 *add_w_set, fp32 *leg_set, Chassis_Move *chassis_move_rc_to_vector)
 {
-    if (vx_can_set == NULL || vy_can_set == NULL || wz_can_set == NULL || chassis_move_rc_to_vector == NULL)
+    if (v_set == NULL || add_w_set == NULL || leg_set == NULL || chassis_move_rc_to_vector == NULL)
     {
         return;
     }
-    *vx_can_set = 0.0f;
-    *vy_can_set = 0.0f;
-    *wz_can_set = 0.0f;
+    *v_set = 0.0f;
+    *add_w_set = 0.0f;
+    *leg_set = 0.2f;
 }
 
 /**
@@ -393,15 +320,15 @@ static void chassis_zero_force_control(float *vx_can_set, float *vy_can_set, flo
   * @retval         返回空
   */
 
-static void chassis_no_move_control(float *vx_set, float *vy_set, float *wz_set, Chassis_Move *chassis_move_rc_to_vector)
+static void chassis_no_move_control(fp32 *v_set, fp32 *add_w_set, fp32 *leg_set, Chassis_Move *chassis_move_rc_to_vector)
 {
-    if (vx_set == NULL || vy_set == NULL || wz_set == NULL || chassis_move_rc_to_vector == NULL)
+    if (v_set == NULL || add_w_set == NULL || leg_set == NULL || chassis_move_rc_to_vector == NULL)
     {
         return;
     }
-    *vx_set = 0.0f;
-    *vy_set = 0.0f;
-    *wz_set = 0.0f;
+    *v_set = 0.0f;
+    *add_w_set = 0.0f;
+    *leg_set = 0.2f;
 }
 
 /**
@@ -414,28 +341,18 @@ static void chassis_no_move_control(float *vx_set, float *vy_set, float *wz_set,
   * @retval         返回空
   */
 
-static void chassis_infantry_follow_gimbal_yaw_control(float *vx_set, float *vy_set, float *angle_set, Chassis_Move *chassis_move_rc_to_vector)
+static void chassis_infantry_follow_gimbal_yaw_control(fp32 *vx_set, fp32 *yaw_set, fp32 *leg_set, Chassis_Move *chassis_move_rc_to_vector)
 {
-    if (vx_set == NULL || vy_set == NULL || angle_set == NULL || chassis_move_rc_to_vector == NULL)
+    if (vx_set == NULL || yaw_set == NULL || leg_set == NULL || chassis_move_rc_to_vector == NULL)
     {
         return;
     }
 
     //遥控器的通道值以及键盘按键 得出 一般情况下的速度设定值
-    Chassis_RC_To_Control_Vector(vx_set, vy_set, chassis_move_rc_to_vector);
+    *vx_set  = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_vx;
+    *yaw_set = 0.0f;
+    *leg_set = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_leg_set;
 
-    //摇摆角度是利用sin函数生成，swing_time是sin函数的输入值
-    static float swing_time = 0.0f;
-
-    static float swing_angle = 0.0f;
-
-    //max_angle 是sin函数的幅值
-    static float max_angle = SWING_NO_MOVE_ANGLE;
-
-    //swing_time 在一个控制周期内，加上 add_time
-    static float const add_time = PI * 0.5f * configTICK_RATE_HZ / CHASSIS_CONTROL_TIME_MS;
-
-    static uint8_t swing_flag = 0;
 }
 
 /**
@@ -471,16 +388,17 @@ static void chassis_engineer_follow_chassis_yaw_control(float *vx_set, float *vy
   * @retval         返回空
   */
 
-static void chassis_no_follow_yaw_control(float *vx_set, float *vy_set, float *wz_set, Chassis_Move *chassis_move_rc_to_vector)
+static void chassis_no_follow_yaw_control(fp32 *vx_set, fp32 *d_yaw_set, fp32 *leg_set, Chassis_Move *chassis_move_rc_to_vector)
 {
-    if (vx_set == NULL || vy_set == NULL || wz_set == NULL || chassis_move_rc_to_vector == NULL)
+
+    if (d_yaw_set == NULL || leg_set == NULL || chassis_move_rc_to_vector == NULL)
     {
         return;
     }
 
-    //    *wz_set = -CHASSIS_WZ_RC_SEN * chassis_move_rc_to_vector->chassis_RC->rc.ch[CHASSIS_WZ_CHANNEL];
-    Chassis_RC_To_Control_Vector(vx_set, vy_set, chassis_move_rc_to_vector);
-    *wz_set = 0; //正 1.3
+    *vx_set = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_vx;
+    *d_yaw_set = chassis_move_rc_to_vector->chassis_gimbal_data->d_yaw_set;
+    *leg_set = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_leg_set;
 
 }
 
@@ -493,7 +411,7 @@ static void chassis_no_follow_yaw_control(float *vx_set, float *vy_set, float *w
   * @retval         none
   */
 
-static void chassis_open_set_control(float *vx_set, float *vy_set, float *wz_set, Chassis_Move *chassis_move_rc_to_vector)
+static void chassis_init_control(float *vx_set, float *vy_set, float *wz_set, Chassis_Move *chassis_move_rc_to_vector)
 {
     if (vx_set == NULL || vy_set == NULL || wz_set == NULL || chassis_move_rc_to_vector == NULL)
     {
@@ -516,14 +434,12 @@ static void chassis_open_set_control(float *vx_set, float *vy_set, float *wz_set
   * @retval         返回空
   */
 
-static void  chassis_gyroscope(float *vx_set, float *vy_set, float *wz_set, Chassis_Move *chassis_move_rc_to_vector)
+static void  chassis_gyroscope(fp32 *v_set, fp32 *d_yaw_set, fp32 *leg_set, Chassis_Move *chassis_move_rc_to_vector)
 {
-    if (vx_set == NULL || vy_set == NULL || wz_set == NULL || chassis_move_rc_to_vector == NULL)
+    if (v_set == NULL || d_yaw_set == NULL || leg_set == NULL || chassis_move_rc_to_vector == NULL)
     {
         return;
     }
-
-    Chassis_RC_To_Control_Vector(vx_set, vy_set, chassis_move_rc_to_vector);
 
     /* 变速小陀螺由以下几部分角速度叠加而成
      * 1.fixed_gyrospeed：固定角速度
@@ -533,9 +449,10 @@ static void  chassis_gyroscope(float *vx_set, float *vy_set, float *wz_set, Chas
 
     const float fixed_gyrospeed = CHASSIS_SPIN_MAIN_SPEED;
     float changeable_gyrospeed = get_changeable_gyrospeed(1234, 0.35, 0.65, 2.0, 0.025);
-    float xy_deleted_gyrospeed = - fabs(chassis_move_rc_to_vector->vx_set) * CHASSIS_SPIN_LOW_SEN - fabs(chassis_move_rc_to_vector->vy_set) * CHASSIS_SPIN_LOW_SEN;
 
-    *wz_set = fixed_gyrospeed + changeable_gyrospeed + xy_deleted_gyrospeed;
+    *v_set = 0;
+    *leg_set = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_leg_set;
+    *d_yaw_set = fixed_gyrospeed + changeable_gyrospeed;
 }
 
 /**

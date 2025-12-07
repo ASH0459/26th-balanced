@@ -1,8 +1,11 @@
-#ifndef BSP_DWT_H
 #define BSP_DWT_H
 
 #include "main.h"
 #include "stdint.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct
 {
@@ -22,4 +25,6 @@ void DWT_SysTimeUpdate(void);
 
 extern DWT_Time_t SysTime;
 
-#endif /* BSP_DWT_H_ */
+#ifdef __cplusplus
+}
+#endif

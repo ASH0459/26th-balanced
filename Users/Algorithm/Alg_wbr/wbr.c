@@ -11,10 +11,10 @@
 void wbr_init(wbr_leg_t *wbr)
 {
 	// 设置VMC各个长度参数
-	wbr->L1u = 0.2055f;
-	wbr->L1d = 0.258f;
-	wbr->L2u = 0.2055f;
-	wbr->L2d = 0.258f;
+	wbr->L1u = L1U;
+	wbr->L1d = L1D;
+	wbr->L2u = L2U;
+	wbr->L2d = L2D;
 
 	wbr->INS_angle = get_INS_angle_point();		// 获取角度数据指针
 }
@@ -57,11 +57,11 @@ void wbr_calc(wbr_leg_t *wbr)
 				- 2 * wbr->Y1 * wbr->Y2 + wbr->Y2 * wbr->Y2));  // 计算 Ye
 
 	// 五连杆长度L相关数据
-	arm_sqrt_f32(wbr->Xe * wbr->Xe + wbr->Ye * wbr->Ye, &wbr->L);
-	wbr->dd_L = wbr->d_L - wbr->d_L_p;
+	arm_sqrt_f32(wbr->Xe * wbr->Xe + wbr->Ye * wbr->Ye, &wbr->L);  //计算虚拟杆长
+	wbr->dd_L = wbr->d_L - wbr->d_L_p;	//计算虚拟杆加速度用于离地检测
 
 	// 五连杆角度theta相关数据
-	wbr->theta = atan2f(wbr->Xe / wbr->L, wbr->Ye / wbr->L);
+	wbr->theta = atan2f(wbr->Xe, wbr->Ye);
 
 	// 腿部倾斜角相关数据
 	wbr->theta_l = wbr->theta + *(wbr->INS_angle + INS_PITCH_ADDRESS_OFFSET);
@@ -103,6 +103,7 @@ void wbr_jacobian_calc(wbr_leg_t *wbr)
 
 	wbr->detA = wbr->PHI_1l * wbr->PHI_2theta - wbr->PHI_1theta * wbr->PHI_2l;
 
+	//对矩阵求逆
 	wbr->J_inv[0][0] = wbr->PHI_2theta / wbr->detA;
 	wbr->J_inv[0][1] = -wbr->PHI_1theta / wbr->detA;
 	wbr->J_inv[1][0] = -wbr->PHI_2l / wbr->detA;

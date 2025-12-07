@@ -18,6 +18,7 @@
   */
 
 #include "kalman_filter.h"
+#include "arm_math.h"
 
 uint16_t sizeof_float, sizeof_double;
 

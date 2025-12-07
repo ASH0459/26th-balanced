@@ -56,16 +56,12 @@
 
 typedef enum
 {
-    CHASSIS_ZERO_FORCE,                   //底盘无力, 跟没上电那样
-    CHASSIS_NO_MOVE,                      //底盘保持不动
-    CHASSIS_INFANTRY_FOLLOW_GIMBAL_YAW,   //正常步兵底盘跟随云台
-    CHASSIS_ENGINEER_FOLLOW_CHASSIS_YAW,  //工程底盘角度控制底盘，由于底盘未有陀螺仪，故而角度是减去云台角度而得到，
-    //如果有底盘陀螺仪请更新底盘的yaw，pitch，roll角度 在chassis_feedback_update函数中
-    CHASSIS_NO_FOLLOW_YAW,                //底盘不跟随角度，角度是开环的，但轮子是有速度环
-    CHASSIS_OPEN,                         //遥控器的值乘以比例成电流值 直接发送到can总线上
-    CHASSIS_SPIN,   										  //小陀螺模式
-
-    CHASSIS_SENTINEL,                     //哨兵模式
+    CHASSIS_BEHAVIOUR_FOLLOW_GIMBAL_YAW,   // 底盘跟随云台
+    CHASSIS_BEHAVIOUR_FOLLOW_CHASSIS_YAW,  // 底盘有底盘角度控制闭环
+    CHASSIS_BEHAVIOUR_ZERO_FORCE,          // 底盘无力模式
+    CHASSIS_BEHAVIOUR_GYROSCOPE,           // 底盘小陀螺模式
+    CHASSIS_BEHAVIOUR_INIT,                // 初始化，翻倒自救
+    CHASSIS_BEHAVIOUR_JUMP                 // 底盘跳跃模式
 } Chassis_Behaviour_e;
 
 #ifdef __cplusplus
@@ -87,7 +83,7 @@ extern void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode);
   * @param[in]      chassis_move_rc_to_vector,  包括底盘所有信息.
   * @retval         none
   */
-extern void chassis_behaviour_control_set(float *vx_set, float *vy_set, float *angle_set, Chassis_Move *chassis_move_rc_to_vector);
+extern void chassis_behaviour_control_set(fp32*vx_set, fp32 *yaw_set, fp32 *d_yaw_set, fp32 *leg_set, Chassis_Move *chassis_move_rc_to_vector);
 
 #ifdef __cplusplus
 }
