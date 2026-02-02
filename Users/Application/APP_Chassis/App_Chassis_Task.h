@@ -36,11 +36,11 @@
 // 重力加速度
 #define GRAVITY_ACCELERATION			9.81f
 
-// 腿长初始值
-#define L_B                             0.087f
+// 机体到腿部质心的距离
+#define L_B                             0.08676f
 
 // 腿转动惯量
-#define I_L                             0.01993708f
+#define I_L                             0.05892206f
 
 // 驱动轮补偿系数
 #define K_APAPT							0.25f
@@ -57,20 +57,20 @@
 #define JOINT_MOTOR_lIMIT_TIME			1
 
 // 最大最小速度设定
-#define NORMAL_MAX_CHASSIS_SPEED_V		3.0f
-#define NORMAL_MIN_CHASSIS_SPEED_V		-3.0f
+#define NORMAL_MAX_CHASSIS_SPEED_V		0.5f
+#define NORMAL_MIN_CHASSIS_SPEED_V		-0.5f
 
 // 小陀螺最大最小速度设定
 #define ROTATION_MAX_CHASSIS_SPEED_V	0.5f
 #define ROTATION_MIN_CHASSIS_SPEED_V	-0.5f
 
 // 关节最大最小力矩
-#define  JOINT_MAX_TORQUE				40.0f
-#define  JOINT_MIN_TORQUE				-40.0f
+#define  JOINT_MAX_TORQUE				35.0f
+#define  JOINT_MIN_TORQUE				-35.0f
 
 // 腿的最大最小长度
-#define CHASSIS_LEG_MAX					0.36f
-#define CHASSIS_LEG_MIN					0.15f
+#define CHASSIS_LEG_MAX					0.35f
+#define CHASSIS_LEG_MIN					0.21f
 
 //yaw轴跟随PID
 #define YAW_PID_KP						5.0f
@@ -90,20 +90,20 @@
 #define LEG_PID_KP						1000.0f
 #define LEG_PID_KI						0.0f
 #define LEG_PID_KD						10000.0f
-#define LEG_PID_MAX_OUT					300.0f
+#define LEG_PID_MAX_OUT					300.0f  //300
 #define LEG_PID_MAX_IOUT				0.0f
 
 /* 轮子相关数据 */
 // 轮子质量 KG
 #define MASS_OF_WHEEL					0.4863f
 // 轮子半径 m
-#define WHEEL_RADIUS					0.06f
+#define WHEEL_RADIUS					0.058f
 // 驱动轮 轮距的一半 m
-#define DRIVE_WHEEL_DIS				0.2263f
+#define DRIVE_WHEEL_DIS				0.24155f
 
 /* 腿部相关数据 */
 // 腿部质量
-#define MASS_OF_LEG						1.72f
+#define MASS_OF_LEG						2.109f
 // 机体到腿部质心距离拟合直线斜率和截距
 #define L_BI_SLOPE						0.85532f
 #define L_BI_INTERCEPT					-0.027935f
@@ -113,7 +113,7 @@
 
 /* 机体相关数据 */
 // 机体质量
-#define MASS_OF_BODY					21.2574f
+#define MASS_OF_BODY					12.15f
 
 // 驱动轮补偿系数
 #define K_APAPT							0.25f
@@ -131,7 +131,7 @@
 #define CHASSIS_MODE_CHANNEL 0 //右侧按键开关
 
 //遥控器前进摇杆（max 660）转化成车体前后速度（m/s）的比例
-#define CHASSIS_VX_RC_SEN 0.001f
+#define CHASSIS_VX_RC_SEN 0.002f
 
 //遥控器左右摇杆（max 660）转化成车体左右速度（m/s）的比例
 #define CHASSIS_VY_RC_SEN 0.0009f
@@ -145,6 +145,7 @@
 /*  */
 #define CHASSIS_ACCEL_X_NUM 0.1666666667f
 #define CHASSIS_ACCEL_Y_NUM 0.3333333333f
+#define CHASSIS_ACCEL_LEG_NUM 0.1666666667f
 
 //摇杆死区
 #define CHASSIS_RC_DEADLINE 10
@@ -355,6 +356,7 @@ class Chassis_Move
     fp32 chassis_d_yaw_set;												// 目标角速度
     fp32 chassis_yaw_set;
     fp32 chassis_leg_set;												// 腿部目标长度
+    first_order_filter_type_t chassis_leg_filter_set;                                        // 低通滤波后的腿部长度
     fp32 chassis_roll_set;												// 底盘roll轴设定值
 
     fp32 K = K_APAPT;														// 驱动轮补偿系数

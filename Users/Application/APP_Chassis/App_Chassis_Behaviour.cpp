@@ -178,6 +178,25 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
         /* 若开关为中档 */
         if (switch_is_mid(chassis_move_mode->chassis_gimbal_data->chassis_mode))
         {
+            /* 上一个状态是无力模式,开关往下，但是这次开关往中间，则切换到起身模式 */
+            if (switch_is_down(last_s) && switch_is_mid(chassis_move_mode->chassis_gimbal_data->chassis_mode))
+            {
+                Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_INIT;
+            }
+
+            // 进入一次起身模式后需要完全起身后才能自动切入行动模式
+            if (Chassis_Behaviour_Mode == CHASSIS_BEHAVIOUR_INIT && chassis_move_mode->chassis_leg_set >= 0.21)
+            {
+                Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_INIT;
+            }
+            else if (Chassis_Behaviour_Mode == CHASSIS_BEHAVIOUR_INIT && chassis_move_mode->chassis_leg_set < 0.21)
+            {
+                Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_FOLLOW_CHASSIS_YAW;
+            }
+            else if (switch_is_mid(last_s) && Chassis_Behaviour_Mode != CHASSIS_BEHAVIOUR_INIT) {
+                Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_FOLLOW_CHASSIS_YAW;
+            }
+
             if (chassis_move_mode->chassis_RC->key.v & GYROSCOPE_KEY)
             {
                 if ((chassis_move_mode->chassis_RC->key.last_v & GYROSCOPE_KEY) == 0)
@@ -195,16 +214,6 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
                 }
             }
 
-            /* 上一个状态不是小陀螺 */
-            if (Chassis_Behaviour_Mode != CHASSIS_BEHAVIOUR_GYROSCOPE)
-            {
-                Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_FOLLOW_GIMBAL_YAW;
-            }
-            /* 上一个状态是小陀螺 */
-            else if (switch_is_up(last_s) && Chassis_Behaviour_Mode == CHASSIS_BEHAVIOUR_GYROSCOPE)
-            {
-                Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_FOLLOW_GIMBAL_YAW;
-            }
         }
         /* 若开关为下档:车车直接Die掉 */
         else if (switch_is_down(chassis_move_mode->chassis_gimbal_data->chassis_mode))
@@ -278,9 +287,9 @@ void chassis_behaviour_control_set(fp32*vx_set, fp32 *yaw_set, fp32 *d_yaw_set, 
     {
         chassis_no_follow_yaw_control(vx_set, d_yaw_set, leg_set, chassis_move_rc_to_vector);
     }
-    else if (Chassis_Behaviour_Mode == CHASSIS_BEHAVIOUR_INIT) //倒地自救(后续修改)
+    else if (Chassis_Behaviour_Mode == CHASSIS_BEHAVIOUR_INIT) //起立模式(后续修改)
     {
-        chassis_init_control(vx_set, yaw_set, leg_set, chassis_move_rc_to_vector);
+        chassis_init_control(vx_set,d_yaw_set, leg_set, chassis_move_rc_to_vector);
     }
     else if (Chassis_Behaviour_Mode == CHASSIS_BEHAVIOUR_GYROSCOPE)  //小陀螺
     {
@@ -307,7 +316,7 @@ static void chassis_zero_force_control(fp32 *v_set, fp32 *add_w_set, fp32 *leg_s
     }
     *v_set = 0.0f;
     *add_w_set = 0.0f;
-    *leg_set = 0.2f;
+    *leg_set = 0.35f;
 }
 
 /**
@@ -349,7 +358,7 @@ static void chassis_infantry_follow_gimbal_yaw_control(fp32 *vx_set, fp32 *yaw_s
     }
 
     //遥控器的通道值以及键盘按键 得出 一般情况下的速度设定值
-    *vx_set  = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_vx;
+    *vx_set  = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_vx * CHASSIS_VX_RC_SEN;
     *yaw_set = 0.0f;
     *leg_set = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_leg_set;
 
@@ -396,9 +405,11 @@ static void chassis_no_follow_yaw_control(fp32 *vx_set, fp32 *d_yaw_set, fp32 *l
         return;
     }
 
-    *vx_set = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_vx;
-    *d_yaw_set = chassis_move_rc_to_vector->chassis_gimbal_data->d_yaw_set;
-    *leg_set = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_leg_set;
+    *vx_set = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_vx * CHASSIS_VX_RC_SEN;
+    //*d_yaw_set = chassis_move_rc_to_vector->chassis_gimbal_data->d_yaw_set;
+    *d_yaw_set = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_leg_set * 0.01;
+    *leg_set = 0.201;
+    //*leg_set = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_leg_set;
 
 }
 
@@ -411,17 +422,18 @@ static void chassis_no_follow_yaw_control(fp32 *vx_set, fp32 *d_yaw_set, fp32 *l
   * @retval         none
   */
 
-static void chassis_init_control(float *vx_set, float *vy_set, float *wz_set, Chassis_Move *chassis_move_rc_to_vector)
+static void chassis_init_control(fp32 *vx_set, fp32 *d_yaw_set, fp32 *leg_set, Chassis_Move *chassis_move_rc_to_vector)
 {
-    if (vx_set == NULL || vy_set == NULL || wz_set == NULL || chassis_move_rc_to_vector == NULL)
+    if (d_yaw_set == NULL || leg_set == NULL || chassis_move_rc_to_vector == NULL)
     {
         return;
     }
 
-    *vx_set = chassis_move_rc_to_vector->chassis_RC->rc.ch[CHASSIS_X_CHANNEL] * CHASSIS_OPEN_RC_SCALE;
-    *vy_set = -chassis_move_rc_to_vector->chassis_RC->rc.ch[CHASSIS_Y_CHANNEL] * CHASSIS_OPEN_RC_SCALE;
-    *wz_set = -chassis_move_rc_to_vector->chassis_RC->rc.ch[CHASSIS_WZ_CHANNEL] * CHASSIS_OPEN_RC_SCALE;
-    return;
+    *vx_set = 0.0f;
+    *d_yaw_set = 0.0f;
+    first_order_filter_cali(&chassis_move_rc_to_vector->chassis_leg_filter_set, 0.201f);
+    *leg_set = chassis_move_rc_to_vector->chassis_leg_filter_set.out;
+
 }
 
 /**

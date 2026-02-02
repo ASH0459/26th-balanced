@@ -20,16 +20,17 @@
 #include "cmsis_os.h"
 #include "fdcan.h"
 /** * @brief 宏定义 */
-#define CHASSIS_WHEEL_CAN hfdcan1
-#define CHASSIS_JOINT_CAN hfdcan2
+#define CHASSIS_JOINT_CAN1 hfdcan1
+#define CHASSIS_JOINT_CAN2 hfdcan2
+#define CHASSIS_WHEEL_CAN hfdcan3
 
 // 转矩系数
-#define CONSTANT_OF_TORQUE			3291.065087
+#define CONSTANT_OF_TORQUE			3057 // 3291.065087
 
-#define P_MIN 						-12.56f
-#define P_MAX 						12.56f
-#define V_MIN 						-20.0f
-#define V_MAX 						20.0f
+#define P_MIN 						-12.5f
+#define P_MAX 						12.5f
+#define V_MIN 						-45.0f
+#define V_MAX 						45.0f
 #define KP_MIN 						0.0f
 #define KP_MAX 						5000.0f
 #define KD_MIN 						0.0f
@@ -88,7 +89,7 @@ public:
     int16_t given_current;//电流值
     uint8_t temperate;//温度值
     int16_t last_ecd;//上一次编码值
-    int16_t total_ecd;//总编码值
+    int32_t total_ecd;//总编码值
     int32_t count;
 
     /**
@@ -99,12 +100,12 @@ public:
     {
         this->last_ecd = this->ecd;
         this->ecd = (uint16_t)((data)[0] << 8 | (data)[1]);
-        if (this->ecd - this->last_ecd >= 4096) {
+        if (this->ecd - this->last_ecd > 4096) {
             this->count--;
-        } else if (this->ecd - this->last_ecd <= -4096){
+        } else if (this->ecd - this->last_ecd < -4096){
             this->count++;
         }
-        this->total_ecd = 8192 * this->count + this->ecd;
+        this->total_ecd = (int32_t)(8192 * this->count + this->ecd);
         this->speed_rpm = (uint16_t)((data)[2] << 8 | (data)[3]);
         this->given_current = (uint16_t)((data)[4] << 8 | (data)[5]);
         this->temperate = (data)[6];
@@ -166,7 +167,7 @@ public:
         joint_fdcan_send_data[6] = 0xFF;
         joint_fdcan_send_data[7] = 0xFC;
 
-        HAL_FDCAN_AddMessageToTxFifoQ(&CHASSIS_JOINT_CAN, &joint_tx_message, joint_fdcan_send_data);
+        HAL_FDCAN_AddMessageToTxFifoQ(this->hfdcan, &joint_tx_message, joint_fdcan_send_data);
     }
 
     /**
@@ -199,7 +200,7 @@ public:
         joint_fdcan_send_data[5] = (kd_tmp >> 4) & 0xFF;
         joint_fdcan_send_data[6] = ((kd_tmp & 0xF) << 4) | ((tor_tmp >> 8) & 0xF);
         joint_fdcan_send_data[7] = tor_tmp & 0xFF;
-        HAL_FDCAN_AddMessageToTxFifoQ(&CHASSIS_JOINT_CAN, &joint_tx_message, joint_fdcan_send_data);
+        HAL_FDCAN_AddMessageToTxFifoQ(this->hfdcan, &joint_tx_message, joint_fdcan_send_data);
     }
 
     /**
@@ -224,7 +225,7 @@ public:
         joint_fdcan_send_data[6] = 0xFF;
         joint_fdcan_send_data[7] = 0xFE;
 
-        HAL_FDCAN_AddMessageToTxFifoQ(&CHASSIS_JOINT_CAN, &joint_tx_message, joint_fdcan_send_data);
+        HAL_FDCAN_AddMessageToTxFifoQ(this->hfdcan, &joint_tx_message, joint_fdcan_send_data);
     }
     
     /**

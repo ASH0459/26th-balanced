@@ -31,10 +31,10 @@ extern FDCAN_HandleTypeDef hfdcan3;
 // 电机数据
 /* 0，1，2，3 左1 左2 右1 右2*/
 Joint_Motor_Measure chassis_joint[4] = {
-	Joint_Motor_Measure(CAN_CHASSIS_JOINT_LEFT_1_ID, &CHASSIS_JOINT_CAN),
-	Joint_Motor_Measure(CAN_CHASSIS_JOINT_LEFT_2_ID, &CHASSIS_JOINT_CAN),
-	Joint_Motor_Measure(CAN_CHASSIS_JOINT_RIGHT_1_ID, &CHASSIS_JOINT_CAN),
-	Joint_Motor_Measure(CAN_CHASSIS_JOINT_RIGHT_2_ID, &CHASSIS_JOINT_CAN),
+	Joint_Motor_Measure(CAN_CHASSIS_JOINT_LEFT_1_ID, &CHASSIS_JOINT_CAN1),
+	Joint_Motor_Measure(CAN_CHASSIS_JOINT_LEFT_2_ID, &CHASSIS_JOINT_CAN1),
+	Joint_Motor_Measure(CAN_CHASSIS_JOINT_RIGHT_1_ID, &CHASSIS_JOINT_CAN2),
+	Joint_Motor_Measure(CAN_CHASSIS_JOINT_RIGHT_2_ID, &CHASSIS_JOINT_CAN2),
 };
 
 /* 0，1 左 右*/
@@ -92,14 +92,15 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 			FDCAN_RxHeaderTypeDef rx_header;
 			uint8_t rx_data[8];
 			HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &rx_header, rx_data);
-			switch (rx_header.Identifier) {
-				case CAN_CHASSIS_WHEEL_LEFT_ID :
-				case CAN_CHASSIS_WHEEL_RIGHT_ID :
+			switch (rx_header.Identifier)
+			{
+				case CAN_CHASSIS_JOINT_LEFT_1_ID:
+				case CAN_CHASSIS_JOINT_LEFT_2_ID:
 				{
 					static uint8_t i = 0;
 					//get motor id
-					i = rx_header.Identifier - CAN_CHASSIS_WHEEL_LEFT_ID;
-					chassis_wheel[i].get_motor_measure(rx_data); //对应电机获取对应值
+					i = rx_header.Identifier - CAN_CHASSIS_JOINT_LEFT_1_ID;
+					chassis_joint[i].get_joint_motor_measure(rx_data); //对应电机获取对应值
 					//detect_hook(CHASSIS_MOTOR1_TOE + i); // 设备检测函数，检测设备是否掉线
 					break;
 				}
@@ -110,6 +111,33 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 			}
 		}
 
+		else if (hfdcan->Instance == FDCAN3)
+		{
+			FDCAN_RxHeaderTypeDef rx_header;
+			uint8_t rx_data[8];
+			HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &rx_header, rx_data);
+			switch (rx_header.Identifier) {
+				case CAN_CHASSIS_WHEEL_LEFT_ID :
+				case CAN_CHASSIS_WHEEL_RIGHT_ID :	//轮电机数据
+				{
+					static uint8_t i = 0;
+					//get motor id
+					i = rx_header.Identifier - CAN_CHASSIS_WHEEL_LEFT_ID;
+					chassis_wheel[i].get_motor_measure(rx_data); //对应电机获取对应值
+					//detect_hook(CHASSIS_MOTOR1_TOE + i); // 设备检测函数，检测设备是否掉线
+					break;
+				}
+				case CAN_GIMBAL_ID:	//云台数据
+				{
+					gimbal_data.get_Gimbal_Data(rx_data);
+					break;
+				}
+				default:
+				{
+					break;
+				}
+			}
+		}
 		else
 		{
 				Error_Handler();
@@ -128,21 +156,13 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
 			HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO1, &rx_header, rx_data);
 			switch (rx_header.Identifier)
 			{
-				case CAN_CHASSIS_JOINT_LEFT_1_ID:
-				case CAN_CHASSIS_JOINT_LEFT_2_ID:
 				case CAN_CHASSIS_JOINT_RIGHT_1_ID:
-				case CAN_CHASSIS_JOINT_RIGHT_2_ID:
-				{
+				case CAN_CHASSIS_JOINT_RIGHT_2_ID: {
 					static uint8_t i = 0;
 					//get motor id
 					i = rx_header.Identifier - CAN_CHASSIS_JOINT_LEFT_1_ID;
 					chassis_joint[i].get_joint_motor_measure(rx_data); //对应电机获取对应值
 					//detect_hook(CHASSIS_MOTOR1_TOE + i); // 设备检测函数，检测设备是否掉线
-					break;
-				}
-				case CAN_GIMBAL_ID:
-				{
-					gimbal_data.get_Gimbal_Data(rx_data);
 					break;
 				}
 				default:

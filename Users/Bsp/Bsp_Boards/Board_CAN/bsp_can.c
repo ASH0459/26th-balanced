@@ -29,10 +29,10 @@ static void FDCAN1_Config(void)
 	{
 		Error_Handler();
 	}
-  if (HAL_FDCAN_ConfigGlobalFilter(&hfdcan1, FDCAN_REJECT, FDCAN_REJECT, FDCAN_FILTER_REMOTE, FDCAN_FILTER_REMOTE) != HAL_OK)
-  {
-    Error_Handler();
-  }
+  // if (HAL_FDCAN_ConfigGlobalFilter(&hfdcan1, FDCAN_REJECT, FDCAN_REJECT, FDCAN_FILTER_REMOTE, FDCAN_FILTER_REMOTE) != HAL_OK)
+  // {
+  //   Error_Handler();
+  // }
   if (HAL_FDCAN_ActivateNotification(&hfdcan1, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK)
   {
     Error_Handler();
@@ -47,7 +47,7 @@ static void FDCAN2_Config(void)
 {
   FDCAN_FilterTypeDef sFilterConfig;
   sFilterConfig.IdType =  FDCAN_STANDARD_ID;
-  sFilterConfig.FilterIndex = 0;
+  sFilterConfig.FilterIndex = 1;
   sFilterConfig.FilterType = FDCAN_FILTER_MASK;
   sFilterConfig.FilterConfig = FDCAN_FILTER_TO_RXFIFO1;
   sFilterConfig.FilterID1 = 0x00000000;
@@ -56,10 +56,10 @@ static void FDCAN2_Config(void)
   {
     Error_Handler();
   }
-  if (HAL_FDCAN_ConfigGlobalFilter(&hfdcan2, FDCAN_REJECT, FDCAN_REJECT, FDCAN_FILTER_REMOTE, FDCAN_FILTER_REMOTE) != HAL_OK)
-  {
-    Error_Handler();
-  }
+  // if (HAL_FDCAN_ConfigGlobalFilter(&hfdcan2, FDCAN_REJECT, FDCAN_REJECT, FDCAN_FILTER_REMOTE, FDCAN_FILTER_REMOTE) != HAL_OK)
+  // {
+  //   Error_Handler();
+  // }
   if (HAL_FDCAN_ActivateNotification(&hfdcan2, FDCAN_IT_RX_FIFO1_NEW_MESSAGE, 0) != HAL_OK)
   {
     Error_Handler();
@@ -74,8 +74,8 @@ static void FDCAN2_Config(void)
 static void FDCAN3_Config(void)
 {
     FDCAN_FilterTypeDef can_filter_st;
-		can_filter_st.IdType = FDCAN_STANDARD_ID;
-    can_filter_st.FilterIndex = 0;
+    can_filter_st.IdType = FDCAN_STANDARD_ID;
+    can_filter_st.FilterIndex = 2;
     can_filter_st.FilterType = FDCAN_FILTER_MASK;
     can_filter_st.FilterConfig = FDCAN_FILTER_TO_RXFIFO0;
     can_filter_st.FilterID1 = 0x00000000;
@@ -84,10 +84,10 @@ static void FDCAN3_Config(void)
 	{
         Error_Handler();
 	}
-    if (HAL_FDCAN_ConfigGlobalFilter(&hfdcan3, FDCAN_REJECT, FDCAN_REJECT, FDCAN_FILTER_REMOTE, FDCAN_FILTER_REMOTE) != HAL_OK)
-    {
-        Error_Handler();
-    }
+    // if (HAL_FDCAN_ConfigGlobalFilter(&hfdcan3, FDCAN_REJECT, FDCAN_REJECT, FDCAN_FILTER_REMOTE, FDCAN_FILTER_REMOTE) != HAL_OK)
+    // {
+    //     Error_Handler();
+    // }
     if (HAL_FDCAN_ActivateNotification(&hfdcan3, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK)
     {
         Error_Handler();
