@@ -152,6 +152,8 @@ static void  chassis_gyroscope(float *vx_set, float *vy_set, float *wz_set, Chas
   */
 static float get_changeable_gyrospeed(const unsigned int random_seed, float range_min, float range_max, float range_const, float sin_frequency);
 
+static void chassis_up_control(fp32 *vx_set, fp32 *d_yaw_set, fp32 *leg_set, Chassis_Move *chassis_move_rc_to_vector);
+
 
 Chassis_Behaviour_e Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_ZERO_FORCE;
 
@@ -185,11 +187,15 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
             }
 
             // 进入一次起身模式后需要完全起身后才能自动切入行动模式
-            if (Chassis_Behaviour_Mode == CHASSIS_BEHAVIOUR_INIT && chassis_move_mode->chassis_leg_set >= 0.21)
+            if (Chassis_Behaviour_Mode == CHASSIS_BEHAVIOUR_INIT && chassis_move_mode->init_leg_reached != 2)
             {
                 Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_INIT;
             }
-            else if (Chassis_Behaviour_Mode == CHASSIS_BEHAVIOUR_INIT && chassis_move_mode->chassis_leg_set < 0.21)
+            else if (Chassis_Behaviour_Mode == CHASSIS_BEHAVIOUR_INIT
+                && chassis_move_mode->init_leg_reached == 2
+                && fabs(chassis_move_mode->chassis_left_control.theta_l) < 0.2
+                && fabs(chassis_move_mode->chassis_right_control.theta_l) < 0.2
+                && fabs(chassis_move_mode->chassis_pitch) < 0.2)
             {
                 Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_FOLLOW_CHASSIS_YAW;
             }
@@ -220,10 +226,11 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
         {
             Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_ZERO_FORCE; // 底盘断电
         }
-            /* 若开关为上档:小陀螺*/
-        else if (switch_is_up(chassis_move_mode->chassis_gimbal_data->chassis_mode))
+            /* 若开关为上档,且上一次为中间:跳跃*/
+        else if (switch_is_up(chassis_move_mode->chassis_gimbal_data->chassis_mode) && switch_is_mid(last_s))
         {
-            Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_GYROSCOPE; // 小陀螺模式
+            //Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_JUMP; // 跳跃模式
+            Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_UP; // 上台阶模式
         }
 
     //添加自己的逻辑判断进入新模式
@@ -253,6 +260,10 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
     else if (Chassis_Behaviour_Mode == CHASSIS_BEHAVIOUR_JUMP)
     {
         chassis_move_mode->chassis_mode = CHASSIS_JUMP; // 跳跃
+    }
+    else if (Chassis_Behaviour_Mode == CHASSIS_BEHAVIOUR_UP)
+    {
+        chassis_move_mode->chassis_mode = CHASSIS_UP; // 磕上台阶
     }
     last_s = chassis_move_mode->chassis_gimbal_data->chassis_mode;
     last_mode_sw = chassis_move_mode->vt_rc_control->mode_sw;
@@ -294,6 +305,10 @@ void chassis_behaviour_control_set(fp32*vx_set, fp32 *yaw_set, fp32 *d_yaw_set, 
     else if (Chassis_Behaviour_Mode == CHASSIS_BEHAVIOUR_GYROSCOPE)  //小陀螺
     {
         chassis_gyroscope(vx_set, d_yaw_set, leg_set, chassis_move_rc_to_vector);
+    }
+    else if (Chassis_Behaviour_Mode == CHASSIS_BEHAVIOUR_UP)
+    {
+        chassis_up_control(vx_set, d_yaw_set, leg_set, chassis_move_rc_to_vector);
     }
 
 }
@@ -404,12 +419,42 @@ static void chassis_no_follow_yaw_control(fp32 *vx_set, fp32 *d_yaw_set, fp32 *l
     {
         return;
     }
-
+    static fp32 leg_set_add;
+    leg_set_add = chassis_move_rc_to_vector->chassis_gimbal_data->yaw_relative_angle * 0.000001;
     *vx_set = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_vx * CHASSIS_VX_RC_SEN;
     //*d_yaw_set = chassis_move_rc_to_vector->chassis_gimbal_data->d_yaw_set;
-    *d_yaw_set = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_leg_set * 0.01;
-    *leg_set = 0.201;
+    *d_yaw_set = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_leg_set * 0.01;//目前暂时把leg作为yaw控制
+    //*leg_set = 0.201;
     //*leg_set = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_leg_set;
+    *leg_set += leg_set_add;
+
+
+    if(*leg_set >= 0.35) {
+        *leg_set = 0.35;
+    }
+    else if(*leg_set <= 0.201) {
+        *leg_set = 0.201;
+    }
+
+}
+
+static void chassis_up_control(fp32 *vx_set, fp32 *d_yaw_set, fp32 *leg_set, Chassis_Move *chassis_move_rc_to_vector)
+{
+
+    if (d_yaw_set == NULL || leg_set == NULL || chassis_move_rc_to_vector == NULL)
+    {
+        return;
+    }
+    *vx_set = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_vx * CHASSIS_VX_RC_SEN;
+    *d_yaw_set = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_leg_set * 0.01;//目前暂时把leg作为yaw控制
+
+
+    if(*leg_set >= 0.35) {
+        *leg_set = 0.35;
+    }
+    else if(*leg_set <= 0.201) {
+        *leg_set = 0.201;
+    }
 
 }
 
@@ -431,9 +476,16 @@ static void chassis_init_control(fp32 *vx_set, fp32 *d_yaw_set, fp32 *leg_set, C
 
     *vx_set = 0.0f;
     *d_yaw_set = 0.0f;
-    first_order_filter_cali(&chassis_move_rc_to_vector->chassis_leg_filter_set, 0.201f);
-    *leg_set = chassis_move_rc_to_vector->chassis_leg_filter_set.out;
-
+    if(chassis_move_rc_to_vector->init_leg_reached == 1) {
+        first_order_filter_cali(&chassis_move_rc_to_vector->chassis_leg_filter_set, 0.201f);
+        *leg_set = chassis_move_rc_to_vector->chassis_leg_filter_set.out;
+        // 腿收缩到目标位置后，
+        if (chassis_move_rc_to_vector->chassis_left_control.wbr_control.L <= 0.211
+            && chassis_move_rc_to_vector->chassis_right_control.wbr_control.L <= 0.211) {
+            // 进入收缩LQR模式
+            chassis_move_rc_to_vector->init_leg_reached = 2;
+        }
+    }
 }
 
 /**

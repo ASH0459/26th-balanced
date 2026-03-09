@@ -39,9 +39,8 @@ typedef struct
  * @brief 变量外部声明
  */
 extern UART_Manage_Object_t UART1_Manage_Object;
-extern UART_Manage_Object_t UART3_Manage_Object;
-extern UART_Manage_Object_t UART6_Manage_Object;
 extern UART_Manage_Object_t UART5_Manage_Object;
+extern UART_Manage_Object_t UART10_Manage_Object;
 
 
 #ifdef __cplusplus

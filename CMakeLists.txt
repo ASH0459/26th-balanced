@@ -122,7 +122,17 @@ add_executable(${CMAKE_PROJECT_NAME}
         Users/Bsp/Bsp_Boards/Board_USART/Board_USART.h
         Users/Application/App_Referee/App_Referee_Task.c
         Users/Bsp/Bsp_Device/Dev_Referee/Dev_Referee.c
-        Users/Algorithm/Alg_wbr/wbr.c)
+        Users/Algorithm/Alg_wbr/wbr.c
+        Users/0-APL/APL_PowerLimitator/APL_PowerLimitator.cpp
+        Users/0-APL/APL_PowerLimitator/APL_PowerLimitator.hpp
+        Users/0-APL/APL_SuperCap/APL_SuperCap.cpp
+        Users/0-APL/APL_SuperCap/APL_SuperCap.hpp
+        Users/2-HDL/HDL_PowerLimitator/HDL_PowerLimitator.cpp
+        Users/2-HDL/HDL_PowerLimitator/HDL_PowerLimitator.hpp
+        Users/2-HDL/HDL_SuperCap/HDL_SuperCap.cpp
+        Users/2-HDL/HDL_SuperCap/HDL_SuperCap.hpp
+        Users/Bsp/Bsp_Device/Dev_LiDAR/Dev_LiDAR.c
+        Users/Bsp/Bsp_Device/Dev_LiDAR/Dev_LiDAR.h)
 
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
@@ -152,6 +162,7 @@ include_directories(Users/Bsp/Bsp_Boards/Bsp_Led Users/Application/APP_INS Users
 include_directories(Core/Inc Drivers/STM32H7xx_HAL_Driver/Inc Drivers/STM32H7xx_HAL_Driver/Inc/Legacy Drivers/CMSIS/Device/ST/STM32H7xx/Include Drivers/CMSIS/Include DSP_LIB/Include)
 include_directories(Middlewares/ST/ARM/DSP/Inc Users/Bsp/Bsp_Support/Sp_CRC8_CRC16 Users/Bsp/Bsp_Support/Sp_FIFO Users/Bsp/Bsp_Support/Sp_MEM_MANG Users/Bsp/Bsp_Support/)
 include_directories(Users/Bsp/Bsp_Device/Dev_Referee Users/Application/App_Referee Users/Bsp/Bsp_Boards/Board_USART Users/Algorithm/Alg_wbr  Users/Algorithm/Alg_EKF/kalman)
+include_directories(Users/0-APL/APL_SuperCap Users/0-APL/APL_PowerLimitator Users/2-HDL/HDL_PowerLimitator Users/2-HDL/HDL_SuperCap Users/Bsp/Bsp_Device/Dev_LiDAR)
 
 # Add project symbols (macros)
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
@@ -169,7 +180,7 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
 )
 
 target_link_directories(stm32cubemx INTERFACE
-        ../../Middlewares/ST/ARM/Lib
+        ${CMAKE_SOURCE_DIR}/Middlewares/ST/ARM/Lib
 )
 
 target_link_libraries(stm32cubemx INTERFACE

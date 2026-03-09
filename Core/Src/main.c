@@ -124,6 +124,8 @@ int main(void)
   MX_USB_OTG_HS_PCD_Init();
   MX_CRC_Init();
   MX_USART10_UART_Init();
+  MX_UART7_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
   DWT_Init(480);

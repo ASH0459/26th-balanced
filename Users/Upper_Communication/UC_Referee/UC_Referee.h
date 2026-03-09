@@ -225,6 +225,10 @@ typedef __packed struct
     uint8_t data[32];
 } ext_download_stream_data_t;
 
+
+extern ext_game_robot_status_t robot_state;
+extern ext_power_heat_data_t power_heat_data_t;
+
 #ifdef __cplusplus
 extern "C"
 {

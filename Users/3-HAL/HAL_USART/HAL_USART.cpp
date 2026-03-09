@@ -21,6 +21,7 @@
  */
 UART_Manage_Object_t UART5_Manage_Object  = {&huart5};
 UART_Manage_Object_t UART10_Manage_Object  = {&huart10};
+UART_Manage_Object_t UART1_Manage_Object  = {&huart1};
 //UART_Manage_Object_t UART6_Manage_Object  = {&huart6};
 
 /**

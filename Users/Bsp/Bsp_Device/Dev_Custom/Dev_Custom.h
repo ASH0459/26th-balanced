@@ -108,7 +108,7 @@ extern void UART1_ISR_Handler(UART_HandleTypeDef *huart, uint16_t Size);
   * @param[in]      none
   * @retval         none
   */
-extern void UART1_Error_Handler(void);
+// extern void UART1_Error_Handler(void);
 
 #ifdef __cplusplus
 }

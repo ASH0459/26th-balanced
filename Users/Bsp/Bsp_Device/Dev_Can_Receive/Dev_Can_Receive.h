@@ -52,10 +52,6 @@ typedef enum
 
     CAN_GIMBAL_ID       = 0x302,
     CAN_ATOM_ID         = 0X2BC,
-
-    /* 在CAN_cmd_supercap函数中被分配，使用0x210作为超级电容的发送ID */
-    CAN_SUPERCAP_TX_ID = 0x210,  //**>
-    CAN_SUPERCAP_RX_ID = 0x211,  //<**
 } can_msg_id_e;
 
 /** * @brief 变量外部声明 */
@@ -270,7 +266,7 @@ class Gimbal_Data {
     uint8_t super_cap_state;
 
     uint16_t d_yaw_set;
-    uint16_t yaw_relative_angle;
+    int16_t yaw_relative_angle;
 
     /**
     * @brief 获取云台对象数据
@@ -280,7 +276,7 @@ class Gimbal_Data {
     {
         this->chassis_vx = (uint16_t)((data)[2] << 8 | (data)[3]);
         this->chassis_leg_set = -(uint16_t)((data)[0] << 8 | (data)[1]);
-        this->yaw_relative_angle = (uint16_t)(data)[6] << 8 | (data)[7];
+        this->yaw_relative_angle = (uint16_t)((data)[6] << 8 | (data)[7]);
         this->chassis_mode = (data)[4];
         this->super_cap_state = (data)[5];
     }

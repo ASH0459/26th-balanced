@@ -19,6 +19,7 @@
 #include "bsp_buzzer.h"
 #include "cmsis_os2.h"
 #include "main.h"
+#include "App_Detect_Task.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,6 +38,21 @@ extern "C" {
     while (1)
     {
       //playStartupSound();
+      if (toe_is_error(CHASSIS_JOINT1_TOE) || toe_is_error(CHASSIS_JOINT2_TOE) ||
+            toe_is_error(CHASSIS_JOINT3_TOE) || toe_is_error(CHASSIS_JOINT4_TOE) ||
+            toe_is_error(VT_TOE)) {
+        buzzer_on(100, 1500);
+        osDelay(500);
+        buzzer_off();
+      }
+      if (toe_is_error(CHASSIS_WHEEL1_TOE) || toe_is_error(CHASSIS_WHEEL2_TOE)) {
+        buzzer_on(400, 1500);
+        osDelay(500);
+        buzzer_off();
+      }
+      else {
+        buzzer_off();
+      }
       osDelay(10);
     }
   }

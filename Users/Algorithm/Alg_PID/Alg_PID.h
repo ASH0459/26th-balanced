@@ -47,6 +47,9 @@ typedef struct
 	float Dbuf[3];  //微分项 0最新 1上一次 2上上次
 	float error[3]; //误差项 0最新 1上一次 2上上次
 
+	float last_fdb;
+	float last_Dout;
+	float D_alpha;
 } PidTypeDef_t;//
 
 #ifdef __cplusplus
@@ -65,6 +68,8 @@ extern void PID_clear(PidTypeDef_t *pid);
 extern float IMU_PID_Calc(PidTypeDef_t* pid, float ref, float set, float error_delta);
 
 extern float Double_PID_Calc(PidTypeDef_t *pid_out, PidTypeDef_t *pid_in, float ref_out, float ref_in, float set_out, float set_in);
+
+	extern float Leg_PID_Calc(PidTypeDef_t *pid, float ref, float set);
 
 #ifdef __cplusplus
 }

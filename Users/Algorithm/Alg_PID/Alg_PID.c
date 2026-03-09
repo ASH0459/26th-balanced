@@ -72,6 +72,7 @@ void PID_init(PidTypeDef_t *pid, uint8_t mode, const float PID[3], float max_out
 ---------------------------------------------------------------*/
 float PID_Calc(PidTypeDef_t *pid, float ref, float set)
 {
+
     if (pid == NULL)
     {
         return 0.0f;
@@ -86,15 +87,47 @@ float PID_Calc(PidTypeDef_t *pid, float ref, float set)
 		
     if (pid->mode == PID_POSITION)			//采用位移式PID
     {
-        pid->Pout = pid->Kp * pid->error[0];
-        pid->Iout += pid->Ki * pid->error[0];
-        pid->Dbuf[2] = pid->Dbuf[1];
-        pid->Dbuf[1] = pid->Dbuf[0];
-        pid->Dbuf[0] = (pid->error[0] - pid->error[1]);
-        pid->Dout = pid->Kd * pid->Dbuf[0];
-        LimitMax(pid->Iout, pid->max_iout);
-        pid->out = pid->Pout + pid->Iout + pid->Dout;
-        LimitMax(pid->out, pid->max_out);
+        // pid->Pout = pid->Kp * pid->error[0];
+        // pid->Iout += pid->Ki * pid->error[0];
+        // pid->Dbuf[2] = pid->Dbuf[1];
+        // pid->Dbuf[1] = pid->Dbuf[0];
+        // pid->Dbuf[0] = (pid->error[0] - pid->error[1]);
+        // pid->Dout = pid->Kd * pid->Dbuf[0];
+        // LimitMax(pid->Iout, pid->max_iout);
+        // pid->out = pid->Pout + pid->Iout + pid->Dout;
+        // LimitMax(pid->out, pid->max_out);
+
+
+    	// 1. 计算比例项 (P)
+    	pid->Pout = pid->Kp * pid->error[0];
+
+    	// 2. 计算积分项 (I) - [新增积分分离逻辑]
+    	// 假设你要在误差小于 5.0 的时候才开启积分 (这个 5.0 需要根据你的物理单位，比如毫米、厘米来修改)
+    	// 最好是将这个阈值加到你的 PidTypeDef_t 结构体里，比如 pid->I_Band
+    	float I_Band = 0.01f;
+
+    	if (fabsf(pid->error[0]) < I_Band)
+    	{
+    		// 当误差在阈值范围内时，正常累加积分
+    		pid->Iout += pid->Ki * pid->error[0];
+    		LimitMax(pid->Iout, pid->max_iout); // 原有的积分限幅保留
+    	}
+    	else
+    	{
+    		// [关键] 当误差过大时，不仅不累加积分，还要把积分项清零
+    		// 防止在快速冲向目标的过程中累积错误的力矩
+    		pid->Iout = 0.0f;
+    	}
+
+    	// 3. 计算微分项 (D)
+    	pid->Dbuf[2] = pid->Dbuf[1];
+    	pid->Dbuf[1] = pid->Dbuf[0];
+    	pid->Dbuf[0] = (pid->error[0] - pid->error[1]);
+    	pid->Dout = pid->Kd * pid->Dbuf[0];
+
+    	// 4. 计算总输出
+    	pid->out = pid->Pout + pid->Iout + pid->Dout;
+    	LimitMax(pid->out, pid->max_out);
     }
     else if (pid->mode == PID_Incremental)		//采用增量式PID
     {
@@ -157,6 +190,61 @@ float IMU_PID_Calc(PidTypeDef_t* pid, float ref, float set, float error_delta)
 	return pid->out;
 }
 
+
+float Leg_PID_Calc(PidTypeDef_t *pid, float ref, float set)
+{
+
+	if (pid == NULL)
+	{
+		return 0.0f;
+	}
+
+	// 更新误差历史
+	pid->error[2] = pid->error[1];
+	pid->error[1] = pid->error[0];
+	pid->set = set;
+	pid->fdb = ref;
+	pid->error[0] = set - ref;
+
+	if (pid->mode == PID_POSITION)			//采用位移式PID
+	{
+		// 1. 计算比例项 (P)
+		pid->Pout = pid->Kp * pid->error[0];
+
+		// 2. 计算积分项 (I) - [积分分离]
+		float I_Band = 0.01f; // 积分介入阈值(可放入结构体由外部传入)
+		if (fabsf(pid->error[0]) < I_Band)
+		{
+			pid->Iout += pid->Ki * pid->error[0];
+			LimitMax(pid->Iout, pid->max_iout); // 积分限幅
+		}
+		else
+		{
+			pid->Iout = 0.0f; // 误差过大时清空积分
+		}
+
+		// 3. 计算微分项 (D) - [修改：微分先行 + 微分滤波]
+		// 【关键改动1】：使用反馈值的变化量代替误差的变化量 (避免目标跳变导致微分踢击)
+		// 物理意义：只关心弹簧当前运动有多快，阻碍它跑太快。
+		float current_speed = -(pid->fdb - pid->last_fdb);
+		float raw_Dout = pid->Kd * current_speed;
+
+		// 【关键改动2】：微分低通滤波 (消除阶梯状的波形和噪声)
+		// pid->D_alpha 是滤波系数，比如 0.5。如果是 1.0 就等于没滤波。
+		pid->D_alpha = 0.3;
+		pid->Dout = (pid->D_alpha * raw_Dout) + ((1.0f - pid->D_alpha) * pid->last_Dout);
+
+		// 保存本次计算数据供下次使用
+		pid->last_fdb = pid->fdb;
+		pid->last_Dout = pid->Dout;
+
+		// 4. 计算总输出
+		pid->out = pid->Pout + pid->Iout + pid->Dout;
+		LimitMax(pid->out, pid->max_out);
+	}
+
+	return pid->out;
+}
 /*---------------------------------------------------------------
  * Function:        PID_clear(PidTypeDef_t *pid)
  * Description:     PID复位（清零）函数

@@ -33,6 +33,9 @@
 //任务开始空闲一段时间
 #define CHASSIS_TASK_INIT_TIME 357
 
+// 收缩系数
+#define INIT_LQR_VAL                     1.0f
+
 // 重力加速度
 #define GRAVITY_ACCELERATION			9.81f
 
@@ -65,12 +68,37 @@
 #define ROTATION_MIN_CHASSIS_SPEED_V	-0.5f
 
 // 关节最大最小力矩
-#define  JOINT_MAX_TORQUE				35.0f
-#define  JOINT_MIN_TORQUE				-35.0f
+#define  JOINT_MAX_TORQUE				40.0f
+#define  JOINT_MIN_TORQUE				-40.0f
 
 // 腿的最大最小长度
 #define CHASSIS_LEG_MAX					0.35f
-#define CHASSIS_LEG_MIN					0.21f
+#define CHASSIS_LEG_MIN					0.201f
+
+// 初始化收腿目标角度 (rad)，原始坐标系下为-1.26rad，换算到0~2π下为2π-1.26
+#define CHASSIS_INIT_LEG_ANGLE_TARGET_RAW   (-1.26f)
+#define CHASSIS_INIT_LEG_ANGLE_TARGET_360   5.1f
+// 初始化收腿角度到位阈值 (rad)
+#define CHASSIS_INIT_LEG_ANGLE_THRESHOLD (0.2f)
+// 初始化收腿PID参数
+#define INIT_LEG_ANGLE_PID_KP           1.0f
+#define INIT_LEG_ANGLE_PID_KI           0.0f
+#define INIT_LEG_ANGLE_PID_KD           1.0f
+#define INIT_LEG_ANGLE_PID_MAX_OUT      4.0f
+#define INIT_LEG_ANGLE_PID_MAX_IOUT     0.0f
+
+// 上台阶收腿目标角度 (0~2π坐标系, rad)
+#define CHASSIS_UP_LEG_ANGLE_TARGET_360   5.0f
+// 上台阶收腿角度到位阈值 (rad)
+#define CHASSIS_UP_LEG_ANGLE_THRESHOLD    (0.2f)
+// 上台阶收腿完成腿长阈值
+#define CHASSIS_UP_LEG_LENGTH_THRESHOLD   0.214f
+// 上台阶收腿PID参数（复用init的PID参数，也可单独设置）
+#define UP_LEG_ANGLE_PID_KP              1.0f
+#define UP_LEG_ANGLE_PID_KI              0.0f
+#define UP_LEG_ANGLE_PID_KD              1.0f
+#define UP_LEG_ANGLE_PID_MAX_OUT         4.0f
+#define UP_LEG_ANGLE_PID_MAX_IOUT        0.0f
 
 //yaw轴跟随PID
 #define YAW_PID_KP						5.0f
@@ -87,10 +115,10 @@
 #define ROLL_PID_MAX_IOUT				0.0f
 
 // 左右腿长度PID
-#define LEG_PID_KP						1000.0f
-#define LEG_PID_KI						0.0f
-#define LEG_PID_KD						10000.0f
-#define LEG_PID_MAX_OUT					300.0f  //300
+#define LEG_PID_KP						2500.0f
+#define LEG_PID_KI						20.0f
+#define LEG_PID_KD						500.0f
+#define LEG_PID_MAX_OUT					200.0f  //300
 #define LEG_PID_MAX_IOUT				0.0f
 
 /* 轮子相关数据 */
@@ -113,7 +141,7 @@
 
 /* 机体相关数据 */
 // 机体质量
-#define MASS_OF_BODY					12.15f
+#define MASS_OF_BODY					11.0f
 
 // 驱动轮补偿系数
 #define K_APAPT							0.25f
@@ -146,6 +174,7 @@
 #define CHASSIS_ACCEL_X_NUM 0.1666666667f
 #define CHASSIS_ACCEL_Y_NUM 0.3333333333f
 #define CHASSIS_ACCEL_LEG_NUM 0.1666666667f
+#define CHASSIS_ACCEL_UP_NUM 0.5f
 
 //摇杆死区
 #define CHASSIS_RC_DEADLINE 10
@@ -231,7 +260,8 @@ typedef enum
     CHASSIS_ZERO,                // 底盘无力模式
     CHASSIS_GYROSCOPE,           // 底盘小陀螺模式
     CHASSIS_INIT,                // 初始化，翻倒自救
-    CHASSIS_JUMP                 // 底盘跳跃模式
+    CHASSIS_JUMP,                 // 底盘跳跃模式
+    CHASSIS_UP                   // 上台阶模式
 }Chassis_Mode_e;
 
 typedef enum
@@ -269,9 +299,12 @@ public:
     fp32 fd_roll;														// roll轴PID输出值
     PidTypeDef_t leg_pid_control;									    // 腿长PID
     fp32 fd_leg;														// 腿长PID输出值
+    PidTypeDef_t init_leg_angle_pid;									// 初始化收腿角度PID
+    PidTypeDef_t up_leg_angle_pid;										// 上台阶收腿角度PID
     fp32 Fbl_gravity;													// 重力补偿前馈
     fp32 Fbl_inertial;													// 侧向惯性力矩补偿前馈
     fp32 Tbl_jump;                                                      // 跳跃补偿前馈
+    fp32 Fbl_spring;
     wbr_leg_t wbr_control;												// wbr连杆解算
     fp32 eta;															// 腿部质心位置系数
     fp32 l_b = L_B;														// 机体到腿部质心的距离
@@ -282,7 +315,9 @@ public:
     fp32 d_theta_w_n;													// 驱动轮角速度预测
     fp32 Tw_adapt;														// 驱动轮力矩补偿
     fp32 theta_l;                                                       // 腿角度
+    fp32 theta_l_set;                                                   // 腿角度设置
     fp32 d_theta_l;                                                     // 腿角速度
+    fp32 d_theta_l_set;                                                 // 腿角速度设置
 };
 
 /* 底盘控制类 */
@@ -291,6 +326,9 @@ class Chassis_Move
     public:
 
     uint8_t jump_state = 0;
+    uint8_t up_state = 0;
+    uint8_t up_leg_reached = 0;  // 上台阶腿角度是否到位标志 0:未到位 1:已到位
+    uint8_t init_leg_reached = 0;  // 初始化收腿是否到位标志 0:未到位 1:已到位
 
     const dr16_control_t *chassis_RC;             //底盘使用的遥控器指针
     const remote_control_t *chassis_RC_0X304;     //底盘使用的图传链路数据指针
@@ -357,6 +395,7 @@ class Chassis_Move
     fp32 chassis_yaw_set;
     fp32 chassis_leg_set;												// 腿部目标长度
     first_order_filter_type_t chassis_leg_filter_set;                                        // 低通滤波后的腿部长度
+    first_order_filter_type_t chassis_UP_filter_set;
     fp32 chassis_roll_set;												// 底盘roll轴设定值
 
     fp32 K = K_APAPT;														// 驱动轮补偿系数

@@ -30,6 +30,10 @@
 #include "App_Detect_Task.h"
 #include "led_flow_task.h"
 #include "APP_Buzzer.h"
+#include "App_Referee_Task.h"
+#include "APL_PowerLimitator.hpp"
+#include "APL_SuperCap.hpp"
+#include "Dev_LiDAR.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -74,7 +78,8 @@ void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
   */
 void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
-
+  Referee_Init();
+  LiDAR_Init();
   /* USER CODE END Init */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -118,10 +123,16 @@ void MX_FREERTOS_Init(void) {
   xTaskCreate(buzzer_task, "Buzzer_Task", 128, NULL, osPriorityNormal, NULL);
 
   /* 创建裁判系统解包任务 */
-  //xTaskCreate(referee_usart_task, "referee_usart_task", 128, NULL, osPriorityNormal, NULL);
+  xTaskCreate(Referee_Task, "referee_task", 128, NULL, osPriorityNormal, NULL);
 
   /* 远程数据中心 */
   xTaskCreate(_Thread_RC_Hub_, "_Thread_RC_Hub_", 256, NULL, osPriorityHigh, NULL);
+
+  /*创建功率控制任务*/
+  xTaskCreate(PowerLimitator_Task, "PowerLimitator_Task", 1024, NULL, osPriorityNormal, NULL);
+
+  /*创建超级电容任务*/
+  xTaskCreate(SuperCap_Task, "SuperCap_Task", 256, NULL, osPriorityNormal, NULL);
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */

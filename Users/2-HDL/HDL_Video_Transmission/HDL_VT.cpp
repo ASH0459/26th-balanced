@@ -37,8 +37,11 @@ void Class_Video_Transmission::Init(UART_Manage_Object_t *_UART_Manage_Obj_)
     this->custom_robot.xcustom_queue = xQueueCreate(QUEUE_RX_ITEM_NUM, sizeof(custom_robot.data));
     this->remote_robot.xremote_queue = xQueueCreate(QUEUE_RX_ITEM_NUM, sizeof(remote_robot.data));
     this->vt_rc_robot.xrc_vt_queue   = xQueueCreate(QUEUE_RX_ITEM_NUM, sizeof(vt_rc_robot.data ));
-    // 启动串口中断
-    UART_Init(this->UART_Mangae_Obj, 256);
+    // 启动串口中断（传NULL则跳过，USART1已废弃）
+    if(this->UART_Mangae_Obj != NULL)
+    {
+        UART_Init(this->UART_Mangae_Obj, 256);
+    }
 }
 
 

@@ -23,7 +23,6 @@
  * @brief 构造数据解析对象
  */
 Class_RC_Hub RC_Hub;
-UART_Manage_Object_t UART1_Manage_Object;
 
 /**
  * @brief   远程控制中心线程
@@ -31,7 +30,7 @@ UART_Manage_Object_t UART1_Manage_Object;
 void _Thread_RC_Hub_(void *pvParameters)
 {
     vTaskDelay(RC_HUB_INIT_TIME);
-    RC_Hub.Init(&VT_Module, &UART1_Manage_Object);
+    RC_Hub.Init(&VT_Module, NULL); // USART1已废弃，VT不再使用串口
 
     while (1)
     {

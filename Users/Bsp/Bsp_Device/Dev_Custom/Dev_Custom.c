@@ -59,17 +59,17 @@ QueueHandle_t xGet_RC_Queue(void)
     return xRC_Queue;
 }
 
-/**
-  * @brief          串口中断错误处理函数
-  *                 将在HAL_UART_ErrorCallback串口1的中断错误回调函数中被调用
-  * @param[in]      none
-  * @retval         none
-  */
-void UART1_Error_Handler(void)
-{
-    HAL_UARTEx_ReceiveToIdle_DMA(&huart1, _rx_buf_, CUSTOM_QUEUE_ITEM_SIZE);
-    memset(_rx_buf_, 0, CUSTOM_QUEUE_ITEM_SIZE);
-}
+// /**
+//   * @brief          串口中断错误处理函数
+//   *                 将在HAL_UART_ErrorCallback串口1的中断错误回调函数中被调用
+//   * @param[in]      none
+//   * @retval         none
+//   */
+// void UART1_Error_Handler(void)
+// {
+//     HAL_UARTEx_ReceiveToIdle_DMA(&huart1, _rx_buf_, CUSTOM_QUEUE_ITEM_SIZE);
+//     memset(_rx_buf_, 0, CUSTOM_QUEUE_ITEM_SIZE);
+// }
 
 /**
   * @brief          串口中断服务函数

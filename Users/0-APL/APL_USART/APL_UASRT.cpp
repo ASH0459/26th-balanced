@@ -16,10 +16,10 @@
   */
 #include "APL_UASRT.h"
 #include "Dev_Remote_Control.h"
-#include "Dev_Custom.h"
-#include "HDL_VT.h"
 #include "HAL_USART.h"
-#include "Dev_Remote_Control.h"
+#include "Dev_Referee.h"
+#include "App_Detect_Task.h"
+#include "Dev_LiDAR.h"
 
 /**
  * @brief          不定长接收中断
@@ -28,19 +28,20 @@
  */
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart,uint16_t Size)
 {
-    if(huart->Instance == USART1)
+    if(huart == &huart10)
     {
-       //图传链路
-        VT_Module.VT_Data_Processing(UART1_Manage_Object.rx_buffer, Size);
-        HAL_UARTEx_ReceiveToIdle_DMA(huart, UART1_Manage_Object.rx_buffer, UART1_Manage_Object.rx_data_size);
+        // 用作接收裁判系统常规链路
+        UART10_ISR_Handler(huart, Size);
+        detect_hook(Referee_TOE);
     }
     else if(huart->Instance == UART5)
     {
         USER_USART5_IRQHandler(huart ,Size);
     }
-    else if(huart->Instance == USART6)
+    else if(huart->Instance == USART1)
     {
-
+        // 用作接收STP-23激光雷达数据
+        USART1_LiDAR_ISR_Handler(huart, Size);
     }
 }
 
@@ -52,13 +53,11 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart,uint16_t Size)
  */
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 {
-    if (huart->Instance == USART1)
+    if(huart->Instance == USART10)
     {
-        HAL_UARTEx_ReceiveToIdle_DMA(UART1_Manage_Object.huart, UART1_Manage_Object.rx_buffer, CUSTOM_QUEUE_ITEM_SIZE);
-
+        UART10_Error_Handler();
     }
-    else if (huart->Instance == USART3)
-    {
-
+    else if (huart->Instance == USART1) {
+        UART1_Error_Handler();
     }
 }
