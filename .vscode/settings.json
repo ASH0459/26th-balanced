@@ -1,0 +1,19 @@
+{
+    "files.associations": {
+        "*.txt": "makefile",
+        "app_detect_task.h": "c",
+        "cmsis_os.h": "c",
+        "cmath": "cpp",
+        "usart.h": "c",
+        "main.h": "c",
+        "hal_usart.h": "c",
+        "dev_lidar.h": "c",
+        "task.h": "c",
+        "stm32h7xx_hal_dma_ex.h": "c",
+        "alg_userlib.h": "c",
+        "limits": "c",
+        "arm_math.h": "c",
+        "wbr.h": "c",
+        "ins_task.h": "c"
+    }
+}

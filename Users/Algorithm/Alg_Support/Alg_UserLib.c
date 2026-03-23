@@ -210,6 +210,27 @@ float loop_float_constrain(float Input, float minValue, float maxValue)
 
 //弧度格式化为-PI~PI
 
+
+/**
+    * @brief 计算最短角度误差 (目标 - 当前)，结果限制在 [-180, 180) 内
+    * @param target 目标角度
+    * @param current 当前角度
+    * @return 最短路径误差
+    */
+float shortest_angle_error(float target, float current) {
+    float error = target - current;
+
+    // 核心逻辑：将误差归一化到 [-180, 180]
+    while (error > PI) {
+        error -= 2*PI;
+    }
+    while (error < -PI) {
+        error += 2*PI;
+    }
+
+    return error;
+}
+
 //角度格式化为-180~180
 float theta_format(float Ang)
 {

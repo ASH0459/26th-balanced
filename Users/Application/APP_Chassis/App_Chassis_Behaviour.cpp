@@ -172,6 +172,7 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
 
     static int8_t last_s = RC_SW_UP;
     static int8_t last_mode_sw = 1;
+    static int8_t last_jump = 0;
 
     /* 按下Q键开关小陀螺 */
     static int16_t spin_flag = 0;
@@ -193,41 +194,36 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
             }
             else if (Chassis_Behaviour_Mode == CHASSIS_BEHAVIOUR_INIT
                 && chassis_move_mode->init_leg_reached == 2
-                && fabs(chassis_move_mode->chassis_left_control.theta_l) < 0.2
-                && fabs(chassis_move_mode->chassis_right_control.theta_l) < 0.2
-                && fabs(chassis_move_mode->chassis_pitch) < 0.2)
+                && fabs(chassis_move_mode->chassis_left_control.theta_l) < 0.1
+                && fabs(chassis_move_mode->chassis_right_control.theta_l) < 0.1
+                && fabs(chassis_move_mode->chassis_pitch) < 0.1)
             {
+                //Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_FOLLOW_CHASSIS_YAW;
                 Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_FOLLOW_CHASSIS_YAW;
             }
             else if (switch_is_mid(last_s) && Chassis_Behaviour_Mode != CHASSIS_BEHAVIOUR_INIT) {
                 Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_FOLLOW_CHASSIS_YAW;
             }
 
-            if (chassis_move_mode->chassis_RC->key.v & GYROSCOPE_KEY)
+            if ((chassis_move_mode->chassis_gimbal_data->key & GYROSCOPE_KEY))
             {
-                if ((chassis_move_mode->chassis_RC->key.last_v & GYROSCOPE_KEY) == 0)
-                {
-                    spin_flag++;
-                }
-
-                if (spin_flag % 2 == 1)
-                {
-                    Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_GYROSCOPE; // 小陀螺模式
-                }
-                else
-                {
-                    Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_FOLLOW_GIMBAL_YAW;  // 底盘跟随云台
-                }
+                // 按住shift进入小陀螺模式
+                //Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_GYROSCOPE; // 小陀螺模式
             }
+            // else
+            // {
+            //     Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_FOLLOW_GIMBAL_YAW;  // 底盘跟随云台
+            // }
 
-        }
         /* 若开关为下档:车车直接Die掉 */
+        }
         else if (switch_is_down(chassis_move_mode->chassis_gimbal_data->chassis_mode))
         {
             Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_ZERO_FORCE; // 底盘断电
         }
             /* 若开关为上档,且上一次为中间:跳跃*/
-        else if (switch_is_up(chassis_move_mode->chassis_gimbal_data->chassis_mode) && switch_is_mid(last_s))
+        else if ((switch_is_up(chassis_move_mode->chassis_gimbal_data->chassis_mode) && switch_is_mid(last_s))
+                || (chassis_move_mode->chassis_gimbal_data->jump == 1 && last_jump != 1))
         {
             //Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_JUMP; // 跳跃模式
             Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_UP; // 上台阶模式
@@ -267,6 +263,7 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
     }
     last_s = chassis_move_mode->chassis_gimbal_data->chassis_mode;
     last_mode_sw = chassis_move_mode->vt_rc_control->mode_sw;
+    last_jump = chassis_move_mode->chassis_gimbal_data->jump;
 }
 
 /**
@@ -290,11 +287,11 @@ void chassis_behaviour_control_set(fp32*vx_set, fp32 *yaw_set, fp32 *d_yaw_set, 
     {
         chassis_zero_force_control(vx_set, yaw_set, leg_set, chassis_move_rc_to_vector);
     }
-    else if (Chassis_Behaviour_Mode == CHASSIS_FOLLOW_GIMBAL_YAW)  //底盘跟随云台
+    else if (Chassis_Behaviour_Mode == CHASSIS_FOLLOW_GIMBAL_YAW)  //底盘跟随云台或者跳跃
     {
         chassis_infantry_follow_gimbal_yaw_control(vx_set, yaw_set, leg_set, chassis_move_rc_to_vector);
     }
-    else if (Chassis_Behaviour_Mode == CHASSIS_FOLLOW_CHASSIS_YAW) //跟随底盘yaw，没装云台时候测试
+    else if (Chassis_Behaviour_Mode == CHASSIS_FOLLOW_CHASSIS_YAW  || Chassis_Behaviour_Mode == CHASSIS_BEHAVIOUR_JUMP) //跟随底盘yaw，没装云台时候测试
     {
         chassis_no_follow_yaw_control(vx_set, d_yaw_set, leg_set, chassis_move_rc_to_vector);
     }
@@ -372,11 +369,60 @@ static void chassis_infantry_follow_gimbal_yaw_control(fp32 *vx_set, fp32 *yaw_s
         return;
     }
 
-    //遥控器的通道值以及键盘按键 得出 一般情况下的速度设定值
-    *vx_set  = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_vx * CHASSIS_VX_RC_SEN;
-    *yaw_set = 0.0f;
-    *leg_set = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_leg_set;
+    /**
+      * PART1. 速度设定值计算
+      *   1. 从图传通道取原始值并死区滤波
+      *   2. 映射成目标速度
+      *   3. 键盘W/S覆盖目标速度为最大/最小
+      */
+    static int16_t vx_channel_ref = 0;
+    static fp32 vx_channel_target = 0;
 
+    // 死区滤波
+    vx_channel_ref = int16_deadline(chassis_move_rc_to_vector->chassis_gimbal_data->chassis_vx,
+                                    -CHASSIS_RC_DEADLINE, CHASSIS_RC_DEADLINE);
+
+    // 映射计算
+    vx_channel_target = vx_channel_ref * CHASSIS_VX_RC_SEN;
+
+    // 键盘W/S覆盖
+    if (chassis_move_rc_to_vector->chassis_gimbal_data->key & CHASSIS_FRONT_KEY)
+    {
+        vx_channel_target = CHASSIS_KEY_MAX_SPEED;
+    }
+    else if (chassis_move_rc_to_vector->chassis_gimbal_data->key & CHASSIS_BACK_KEY)
+    {
+        vx_channel_target = -CHASSIS_KEY_MAX_SPEED;
+    }
+
+    /**
+      * PART2. 一阶低通滤波平滑 + 急停处理
+      */
+    first_order_filter_cali(&chassis_move_rc_to_vector->chassis_cmd_slow_set_vx, vx_channel_target);
+
+    // 无摇杆输入 且 无键盘按键 → 急停，直接清零
+    if (vx_channel_target < CHASSIS_RC_DEADLINE * CHASSIS_VX_RC_SEN
+        && vx_channel_target > -CHASSIS_RC_DEADLINE * CHASSIS_VX_RC_SEN)
+    {
+        chassis_move_rc_to_vector->chassis_cmd_slow_set_vx.out = 0.0f;
+    }
+
+    *vx_set = chassis_move_rc_to_vector->chassis_cmd_slow_set_vx.out;
+
+    /**
+      * PART3. 腿长 & yaw 设定
+      */
+    static fp32 leg_set_add;
+    leg_set_add = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_leg_set * 0.000001;
+    // yaw_set在跟随云台模式下不需要设置，PID在App_Chassis_Task.cpp中计算
+    *yaw_set = 0.0f;
+    *leg_set += leg_set_add;
+    if(*leg_set >= 0.35) {
+        *leg_set = 0.35;
+    }
+    else if(*leg_set <= 0.201) {
+        *leg_set = 0.201;
+    }
 }
 
 /**
@@ -419,13 +465,50 @@ static void chassis_no_follow_yaw_control(fp32 *vx_set, fp32 *d_yaw_set, fp32 *l
     {
         return;
     }
+
+    /**
+      * PART1. 速度设定值计算 (与 follow_gimbal_yaw 相同逻辑)
+      */
+    static int16_t vx_channel_ref = 0;
+    static fp32 vx_channel_target = 0;
+
+    // 死区滤波
+    vx_channel_ref = int16_deadline(chassis_move_rc_to_vector->chassis_gimbal_data->chassis_vx,
+                                    -CHASSIS_RC_DEADLINE, CHASSIS_RC_DEADLINE);
+
+    // 映射计算
+    vx_channel_target = vx_channel_ref * CHASSIS_VX_RC_SEN;
+
+    // 键盘W/S覆盖
+    if (chassis_move_rc_to_vector->chassis_gimbal_data->key & CHASSIS_FRONT_KEY)
+    {
+        vx_channel_target = CHASSIS_KEY_MAX_SPEED;
+    }
+    else if (chassis_move_rc_to_vector->chassis_gimbal_data->key & CHASSIS_BACK_KEY)
+    {
+        vx_channel_target = -CHASSIS_KEY_MAX_SPEED;
+    }
+
+    /**
+      * PART2. 一阶低通滤波平滑 + 急停处理
+      */
+    first_order_filter_cali(&chassis_move_rc_to_vector->chassis_cmd_slow_set_vx, vx_channel_target);
+
+    if (vx_channel_target < CHASSIS_RC_DEADLINE * CHASSIS_VX_RC_SEN
+        && vx_channel_target > -CHASSIS_RC_DEADLINE * CHASSIS_VX_RC_SEN)
+    {
+        chassis_move_rc_to_vector->chassis_cmd_slow_set_vx.out = 0.0f;
+    }
+
+    *vx_set = chassis_move_rc_to_vector->chassis_cmd_slow_set_vx.out;
+
+    /**
+      * PART3. yaw 和腿长设定
+      */
     static fp32 leg_set_add;
     leg_set_add = chassis_move_rc_to_vector->chassis_gimbal_data->yaw_relative_angle * 0.000001;
-    *vx_set = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_vx * CHASSIS_VX_RC_SEN;
     //*d_yaw_set = chassis_move_rc_to_vector->chassis_gimbal_data->d_yaw_set;
-    *d_yaw_set = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_leg_set * 0.01;//目前暂时把leg作为yaw控制
-    //*leg_set = 0.201;
-    //*leg_set = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_leg_set;
+    *d_yaw_set = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_leg_set * 0.008;//目前暂时把leg作为yaw控制
     *leg_set += leg_set_add;
 
 
@@ -480,11 +563,30 @@ static void chassis_init_control(fp32 *vx_set, fp32 *d_yaw_set, fp32 *leg_set, C
         first_order_filter_cali(&chassis_move_rc_to_vector->chassis_leg_filter_set, 0.201f);
         *leg_set = chassis_move_rc_to_vector->chassis_leg_filter_set.out;
         // 腿收缩到目标位置后，
-        if (chassis_move_rc_to_vector->chassis_left_control.wbr_control.L <= 0.211
-            && chassis_move_rc_to_vector->chassis_right_control.wbr_control.L <= 0.211) {
+        if (chassis_move_rc_to_vector->chassis_left_control.wbr_control.L <= 0.21
+            && chassis_move_rc_to_vector->chassis_right_control.wbr_control.L <= 0.21) {
             // 进入收缩LQR模式
             chassis_move_rc_to_vector->init_leg_reached = 2;
         }
+    }
+
+    // Phase 1: 触地后，用力收腿
+    if(chassis_move_rc_to_vector->init_leg_reached == 1) {
+        first_order_filter_cali(&chassis_move_rc_to_vector->chassis_leg_filter_set, 0.2f);
+        *leg_set = chassis_move_rc_to_vector->chassis_leg_filter_set.out;
+
+        // 当腿收缩到 0.21m 以下时，准备切入 LQR 平衡模式
+        if (chassis_move_rc_to_vector->chassis_left_control.wbr_control.L <= 0.21f
+            && chassis_move_rc_to_vector->chassis_right_control.wbr_control.L <= 0.21f) {
+                chassis_move_rc_to_vector->init_leg_reached = 2;
+            }
+    }
+    // Phase 2: LQR 已经接管，开始平滑起立
+    else if (chassis_move_rc_to_vector->init_leg_reached == 2) {
+        // 【新增：恢复站立高度】把目标腿长滤滑到正常高度（例如 0.25f 或更高）
+        // 这样机器人在切入平衡后，会从蹲姿慢慢站起来，极大地增加抗扰动能力
+        first_order_filter_cali(&chassis_move_rc_to_vector->chassis_leg_filter_set, 0.21f);
+        *leg_set = chassis_move_rc_to_vector->chassis_leg_filter_set.out;
     }
 }
 
@@ -516,7 +618,7 @@ static void  chassis_gyroscope(fp32 *v_set, fp32 *d_yaw_set, fp32 *leg_set, Chas
 
     *v_set = 0;
     *leg_set = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_leg_set;
-    *d_yaw_set = fixed_gyrospeed + changeable_gyrospeed;
+    *d_yaw_set = fixed_gyrospeed; //+ changeable_gyrospeed;
 }
 
 /**

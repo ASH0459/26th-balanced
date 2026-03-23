@@ -19,6 +19,10 @@
 #include "main.h" 
 #include "cmsis_os.h"
 #include "fdcan.h"
+#include <math.h>
+
+#include "arm_math.h"
+
 /** * @brief 宏定义 */
 #define CHASSIS_JOINT_CAN1 hfdcan1
 #define CHASSIS_JOINT_CAN2 hfdcan2
@@ -50,7 +54,8 @@ typedef enum
     CAN_CHASSIS_WHEEL_LEFT_ID = 0x201,
     CAN_CHASSIS_WHEEL_RIGHT_ID = 0x202,
 
-    CAN_GIMBAL_ID       = 0x302,
+    CAN_SBUS_ID       = 0x302,
+    CAN_VT_ID         = 0x303,
     CAN_ATOM_ID         = 0X2BC,
 } can_msg_id_e;
 
@@ -264,9 +269,48 @@ class Gimbal_Data {
     int16_t chassis_leg_set;
     uint8_t chassis_mode;
     uint8_t super_cap_state;
+    uint8_t jump;           // trigger标志位
+    uint8_t key;            // 键盘高字节
 
     uint16_t d_yaw_set;
+    //int yaw_relative_angle;
     int16_t yaw_relative_angle;
+    float yaw_relative_pos;
+    float total_pos, final_pos;
+
+    float init_yaw_angle;
+
+    // 全局或静态变量：记录电机圈数和上一次的单圈角度
+    int32_t motor_rounds = 0;       // 累计转动圈数
+    float prev_single_pos = 0.0f;   // 上一次的单圈角度（用于检测跨圈）
+
+    float uint_to_float(int x_int, float x_min, float x_max, int bits)
+    {
+        /* converts unsigned int to float, given range and number of bits */
+        float span = x_max - x_min;
+        float offset = x_min;
+        return ((float)x_int)*span/((float)((1<<bits)-1)) + offset;
+    }
+
+    /**
+ * @brief 角度归一化函数：将任意角度折叠到 [-180°, 180°] 范围内
+ * @param angle 输入的任意角度（单位：度）
+ * @return 归一化后的角度，范围 [-180°, 180°]
+ */
+    float wrap_to_180(float angle) {
+        // 第一步：对 360 取模，得到 (-360°, 360°) 之间的角度
+        angle = fmod(angle, 2.0f*PI);
+
+        // 第二步：调整到 [-180°, 180°] 范围内
+        if (angle > PI) {
+            angle -= 2.0f*PI;
+        } else if (angle < -PI) {
+            angle += 2.0f*PI;
+        }
+
+        return angle;
+    }
+
 
     /**
     * @brief 获取云台对象数据
@@ -274,11 +318,61 @@ class Gimbal_Data {
     */
     void get_Gimbal_Data(uint8_t data[8])
     {
+        static uint8_t init_flag = 0;
+
         this->chassis_vx = (uint16_t)((data)[2] << 8 | (data)[3]);
         this->chassis_leg_set = -(uint16_t)((data)[0] << 8 | (data)[1]);
         this->yaw_relative_angle = (uint16_t)((data)[6] << 8 | (data)[7]);
         this->chassis_mode = (data)[4];
         this->super_cap_state = (data)[5];
+
+        this->yaw_relative_pos = uint_to_float(this->yaw_relative_angle, -4.0f*PI,  4.0f*PI, 16); // (-12.5,12.5)
+
+        // 2. 检测跨圈（判断是否从单圈的一端跳到另一端）.
+        float delta = this->yaw_relative_pos - this->prev_single_pos;
+        if (delta > 4.0f*PI) {
+            // 逆时针跨圈（例如从 12.5° 跳到 -12.5°），圈数减 1
+            this->motor_rounds--;
+        } else if (delta < -4.0f*PI) {
+            // 顺时针跨圈（例如从 -12.5° 跳到 12.5°），圈数加 1
+            this->motor_rounds++;
+        }
+
+        // 3. 计算累计总角度（单圈角度 + 圈数 × 单圈跨度）
+        this->total_pos = this->yaw_relative_pos + motor_rounds * 8.0f*PI;
+
+        // 4. 核心步骤：将总角度归一化到 ±180° 范围内
+        this->final_pos = wrap_to_180(total_pos);
+
+        // 5. 更新上一次的单圈角度，用于下一次跨圈检测
+        this->prev_single_pos = this->yaw_relative_pos;
+
+        if(init_flag == 0 && this->final_pos != 0.0f) {
+            this->init_yaw_angle = this->final_pos;
+            init_flag = 1;
+        }
+    }
+
+    /**
+    * @brief 获取图传链路数据
+    * @param data 接收到的CAN数据
+    */
+    void get_vt_Data(uint8_t data[8])
+    {
+        // [0][1] = ch_2 → leg_set
+        this->chassis_leg_set = -(int16_t)((data)[0] << 8 | (data)[1]);
+        // [2][3] = ch_3 → vx
+        this->chassis_vx = (int16_t)((data)[2] << 8 | (data)[3]);
+        // [4] bit2-bit3 = mode_sw → chassis_mode
+        this->chassis_mode = ((data)[4] >> 2) & 0x03;
+        // [4] bit0 = fn_1 → super_cap_state
+        this->super_cap_state = (data)[4] & 0x01;
+        // [4] bit1 = trigger → jump
+        this->jump = ((data)[4] >> 1) & 0x01;
+        // [5] = key低8位字节
+        this->key = (data)[5];
+        // [6][7] = pos_1 + pos_2 → yaw_relative_angle
+        this->yaw_relative_angle = (int16_t)((data)[6] << 8 | (data)[7]);
     }
 
     /**

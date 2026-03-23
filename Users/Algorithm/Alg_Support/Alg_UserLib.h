@@ -89,6 +89,7 @@ extern float Range_Number(float min, float max, const unsigned int *seed);
   */
 extern float float_sum(float *array, uint8_t length);
 
+extern float shortest_angle_error(float target, float current);
 #ifdef __cplusplus
 }
 #endif

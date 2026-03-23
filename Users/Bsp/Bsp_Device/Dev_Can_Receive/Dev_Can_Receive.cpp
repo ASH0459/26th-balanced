@@ -113,7 +113,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 				case SuperCap_1ID:
 				case SuperCap_2ID:
 				{
-					SuperCap_RX_Callback();
+					SuperCap_RX_Callback(rx_data);
 					detect_hook(SuperCap_TOE);
 				}
 
@@ -140,12 +140,19 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 					detect_hook(CHASSIS_WHEEL1_TOE + i); // 设备检测函数，检测设备是否掉线
 					break;
 				}
-				case CAN_GIMBAL_ID:	//云台数据
+				case CAN_SBUS_ID:	//云台遥控器数据
 				{
 					gimbal_data.get_Gimbal_Data(rx_data);
 					detect_hook(VT_TOE);
 					break;
 				}
+				case CAN_VT_ID:    //图传链路数据
+				{
+					gimbal_data.get_vt_Data(rx_data);
+					detect_hook(VT_TOE);
+					break;
+				}
+
 				default:
 				{
 					break;

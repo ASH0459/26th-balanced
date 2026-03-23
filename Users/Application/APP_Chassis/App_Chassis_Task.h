@@ -36,6 +36,9 @@
 // 收缩系数
 #define INIT_LQR_VAL                     1.0f
 
+// 初始化腿旋转速度
+#define ROTATE_SPEED                    0.7f
+
 // 重力加速度
 #define GRAVITY_ACCELERATION			9.81f
 
@@ -79,32 +82,32 @@
 #define CHASSIS_INIT_LEG_ANGLE_TARGET_RAW   (-1.26f)
 #define CHASSIS_INIT_LEG_ANGLE_TARGET_360   5.1f
 // 初始化收腿角度到位阈值 (rad)
-#define CHASSIS_INIT_LEG_ANGLE_THRESHOLD (0.2f)
+#define CHASSIS_INIT_LEG_ANGLE_THRESHOLD (0.1f)
 // 初始化收腿PID参数
-#define INIT_LEG_ANGLE_PID_KP           1.0f
+#define INIT_LEG_ANGLE_PID_KP           5.0f
 #define INIT_LEG_ANGLE_PID_KI           0.0f
-#define INIT_LEG_ANGLE_PID_KD           1.0f
-#define INIT_LEG_ANGLE_PID_MAX_OUT      4.0f
+#define INIT_LEG_ANGLE_PID_KD           10.0f
+#define INIT_LEG_ANGLE_PID_MAX_OUT      20.0f
 #define INIT_LEG_ANGLE_PID_MAX_IOUT     0.0f
 
 // 上台阶收腿目标角度 (0~2π坐标系, rad)
-#define CHASSIS_UP_LEG_ANGLE_TARGET_360   5.0f
+#define CHASSIS_UP_LEG_ANGLE_TARGET_360   5.1f
 // 上台阶收腿角度到位阈值 (rad)
-#define CHASSIS_UP_LEG_ANGLE_THRESHOLD    (0.2f)
+#define CHASSIS_UP_LEG_ANGLE_THRESHOLD    (0.1f)
 // 上台阶收腿完成腿长阈值
-#define CHASSIS_UP_LEG_LENGTH_THRESHOLD   0.214f
+#define CHASSIS_UP_LEG_LENGTH_THRESHOLD   0.211f
 // 上台阶收腿PID参数（复用init的PID参数，也可单独设置）
-#define UP_LEG_ANGLE_PID_KP              1.0f
+#define UP_LEG_ANGLE_PID_KP              5.0f
 #define UP_LEG_ANGLE_PID_KI              0.0f
-#define UP_LEG_ANGLE_PID_KD              1.0f
-#define UP_LEG_ANGLE_PID_MAX_OUT         4.0f
+#define UP_LEG_ANGLE_PID_KD              10.0f
+#define UP_LEG_ANGLE_PID_MAX_OUT         20.0f
 #define UP_LEG_ANGLE_PID_MAX_IOUT        0.0f
 
 //yaw轴跟随PID
-#define YAW_PID_KP						5.0f
+#define YAW_PID_KP						3.0f
 #define YAW_PID_KI						0.0f
 #define YAW_PID_KD						3.0f
-#define YAW_PID_MAX_OUT				    10.0f
+#define YAW_PID_MAX_OUT				    5.0f
 #define YAW_PID_MAX_IOUT				0.0f
 
 // 左右腿roll轴PID
@@ -115,9 +118,9 @@
 #define ROLL_PID_MAX_IOUT				0.0f
 
 // 左右腿长度PID
-#define LEG_PID_KP						2500.0f
-#define LEG_PID_KI						20.0f
-#define LEG_PID_KD						500.0f
+#define LEG_PID_KP						2000.0f
+#define LEG_PID_KI						0.0f
+#define LEG_PID_KD						100000.0f
 #define LEG_PID_MAX_OUT					200.0f  //300
 #define LEG_PID_MAX_IOUT				0.0f
 
@@ -141,7 +144,7 @@
 
 /* 机体相关数据 */
 // 机体质量
-#define MASS_OF_BODY					11.0f
+#define MASS_OF_BODY					20.0f
 
 // 驱动轮补偿系数
 #define K_APAPT							0.25f
@@ -159,7 +162,7 @@
 #define CHASSIS_MODE_CHANNEL 0 //右侧按键开关
 
 //遥控器前进摇杆（max 660）转化成车体前后速度（m/s）的比例
-#define CHASSIS_VX_RC_SEN 0.002f
+#define CHASSIS_VX_RC_SEN 0.0025f
 
 //遥控器左右摇杆（max 660）转化成车体左右速度（m/s）的比例
 #define CHASSIS_VY_RC_SEN 0.0009f
@@ -173,7 +176,7 @@
 /*  */
 #define CHASSIS_ACCEL_X_NUM 0.1666666667f
 #define CHASSIS_ACCEL_Y_NUM 0.3333333333f
-#define CHASSIS_ACCEL_LEG_NUM 0.1666666667f
+#define CHASSIS_ACCEL_LEG_NUM 0.3333333333f
 #define CHASSIS_ACCEL_UP_NUM 0.5f
 
 //摇杆死区
@@ -196,7 +199,7 @@
 #define MAX_MOTOR_CAN_CURRENT 16000.0f
 
 //底盘小陀螺按键
-#define GYROSCOPE_KEY       KEY_PRESSED_OFFSET_Q
+#define GYROSCOPE_KEY       KEY_PRESSED_OFFSET_SHIFT
 #define GYROSCOPE_OFF_KEY   KEY_PRESSED_OFFSET_B
 
 //底盘前后左右控制按键
@@ -204,6 +207,11 @@
 #define CHASSIS_BACK_KEY    KEY_PRESSED_OFFSET_S
 #define CHASSIS_LEFT_KEY    KEY_PRESSED_OFFSET_A
 #define CHASSIS_RIGHT_KEY   KEY_PRESSED_OFFSET_D
+
+// 键盘控制最大速度 (m/s)
+#define CHASSIS_KEY_MAX_SPEED   1.5f
+// 键盘速度斜坡步长 (m/s per loop, 500Hz下 0→1.5m/s 约0.75秒)
+#define CHASSIS_KEY_RAMP_STEP   0.004f
 
 // M3508电机原始转速数据转化成Rpm的比例  3591/187
 //#define M3508_MOTOR_RPM_TO_VECTOR           0.052074631021999f
@@ -226,7 +234,7 @@
 #define CHASSIS_SPIN_LOW_SPEED 1.5f
 
 //底盘小陀螺基本速度
-#define CHASSIS_SPIN_MAIN_SPEED 13
+#define CHASSIS_SPIN_MAIN_SPEED 5
 
 //底盘小陀螺减去x,y方向的速度比例系数
 #define CHASSIS_SPIN_LOW_SEN 0.6
@@ -295,6 +303,9 @@ class leg_control {
 public:
     KalmanFilter_t chassis_vaestimatekf_theta;							// 卡尔曼滤波观测器
     chassis_off_ground_detection_e chassis_off_ground_detection;		// 离地检测枚举
+
+    ramp_function_source_t init_angle_ramp;                             // 用于倒地自启的斜坡函数
+    ramp_function_source_t up_angle_ramp;
     PidTypeDef_t roll_control;											// roll轴PID
     fp32 fd_roll;														// roll轴PID输出值
     PidTypeDef_t leg_pid_control;									    // 腿长PID
