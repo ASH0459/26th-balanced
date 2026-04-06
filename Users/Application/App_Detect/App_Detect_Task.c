@@ -208,14 +208,14 @@ static void detect_init(uint32_t time)
     // 设置离线时间，上线稳定工作时间，优先级 offlineTime onlinetime priority
     uint16_t set_item[ERROR_LIST_LENGHT][3] =
         {
-            {60, 40, 15}, // DBUS
-            {60, 40, 15}, // VT
-            {50, 10, 10}, // joint1
-            {50, 10, 10}, // joint2
-            {50, 10, 10},  // joint3
-            {50, 10, 10},  // joint4
-            {10, 10, 8},  // motor5
-            {10, 10, 8},  // motor6
+            {100, 10, 15}, // DBUS
+            {100, 10, 15}, // VT
+            {200, 2, 8}, // joint1
+            {200, 2, 8}, // joint2
+            {200, 2, 8},  // joint3
+            {200, 2, 8},  // joint4
+            {200, 10, 8},  // motor5
+            {200, 10, 8},  // motor6
             {10, 10, 12},  // trigger
             {2, 3, 14},   // yaw
             {2, 3, 13},   // pitch
@@ -228,6 +228,7 @@ static void detect_init(uint32_t time)
             {100, 100, 5}, // referee
             {10, 10, 7},   // rm imu
             {100, 100, 1}, // oled
+            {100, 10, 5}, // referee
         };
 
     for (uint8_t i = 0; i < ERROR_LIST_LENGHT; i++)

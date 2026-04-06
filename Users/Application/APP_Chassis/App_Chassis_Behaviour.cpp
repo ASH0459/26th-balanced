@@ -87,7 +87,7 @@ static void chassis_no_move_control(float *vx_set, float *vy_set, float *wz_set,
   * @param[in]      chassis_move_rc_to_vector底盘数据
   * @retval         返回空
   */
-static void chassis_infantry_follow_gimbal_yaw_control(float *vx_set, float *vy_set, float *angle_set, Chassis_Move *chassis_move_rc_to_vector);
+static void chassis_infantry_follow_gimbal_yaw_control(float *vx_set, float *vy_set, float *angle_set, float *yaw_set, Chassis_Move *chassis_move_rc_to_vector);
 
 
 /**
@@ -150,7 +150,7 @@ static void  chassis_gyroscope(float *vx_set, float *vy_set, float *wz_set, Chas
   * @note           变速部分的幅值大小由一个（常数+随机数）* sin函数得到
   * @retval         返回空
   */
-static float get_changeable_gyrospeed(const unsigned int random_seed, float range_min, float range_max, float range_const, float sin_frequency);
+static float get_changeable_gyrospeed(float amplitude, float sin_frequency);
 
 static void chassis_up_control(fp32 *vx_set, fp32 *d_yaw_set, fp32 *leg_set, Chassis_Move *chassis_move_rc_to_vector);
 
@@ -174,63 +174,62 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
     static int8_t last_mode_sw = 1;
     static int8_t last_jump = 0;
 
-    /* 按下Q键开关小陀螺 */
-    static int16_t spin_flag = 0;
+    static uint8_t last_ctrl = 0;
+    //static bool is_up_mode = false; // 用于记录当前的“上台阶”翻转状态
+
+    // 提取 CTRL 键当前状态
+    uint8_t curr_ctrl = ((chassis_move_mode->chassis_gimbal_data->key & KEY_PRESSED_OFFSET_CTRL) || (chassis_move_mode->chassis_gimbal_data->jump == 1)) ? 1 : 0;
+
+    // 边缘检测：检测到按下的一瞬间，翻转状态
+    if (curr_ctrl && !last_ctrl)
+    {
+        chassis_move_mode->is_up_mode = !chassis_move_mode->is_up_mode; // 状态翻转：上台阶 <-> 正常跟随
+    }
+    last_ctrl = curr_ctrl;
+
     /* 遥控器设置模式部分:针对右侧按键开关 */
 
         /* 若开关为中档 */
-        if (switch_is_mid(chassis_move_mode->chassis_gimbal_data->chassis_mode))
+        if (chassis_move_mode->chassis_gimbal_data->chassis_mode == 2)
         {
             /* 上一个状态是无力模式,开关往下，但是这次开关往中间，则切换到起身模式 */
-            if (switch_is_down(last_s) && switch_is_mid(chassis_move_mode->chassis_gimbal_data->chassis_mode))
+            if (last_s <= 1 && chassis_move_mode->chassis_gimbal_data->chassis_mode == 2)
             {
                 Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_INIT;
+                chassis_move_mode->is_up_mode = false; // 断电时顺便重置状态，防止重新上电猛然上台阶
             }
 
             // 进入一次起身模式后需要完全起身后才能自动切入行动模式
             if (Chassis_Behaviour_Mode == CHASSIS_BEHAVIOUR_INIT && chassis_move_mode->init_leg_reached != 2)
             {
                 Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_INIT;
+                chassis_move_mode->is_up_mode = false; // 断电时顺便重置状态，防止重新上电猛然上台阶
             }
             else if (Chassis_Behaviour_Mode == CHASSIS_BEHAVIOUR_INIT
-                && chassis_move_mode->init_leg_reached == 2
-                && fabs(chassis_move_mode->chassis_left_control.theta_l) < 0.1
-                && fabs(chassis_move_mode->chassis_right_control.theta_l) < 0.1
-                && fabs(chassis_move_mode->chassis_pitch) < 0.1)
+                && chassis_move_mode->init_leg_reached == 2)
+                // && fabs(chassis_move_mode->chassis_left_control.theta_l) < 0.1
+                // && fabs(chassis_move_mode->chassis_right_control.theta_l) < 0.1
+                // && fabs(chassis_move_mode->chassis_pitch) < 0.1)
             {
                 //Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_FOLLOW_CHASSIS_YAW;
-                Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_FOLLOW_CHASSIS_YAW;
+                Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_FOLLOW_GIMBAL_YAW;
             }
-            else if (switch_is_mid(last_s) && Chassis_Behaviour_Mode != CHASSIS_BEHAVIOUR_INIT) {
-                Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_FOLLOW_CHASSIS_YAW;
+            else if (chassis_move_mode->chassis_gimbal_data->chassis_mode == 2 && Chassis_Behaviour_Mode != CHASSIS_BEHAVIOUR_INIT) {
+                if (chassis_move_mode->is_up_mode)
+                {
+                    Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_UP; // 进入上台阶
+                }
+                else
+                {
+                    Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_FOLLOW_GIMBAL_YAW; // 正常跟随
+                }
             }
-
-            if ((chassis_move_mode->chassis_gimbal_data->key & GYROSCOPE_KEY))
-            {
-                // 按住shift进入小陀螺模式
-                //Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_GYROSCOPE; // 小陀螺模式
-            }
-            // else
-            // {
-            //     Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_FOLLOW_GIMBAL_YAW;  // 底盘跟随云台
-            // }
-
-        /* 若开关为下档:车车直接Die掉 */
         }
-        else if (switch_is_down(chassis_move_mode->chassis_gimbal_data->chassis_mode))
+        else if (chassis_move_mode->chassis_gimbal_data->chassis_mode == 0 || chassis_move_mode->chassis_gimbal_data->chassis_mode == 1)
         {
             Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_ZERO_FORCE; // 底盘断电
         }
-            /* 若开关为上档,且上一次为中间:跳跃*/
-        else if ((switch_is_up(chassis_move_mode->chassis_gimbal_data->chassis_mode) && switch_is_mid(last_s))
-                || (chassis_move_mode->chassis_gimbal_data->jump == 1 && last_jump != 1))
-        {
-            //Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_JUMP; // 跳跃模式
-            Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_UP; // 上台阶模式
-        }
-
-    //添加自己的逻辑判断进入新模式
-
+            /* 若开关为上档,且上一次为中间:上台阶*/
     /* 遥控器模式执行部分:根据行为模式选择一个底盘控制模式 */
 
     if (Chassis_Behaviour_Mode == CHASSIS_BEHAVIOUR_ZERO_FORCE)
@@ -264,13 +263,14 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
     last_s = chassis_move_mode->chassis_gimbal_data->chassis_mode;
     last_mode_sw = chassis_move_mode->vt_rc_control->mode_sw;
     last_jump = chassis_move_mode->chassis_gimbal_data->jump;
+    last_ctrl = curr_ctrl;
 }
 
 /**
   * @brief          设置控制量.根据不同底盘控制模式，三个参数会控制不同运动.在这个函数里面，会调用不同的控制函数.
   * @param[out]     vx_set, 通常控制纵向移动.
   * @param          w_set,  旋转速度设置
-  * @param          leg_set, 腿长设置
+  * @param          le  g_set, 腿长设置
   * @param[in]      chassis_move_rc_to_vector,  包括底盘所有信息.
   * @retval         none
   */
@@ -289,7 +289,7 @@ void chassis_behaviour_control_set(fp32*vx_set, fp32 *yaw_set, fp32 *d_yaw_set, 
     }
     else if (Chassis_Behaviour_Mode == CHASSIS_FOLLOW_GIMBAL_YAW)  //底盘跟随云台或者跳跃
     {
-        chassis_infantry_follow_gimbal_yaw_control(vx_set, yaw_set, leg_set, chassis_move_rc_to_vector);
+        chassis_infantry_follow_gimbal_yaw_control(vx_set, d_yaw_set, leg_set, yaw_set, chassis_move_rc_to_vector);
     }
     else if (Chassis_Behaviour_Mode == CHASSIS_FOLLOW_CHASSIS_YAW  || Chassis_Behaviour_Mode == CHASSIS_BEHAVIOUR_JUMP) //跟随底盘yaw，没装云台时候测试
     {
@@ -349,7 +349,7 @@ static void chassis_no_move_control(fp32 *v_set, fp32 *add_w_set, fp32 *leg_set,
     }
     *v_set = 0.0f;
     *add_w_set = 0.0f;
-    *leg_set = 0.2f;
+    *leg_set = 0.18f;
 }
 
 /**
@@ -362,9 +362,9 @@ static void chassis_no_move_control(fp32 *v_set, fp32 *add_w_set, fp32 *leg_set,
   * @retval         返回空
   */
 
-static void chassis_infantry_follow_gimbal_yaw_control(fp32 *vx_set, fp32 *yaw_set, fp32 *leg_set, Chassis_Move *chassis_move_rc_to_vector)
+static void chassis_infantry_follow_gimbal_yaw_control(fp32 *vx_set, fp32 *d_yaw_set, fp32 *leg_set, fp32* yaw_set, Chassis_Move *chassis_move_rc_to_vector)
 {
-    if (vx_set == NULL || yaw_set == NULL || leg_set == NULL || chassis_move_rc_to_vector == NULL)
+    if (vx_set == NULL || d_yaw_set == NULL || leg_set == NULL || chassis_move_rc_to_vector == NULL)
     {
         return;
     }
@@ -378,51 +378,171 @@ static void chassis_infantry_follow_gimbal_yaw_control(fp32 *vx_set, fp32 *yaw_s
     static int16_t vx_channel_ref = 0;
     static fp32 vx_channel_target = 0;
 
-    // 死区滤波
-    vx_channel_ref = int16_deadline(chassis_move_rc_to_vector->chassis_gimbal_data->chassis_vx,
-                                    -CHASSIS_RC_DEADLINE, CHASSIS_RC_DEADLINE);
+    uint16_t key_v = chassis_move_rc_to_vector->chassis_gimbal_data->key;
 
-    // 映射计算
-    vx_channel_target = vx_channel_ref * CHASSIS_VX_RC_SEN;
+    // 遥控器拨杆原始值死区滤波
+    int16_t rc_vx = int16_deadline(chassis_move_rc_to_vector->chassis_gimbal_data->chassis_vx,
+                                   -CHASSIS_RC_DEADLINE, CHASSIS_RC_DEADLINE);
 
-    // 键盘W/S覆盖
-    if (chassis_move_rc_to_vector->chassis_gimbal_data->key & CHASSIS_FRONT_KEY)
+    // 提取键盘 WASD 向量 (-1.0 到 1.0)
+    fp32 key_x = ((key_v & KEY_PRESSED_OFFSET_W) ? 1.0f : 0.0f) - ((key_v & KEY_PRESSED_OFFSET_S) ? 1.0f : 0.0f);
+    fp32 key_y = ((key_v & KEY_PRESSED_OFFSET_D) ? 1.0f : 0.0f) - ((key_v & KEY_PRESSED_OFFSET_A) ? 1.0f : 0.0f);
+
+    // 提取 Shift 键状态
+    //uint8_t key_shift = (key_v & KEY_PRESSED_OFFSET_SHIFT || chassis_move_rc_to_vector->chassis_gimbal_data->jump == 1) ? 1 : 0;
+    uint8_t key_shift = (key_v & KEY_PRESSED_OFFSET_SHIFT) ? 1 : 0;
+
+    fp32 target_angle_offset = 0.0f; // 底盘相对于云台的目标夹角
+    fp32 speed_cmd = 0.0f;           // 目标线速度
+
+    // 解算目标夹角和运动方向
+    if (key_x != 0.0f || key_y != 0.0f)
     {
-        vx_channel_target = CHASSIS_KEY_MAX_SPEED;
+        // 1. 如果有键盘按键输入，优先执行键盘的全向逻辑
+        fp32 max_speed = CHASSIS_KEY_MAX_SPEED;
+        if (key_x >= 0.0f) {
+            // 包含前进 (W, A, D, WA, WD)
+            target_angle_offset = atan2f(key_y, key_x);
+            speed_cmd = max_speed;
+        } else {
+            // 包含后退 (S, SA, SD) -> 利用倒车实现，车头不掉头
+            target_angle_offset = atan2f(-key_y, -key_x);
+            speed_cmd = -max_speed;
+        }
     }
-    else if (chassis_move_rc_to_vector->chassis_gimbal_data->key & CHASSIS_BACK_KEY)
+    else
     {
-        vx_channel_target = -CHASSIS_KEY_MAX_SPEED;
+        // 2. 如果没有键盘输入，自动切回遥控器摇杆逻辑
+        target_angle_offset = 0.0f; // 遥控器控制时，默认车头正对云台
+        speed_cmd = rc_vx * CHASSIS_VX_RC_SEN;
     }
+
+    //fp32 target_yaw_angle = chassis_move_rc_to_vector->chassis_gimbal_data->init_yaw_angle + target_angle_offset;
+    fp32 target_yaw_angle = chassis_move_rc_to_vector->chassis_yaw_target_base + target_angle_offset;
+    // 计算当前角度与目标角度的最短误差
+    fp32 angle_error = shortest_angle_error(target_yaw_angle, chassis_move_rc_to_vector->chassis_gimbal_data->final_pos);
+    fp32 target_vx = 0.0f;
+    fp32 target_d_yaw = 0.0f;
+    if (key_shift)
+    {
+        // 1. 调用极度顺滑的变速函数 (确保 get_changeable_gyrospeed 定义在文件上方)
+        // 振幅 1.5f，频率步长 0.01f (可根据实车测试手感微调)
+        float changeable_gyrospeed = get_changeable_gyrospeed(2.5f, 0.01f);
+
+        target_d_yaw = CHASSIS_SPIN_MAIN_SPEED;// + changeable_gyrospeed;
+
+        target_vx = 0.0f;
+        *yaw_set = 0.0f;
+    }
+    else
+    {
+        // 松开 Shift：回到正常的“先转后走”底盘跟随模式
+        target_d_yaw = PID_Calc(&chassis_move_rc_to_vector->chassis_angle_pid, 0.0f, -angle_error);
+        *yaw_set = angle_error;
+
+        // 速度衰减计算：当车头没转过去时，限制前进速度
+        fp32 turn_ratio = cosf(angle_error);
+        if (speed_cmd * turn_ratio < 0.0f && speed_cmd > 0.0f) {
+            turn_ratio = 0.0f;
+        }
+        target_vx = speed_cmd * turn_ratio;
+    }
+
+    //斜坡函数平滑速度 (替换原有的一阶低通与突变)
+    static ramp_function_source_t vx_ramp;
+    static uint8_t ramp_init_flag = 0;
+
+    // 初始化斜坡结构体
+    if (ramp_init_flag == 0) {
+        ramp_init(&vx_ramp, 0.002f, CHASSIS_KEY_MAX_SPEED, -CHASSIS_KEY_MAX_SPEED);
+        ramp_init_flag = 1;
+    }
+
+    // 核心急停与平滑控制逻辑
+    if (key_x == 0.0f && key_y == 0.0f && rc_vx == 0 && !key_shift)
+    {
+        // 1. 无任何键盘和摇杆输入：瞬间清零，直接急停，不需要斜坡缓冲
+        vx_ramp.out = 0.0f;
+    }
+    else
+    {
+        static fp32 accel_step;
+        if (key_x != 0.0f || key_y != 0.0f) {
+            // 2. 有输入：使用斜坡函数平滑加速或切换方向
+            accel_step = CHASSIS_KEY_ACCEL; // 正常加速/减速的斜坡步长
+        }
+        else {
+            accel_step = CHASSIS_KEY_ACCEL;
+        }
+
+        if (vx_ramp.out < target_vx) {
+            ramp_calc(&vx_ramp, accel_step);
+            if (vx_ramp.out > target_vx) vx_ramp.out = target_vx; // 防止超调
+        } else if (vx_ramp.out > target_vx) {
+            ramp_calc(&vx_ramp, -accel_step);
+            if (vx_ramp.out < target_vx) vx_ramp.out = target_vx; // 防止超调
+        }
+    }
+    // 赋值给底盘最终输出
+    *vx_set = vx_ramp.out;
+    *d_yaw_set = target_d_yaw;
+
 
     /**
-      * PART2. 一阶低通滤波平滑 + 急停处理
+      * PART4. 腿长 & Yaw 设定 (使用 UserLib 斜坡函数平滑)
       */
-    first_order_filter_cali(&chassis_move_rc_to_vector->chassis_cmd_slow_set_vx, vx_channel_target);
+    static fp32 leg_target = 0.24f; // 用于记录全局的目标腿长
+    static ramp_function_source_t leg_ramp;
+    static uint8_t leg_init_flag = 0;
 
-    // 无摇杆输入 且 无键盘按键 → 急停，直接清零
-    if (vx_channel_target < CHASSIS_RC_DEADLINE * CHASSIS_VX_RC_SEN
-        && vx_channel_target > -CHASSIS_RC_DEADLINE * CHASSIS_VX_RC_SEN)
+    // 1. 初始化斜坡结构体 (仅运行一次，继承当前实际腿长作为起点)
+    if (leg_init_flag == 0) {
+        // 参数依次为：ramp结构体、伸缩极限范围
+        ramp_init(&leg_ramp, 0.002f, 0.35f, 0.18f);
+        leg_ramp.out = *leg_set;
+        leg_target = *leg_set;
+        leg_init_flag = 1;
+    }
+
+    // 2. 提取键盘 Q 和 E 的按键状态
+    if (key_v & KEY_PRESSED_OFFSET_Q)
     {
-        chassis_move_rc_to_vector->chassis_cmd_slow_set_vx.out = 0.0f;
+        leg_target = 0.3f;  // 按下 Q 键，目标高度设为 0.3
+    }
+    else if (key_v & KEY_PRESSED_OFFSET_E)
+    {
+        leg_target = 0.18f; // 按下 E 键，目标高度设为最短 0.201
+    }
+    else
+    {
+        // 如果没有按键输入，依然保留遥控器拨轮/通道控制腿长的功能
+        leg_target += chassis_move_rc_to_vector->chassis_gimbal_data->chassis_leg_set * 0.000001f;
     }
 
-    *vx_set = chassis_move_rc_to_vector->chassis_cmd_slow_set_vx.out;
+    // 3. 目标值绝对限幅 (保护机械结构)
+    if (leg_target > 0.35f) {
+        leg_target = 0.35f;
+    } else if (leg_target < 0.18f) {
+        leg_target = 0.18f;
+    }
 
-    /**
-      * PART3. 腿长 & yaw 设定
-      */
-    static fp32 leg_set_add;
-    leg_set_add = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_leg_set * 0.000001;
-    // yaw_set在跟随云台模式下不需要设置，PID在App_Chassis_Task.cpp中计算
-    *yaw_set = 0.0f;
-    *leg_set += leg_set_add;
-    if(*leg_set >= 0.35) {
-        *leg_set = 0.35;
+    // 4. 使用斜坡函数平滑逼近目标值
+    // leg_step 决定了腿伸缩的速度。
+    // 假设控制周期是 2ms(500Hz)，0.0002 代表每秒伸缩 0.1 米。0.201到0.28只需约0.8秒，非常平缓。
+    // 如果觉得动作太慢，可以把 0.0002f 改大（如 0.0005f）；如果觉得太快，可以改小（如 0.0001f）。
+    fp32 leg_step = 0.09f;
+
+    if (leg_ramp.out < leg_target) {
+        ramp_calc(&leg_ramp, leg_step);
+        if (leg_ramp.out > leg_target) leg_ramp.out = leg_target; // 防止超调抖动
+    } else if (leg_ramp.out > leg_target) {
+        ramp_calc(&leg_ramp, -leg_step);
+        if (leg_ramp.out < leg_target) leg_ramp.out = leg_target; // 防止超调抖动
     }
-    else if(*leg_set <= 0.201) {
-        *leg_set = 0.201;
-    }
+
+    // 5. 最终赋值给底层闭环
+    *leg_set = leg_ramp.out;
+    *yaw_set = 0.0f; // 保持原有 Yaw 的置零逻辑
 }
 
 /**
@@ -515,8 +635,8 @@ static void chassis_no_follow_yaw_control(fp32 *vx_set, fp32 *d_yaw_set, fp32 *l
     if(*leg_set >= 0.35) {
         *leg_set = 0.35;
     }
-    else if(*leg_set <= 0.201) {
-        *leg_set = 0.201;
+    else if(*leg_set <= 0.18) {
+        *leg_set = 0.18;
     }
 
 }
@@ -528,15 +648,99 @@ static void chassis_up_control(fp32 *vx_set, fp32 *d_yaw_set, fp32 *leg_set, Cha
     {
         return;
     }
-    *vx_set = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_vx * CHASSIS_VX_RC_SEN;
-    *d_yaw_set = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_leg_set * 0.01;//目前暂时把leg作为yaw控制
+     uint16_t key_v = chassis_move_rc_to_vector->chassis_gimbal_data->key;
+
+    // 遥控器拨杆原始值死区滤波
+    int16_t rc_vx = int16_deadline(chassis_move_rc_to_vector->chassis_gimbal_data->chassis_vx,
+                                   -CHASSIS_RC_DEADLINE, CHASSIS_RC_DEADLINE);
+
+    // 提取键盘 WASD 向量 (-1.0 到 1.0)
+    fp32 key_x = ((key_v & KEY_PRESSED_OFFSET_W) ? 1.0f : 0.0f) - ((key_v & KEY_PRESSED_OFFSET_S) ? 1.0f : 0.0f);
+    fp32 key_y = ((key_v & KEY_PRESSED_OFFSET_D) ? 1.0f : 0.0f) - ((key_v & KEY_PRESSED_OFFSET_A) ? 1.0f : 0.0f);
+
+    // 提取 Shift 键状态
+    //uint8_t key_shift = (key_v & KEY_PRESSED_OFFSET_SHIFT || chassis_move_rc_to_vector->chassis_gimbal_data->jump == 1) ? 1 : 0;
+    uint8_t key_shift = (key_v & KEY_PRESSED_OFFSET_SHIFT) ? 1 : 0;
+
+    fp32 target_angle_offset = 0.0f; // 底盘相对于云台的目标夹角
+    fp32 speed_cmd = 0.0f;           // 目标线速度
+
+    // 解算目标夹角和运动方向
+    if (key_x != 0.0f || key_y != 0.0f)
+    {
+        // 1. 如果有键盘按键输入，优先执行键盘的全向逻辑
+        fp32 max_speed = CHASSIS_KEY_MAX_SPEED_UP;
+        if (key_x >= 0.0f) {
+            // 包含前进 (W, A, D, WA, WD)
+            target_angle_offset = atan2f(key_y, key_x);
+            speed_cmd = max_speed;
+        } else {
+            // 包含后退 (S, SA, SD) -> 利用倒车实现，车头不掉头
+            target_angle_offset = atan2f(-key_y, -key_x);
+            speed_cmd = -max_speed;
+        }
+    }
+    else
+    {
+        // 2. 如果没有键盘输入，自动切回遥控器摇杆逻辑
+        target_angle_offset = 0.0f; // 遥控器控制时，默认车头正对云台
+        speed_cmd = rc_vx * CHASSIS_VX_RC_SEN;
+    }
+
+    //fp32 target_yaw_angle = chassis_move_rc_to_vector->chassis_gimbal_data->init_yaw_angle + target_angle_offset;
+    fp32 target_yaw_angle = chassis_move_rc_to_vector->chassis_yaw_target_base + target_angle_offset;
+    // 计算当前角度与目标角度的最短误差
+    fp32 angle_error = shortest_angle_error(target_yaw_angle, chassis_move_rc_to_vector->chassis_gimbal_data->final_pos);
+    fp32 target_vx = speed_cmd;
+    fp32 target_d_yaw = 0.0f;
+
+    //斜坡函数平滑速度 (替换原有的一阶低通与突变)
+    static ramp_function_source_t vx_ramp;
+    static uint8_t ramp_init_flag = 0;
+
+    // 初始化斜坡结构体
+    if (ramp_init_flag == 0) {
+        ramp_init(&vx_ramp, 0.002f, CHASSIS_KEY_MAX_SPEED, -CHASSIS_KEY_MAX_SPEED);
+        ramp_init_flag = 1;
+    }
+
+    // 核心急停与平滑控制逻辑
+    if (key_x == 0.0f && key_y == 0.0f && rc_vx == 0 && !key_shift)
+    {
+        // 1. 无任何键盘和摇杆输入：瞬间清零，直接急停，不需要斜坡缓冲
+        vx_ramp.out = 0.0f;
+    }
+    else
+    {
+        static fp32 accel_step;
+        if (key_x != 0.0f || key_y != 0.0f) {
+            // 2. 有输入：使用斜坡函数平滑加速或切换方向
+            accel_step = 0.5; // 正常加速/减速的斜坡步长
+        }
+        else {
+            accel_step = 0.5f;
+        }
+
+        if (vx_ramp.out < target_vx) {
+            ramp_calc(&vx_ramp, accel_step);
+            if (vx_ramp.out > target_vx) vx_ramp.out = target_vx; // 防止超调
+        } else if (vx_ramp.out > target_vx) {
+            ramp_calc(&vx_ramp, -accel_step);
+            if (vx_ramp.out < target_vx) vx_ramp.out = target_vx; // 防止超调
+        }
+    }
+    // 赋值给底盘最终输出
+    *vx_set = vx_ramp.out;
+    *d_yaw_set = target_d_yaw;
+    //*vx_set = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_vx * CHASSIS_VX_RC_SEN;
+    //*d_yaw_set = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_leg_set * 0.01;//目前暂时把leg作为yaw控制
 
 
     if(*leg_set >= 0.35) {
         *leg_set = 0.35;
     }
-    else if(*leg_set <= 0.201) {
-        *leg_set = 0.201;
+    else if(*leg_set <= 0.18) {
+        *leg_set = 0.18;
     }
 
 }
@@ -559,25 +763,15 @@ static void chassis_init_control(fp32 *vx_set, fp32 *d_yaw_set, fp32 *leg_set, C
 
     *vx_set = 0.0f;
     *d_yaw_set = 0.0f;
-    if(chassis_move_rc_to_vector->init_leg_reached == 1) {
-        first_order_filter_cali(&chassis_move_rc_to_vector->chassis_leg_filter_set, 0.201f);
-        *leg_set = chassis_move_rc_to_vector->chassis_leg_filter_set.out;
-        // 腿收缩到目标位置后，
-        if (chassis_move_rc_to_vector->chassis_left_control.wbr_control.L <= 0.21
-            && chassis_move_rc_to_vector->chassis_right_control.wbr_control.L <= 0.21) {
-            // 进入收缩LQR模式
-            chassis_move_rc_to_vector->init_leg_reached = 2;
-        }
-    }
 
     // Phase 1: 触地后，用力收腿
     if(chassis_move_rc_to_vector->init_leg_reached == 1) {
-        first_order_filter_cali(&chassis_move_rc_to_vector->chassis_leg_filter_set, 0.2f);
+        first_order_filter_cali(&chassis_move_rc_to_vector->chassis_leg_filter_set, 0.18f);
         *leg_set = chassis_move_rc_to_vector->chassis_leg_filter_set.out;
 
         // 当腿收缩到 0.21m 以下时，准备切入 LQR 平衡模式
-        if (chassis_move_rc_to_vector->chassis_left_control.wbr_control.L <= 0.21f
-            && chassis_move_rc_to_vector->chassis_right_control.wbr_control.L <= 0.21f) {
+        if (chassis_move_rc_to_vector->chassis_left_control.wbr_control.L <= 0.185f
+            && chassis_move_rc_to_vector->chassis_right_control.wbr_control.L <= 0.185f) {
                 chassis_move_rc_to_vector->init_leg_reached = 2;
             }
     }
@@ -585,7 +779,7 @@ static void chassis_init_control(fp32 *vx_set, fp32 *d_yaw_set, fp32 *leg_set, C
     else if (chassis_move_rc_to_vector->init_leg_reached == 2) {
         // 【新增：恢复站立高度】把目标腿长滤滑到正常高度（例如 0.25f 或更高）
         // 这样机器人在切入平衡后，会从蹲姿慢慢站起来，极大地增加抗扰动能力
-        first_order_filter_cali(&chassis_move_rc_to_vector->chassis_leg_filter_set, 0.21f);
+        first_order_filter_cali(&chassis_move_rc_to_vector->chassis_leg_filter_set, 0.18f);
         *leg_set = chassis_move_rc_to_vector->chassis_leg_filter_set.out;
     }
 }
@@ -614,7 +808,6 @@ static void  chassis_gyroscope(fp32 *v_set, fp32 *d_yaw_set, fp32 *leg_set, Chas
      * */
 
     const float fixed_gyrospeed = CHASSIS_SPIN_MAIN_SPEED;
-    float changeable_gyrospeed = get_changeable_gyrospeed(1234, 0.35, 0.65, 2.0, 0.025);
 
     *v_set = 0;
     *leg_set = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_leg_set;
@@ -622,24 +815,26 @@ static void  chassis_gyroscope(fp32 *v_set, fp32 *d_yaw_set, fp32 *leg_set, Chas
 }
 
 /**
-  * @brief          小陀螺模式变速部分生成
-  * @author         Light
-  * @param[in]      random_seed   随机数种子
-  * @param[in]      range_min     生成随机数的最小值
-  * @param[in]      range_max     生成随机数的最小值
-  * @param[in]      range_const   正弦函数的基础值
-  * @param[in]      sin_frequency 正弦函数的频率
-  * @param[in]      range_const   正弦函数的基础值
-  * @note           变速部分的幅值大小由一个（常数+随机数）* sin函数得到
-  * @retval         返回空
+/**
+  * @brief          正弦变速小陀螺速度生成
+  * @param[in]      amplitude     正弦波的振幅（决定了忽快忽慢的幅度大小）
+  * @param[in]      sin_frequency 正弦波的频率（决定了多长时间完成一次快慢循环）
+  * @retval         当前周期的速度增量
   */
-static float get_changeable_gyrospeed(const unsigned int random_seed, float range_min, float range_max, float range_const, float sin_frequency)
+static float get_changeable_gyrospeed(float amplitude, float sin_frequency)
 {
-    float gyroscope_random = Range_Number(range_min, range_max, &random_seed); // 幅值随机数
-    static float gyroscope_frequency = 0.0f; // 正弦频率
-    float Speed_Changeable = (range_const + gyroscope_random); //* arm_sin_f32(gyroscope_frequency);
+    static float gyroscope_phase = 0.0f; // 正弦相位
 
-    gyroscope_frequency += sin_frequency; // 相位自增
+    // 计算当前的正弦速度分量
+    float Speed_Changeable = amplitude * arm_sin_f32(gyroscope_phase);
+
+    // 相位自增
+    gyroscope_phase += sin_frequency;
+
+    // 【核心保护】：相位防溢出。防止机器人开机时间过长导致 float 精度丢失引发死机
+    if (gyroscope_phase > 2.0f * PI) {
+        gyroscope_phase -= 2.0f * PI;
+    }
 
     return Speed_Changeable;
 }

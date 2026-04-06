@@ -42,6 +42,8 @@
 #define T_MIN 						-40.0f
 #define T_MAX 						40.0f
 
+#define YAW_MECHANICAL_ZERO  0.32f
+
 /** * @brief 结构体 */
 typedef enum
 {
@@ -359,12 +361,23 @@ class Gimbal_Data {
     */
     void get_vt_Data(uint8_t data[8])
     {
+        static uint8_t init_flag = 0;
         // [0][1] = ch_2 → leg_set
-        this->chassis_leg_set = -(int16_t)((data)[0] << 8 | (data)[1]);
+        this->chassis_vx = (int16_t)((data)[0] << 8 | (data)[1]);
         // [2][3] = ch_3 → vx
-        this->chassis_vx = (int16_t)((data)[2] << 8 | (data)[3]);
+        this->chassis_leg_set = -(int16_t)((data)[2] << 8 | (data)[3]);
         // [4] bit2-bit3 = mode_sw → chassis_mode
         this->chassis_mode = ((data)[4] >> 2) & 0x03;
+
+        // if (this->chassis_mode == 0) {
+        //     this->chassis_mode = 2;
+        // }
+        // else if (this->chassis_mode == 1) {
+        //     this->chassis_mode = 3;
+        // }
+        // else if (this->chassis_mode == 2) {
+        //     this->chassis_mode = 1;
+        // }
         // [4] bit0 = fn_1 → super_cap_state
         this->super_cap_state = (data)[4] & 0x01;
         // [4] bit1 = trigger → jump
@@ -373,6 +386,31 @@ class Gimbal_Data {
         this->key = (data)[5];
         // [6][7] = pos_1 + pos_2 → yaw_relative_angle
         this->yaw_relative_angle = (int16_t)((data)[6] << 8 | (data)[7]);
+
+        this->yaw_relative_pos = uint_to_float(this->yaw_relative_angle, -PI,  PI, 16); // (-12.5,12.5)
+
+        // 2. 检测跨圈（判断是否从单圈的一端跳到另一端）.
+        float delta = this->yaw_relative_pos - this->prev_single_pos;
+        if (delta > 4.0f*PI) {
+            // 逆时针跨圈（例如从 12.5° 跳到 -12.5°），圈数减 1
+            this->motor_rounds--;
+        } else if (delta < -4.0f*PI) {
+            // 顺时针跨圈（例如从 -12.5° 跳到 12.5°），圈数加 1
+            this->motor_rounds++;
+        }
+
+        // 3. 计算累计总角度（单圈角度 + 圈数 × 单圈跨度）
+        this->total_pos = this->yaw_relative_pos + motor_rounds * 8.0f*PI;
+
+        // 4. 核心步骤：将总角度归一化到 ±180° 范围内
+        this->final_pos = wrap_to_180(total_pos);
+
+        // 5. 更新上一次的单圈角度，用于下一次跨圈检测
+        this->prev_single_pos = this->yaw_relative_pos;
+        if(init_flag == 0 && this->final_pos != 0.0f) {
+            this->init_yaw_angle = this->final_pos;
+            init_flag = 1;
+        }
     }
 
     /**
@@ -401,6 +439,7 @@ private:
 };
 
 extern Joint_Motor_Measure chassis_joint[4];
+
 
 extern Wheel_Motor_Measure chassis_wheel[2];
 

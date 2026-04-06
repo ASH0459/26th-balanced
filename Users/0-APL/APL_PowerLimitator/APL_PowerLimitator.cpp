@@ -84,7 +84,7 @@ static inline bool float_Equal(float a, float b) { return fabs(a - b) < 1e-5f; }
 
 void WheelLeggedPowerLimitator::Init() {
     // 初始化能量环 PID (PD 控制, 参数需根据实车调节)
-    const float energy_pid_params[3] = {50.0f, 0.0f, 0.20f}; // Kp, Ki, Kd
+    const float energy_pid_params[3] = {20.0f, 0.0f, 0.20f}; // Kp, Ki, Kd
     PID_init(&energy_pid, PID_POSITION, energy_pid_params, 300.0f, 0.0f);
 
     decayUspeed = 1.0f;

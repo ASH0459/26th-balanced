@@ -61,3 +61,4 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
         UART1_Error_Handler();
     }
 }
+

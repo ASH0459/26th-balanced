@@ -34,73 +34,73 @@ extern "C" {
 #endif
 
     // 拟合矩阵K，A，B
-    fp32 fitted_matrix_K[40][6] = {
-        {-1.2685, -3.2933, 1.5109, 3.3201, -0.26564, -0.45328},
-{-1.9305, -4.2031, 2.429, 4.2739, -0.90426, -1.0461},
-{-3.5432, 5.439, -4.8752, -2.1252, -1.7763, 4.2743},
-{-0.83697, 1.6835, -1.6455, -0.32868, -0.76549, 1.3308},
-{-1.386, -27.63, 7.2052, 12.651, 12.004, -7.0237},
-{-0.1373, -4.9141, 0.97933, 1.0923, 2.2197, -1.0659},
-{-1.0762, 1.844, -20.048, 3.748, -1.9109, 16.903},
-{-0.045721, 0.30444, -3.457, 0.71224, -1.027, 2.3074},
-{-15.493, 19.77, 25.101, -2.7587, -31.623, -11.294},
-{-2.2922, 3.2064, 3.7231, -0.63967, -4.8938, -1.6563},
-{-1.2685, 1.5109, -3.2933, -0.45328, -0.26564, 3.3201},
-{-1.9305, 2.429, -4.2031, -1.0461, -0.90426, 4.2739},
-{3.5432, 4.8752, -5.439, -4.2743, 1.7763, 2.1252},
-{0.83697, 1.6455, -1.6835, -1.3308, 0.76549, 0.32868},
-{-1.0762, -20.048, 1.844, 16.903, -1.9109, 3.748},
-{-0.045721, -3.457, 0.30444, 2.3074, -1.027, 0.71224},
-{-1.386, 7.2052, -27.63, -7.0237, 12.004, 12.651},
-{-0.1373, 0.97933, -4.9141, -1.0659, 2.2197, 1.0923},
-{-15.493, 25.101, 19.77, -11.294, -31.623, -2.7587},
-{-2.2922, 3.7231, 3.2064, -1.6563, -4.8938, -0.63967},
-{18.286, -44.983, -33.258, 11.934, 46.135, 30.725},
-{27.522, -62.349, -54.176, 15.391, 72.401, 47.444},
-{-4.3302, -40.734, -7.1107, 58.562, -58.46, 25.337},
-{-1.0557, -11.896, 1.1968, 17.175, -20.767, 3.2275},
-{64.397, -55.908, -38.636, -57.925, 200.74, 2.0695},
-{16.572, -30.627, -2.3575, 6.9873, 35.004, -5.1161},
-{22.136, -123.14, -34.807, 134.93, -157.52, 113.59},
-{3.3478, -23.875, -4.1533, 27.934, -35.227, 26.587},
-{-7.3565, -676.11, 132.66, 713.31, 240.72, -225.67},
-{-2.4277, -108.29, 24.637, 117.48, 35.328, -39.917},
-{18.286, -33.258, -44.983, 30.725, 46.135, 11.934},
-{27.522, -54.176, -62.349, 47.444, 72.401, 15.391},
-{4.3302, 7.1107, 40.734, -25.337, 58.46, -58.562},
-{1.0557, -1.1968, 11.896, -3.2275, 20.767, -17.175},
-{22.136, -34.807, -123.14, 113.59, -157.52, 134.93},
-{3.3478, -4.1533, -23.875, 26.587, -35.227, 27.934},
-{64.397, -38.636, -55.908, 2.0695, 200.74, -57.925},
-{16.572, -2.3575, -30.627, -5.1161, 35.004, 6.9873},
-{-7.3565, 132.66, -676.11, -225.67, 240.72, 713.31},
-{-2.4277, 24.637, -108.29, -39.917, 35.328, 117.48}
-    };
+    fp32 fitted_matrix_K[40][6] = {{
+        -1.2854, -3.6996, 1.1959, 3.4809, 0.3428, -0.22891},
+{-1.9774, -5.0911, 1.9644, 4.7791, 0.043449, -0.65803},
+{-3.8701, 5.2315, -5.0387, -1.5639, -2.14, 4.178},
+{-0.87818, 1.508, -1.5055, -0.25341, -0.76449, 1.1617},
+{-1.1035, -35.836, 7.7613, 15.872, 17.479, -7.2598},
+{-0.0028341, -5.6861, 0.83568, 1.1584, 2.7225, -0.79063},
+{-0.85685, 1.1941, -27.54, 5.9646, -1.5473, 22.839},
+{0.059856, -0.021639, -4.2185, 1.2972, -1.2185, 2.9127},
+{-19.629, 20.077, 32.962, 7.6761, -46.973, -10.207},
+{-2.0777, 2.1885, 3.5042, 0.80113, -5.0817, -1.0632},
+{-1.2854, 1.1959, -3.6996, -0.22891, 0.3428, 3.4809},
+{-1.9774, 1.9644, -5.0911, -0.65803, 0.043449, 4.7791},
+{3.8701, 5.0387, -5.2315, -4.178, 2.14, 1.5639},
+{0.87818, 1.5055, -1.508, -1.1617, 0.76449, 0.25341},
+{-0.85685, -27.54, 1.1941, 22.839, -1.5473, 5.9646},
+{0.059856, -4.2185, -0.021639, 2.9127, -1.2185, 1.2972},
+{-1.1035, 7.7613, -35.836, -7.2598, 17.479, 15.872},
+{-0.0028341, 0.83568, -5.6861, -0.79063, 2.7225, 1.1584},
+{-19.629, 32.962, 20.077, -10.207, -46.973, 7.6761},
+{-2.0777, 3.5042, 2.1885, -1.0632, -5.0817, 0.80113},
+{34.646, -69.167, -71.247, -17.953, 101.89, 63.486},
+{54.408, -97.53, -119.54, -34.75, 166.06, 102.27},
+{-4.8367, -50.84, -3.42, 83.19, -102.41, 32.676},
+{-1.1774, -14.536, 3.8575, 23.2, -28.915, 2.5149},
+{124.94, -50.128, -117.33, -289.13, 432.85, 50.202},
+{29.531, -36.224, -13.19, -33.773, 73.523, 0.97842},
+{45.347, -199.32, -68.407, 181.45, -316.14, 245.12},
+{6.709, -33.362, -10.551, 31.845, -67.852, 57.62},
+{31.874, -1392.3, 193, 1337.1, 573.36, -334.71},
+{2.9392, -152.74, 22.75, 148.41, 61.167, -38.366},
+{34.646, -71.247, -69.167, 63.486, 101.89, -17.953},
+{54.408, -119.54, -97.53, 102.27, 166.06, -34.75},
+{4.8367, 3.42, 50.84, -32.676, 102.41, -83.19},
+{1.1774, -3.8575, 14.536, -2.5149, 28.915, -23.2},
+{45.347, -68.407, -199.32, 245.12, -316.14, 181.45},
+{6.709, -10.551, -33.362, 57.62, -67.852, 31.845},
+{124.94, -117.33, -50.128, 50.202, 432.85, -289.13},
+{29.531, -13.19, -36.224, 0.97842, 73.523, -33.773},
+{31.874, 193, -1392.3, -334.71, 573.36, 1337.1},
+{2.9392, 22.75, -152.74, -38.366, 61.167, 148.41}};
+
     fp32 fitted_matrix_A[15][6];
     fp32 fitted_matrix_B[20][6];
 
     //
-//     fp32 LQR_K[4][10] = {
-//         {-2.7157, -3.6254, -5.8827, -1.0944, -7.2902, -1.0194, -5.8203, -0.81079, -11.017, -1.2003},
-// {-2.7157, -3.6254, 5.8827, 1.0944, -5.8203, -0.81079, -7.2902, -1.0194, -11.017, -1.2003},
-// {5.0016, 7.7018, -24.059, -4.6262, 73.307, 8.6373, -23.046, -2.0135, -161.33, -20.51},
-// {5.0016, 7.7018, 24.059, 4.6262, -23.046, -2.0135, 73.307, 8.6373, -161.33, -20.51},
-//     };
+    fp32 LQR_K[4][10] = {
+        {-3.1034, -3.4756, -4.8629, -0.99033, -6.696, -0.99177, -5.6914, -0.79448, -11.003, -1.1729},
+{-3.1034, -3.4756, 4.8629, 0.99033, -5.6914, -0.79448, -6.696, -0.99177, -11.003, -1.1729},
+{10.519, 13.766, -20.138, -4.1627, 80.596, 12.6, -16.652, -1.9162, -162.76, -19.32},
+{10.519, 13.766, 20.138, 4.1627, -16.652, -1.9162, 80.596, 12.6, -162.76, -19.32},
+    };
 
     // 起身用LQR
     fp32 LQR_RISE_K[4][10] = {
-        {-7.0343, -9.614, -11.958, -1.5917, -19.283, -4.2811, -8.9393, -1.6172, -22.68, -2.8256},
-{-7.0343, -9.614, 11.958, 1.5917, -8.9393, -1.6172, -19.283, -4.2811, -22.68, -2.8256},
-{2.7902, 5.1108, -40.065, -5.8757, 51.324, 10.665, -10.77, -1.8883, -121.16, -14.59},
-{2.7902, 5.1108, 40.065, 5.8757, -10.77, -1.8883, 51.324, 10.665, -121.16, -14.59},
+        {-3.118, -3.4967, -4.7518, -0.97079, -6.942, -1.0289, -5.5276, -0.77219, -10.785, -1.1468},
+{-3.118, -3.4967, 4.7518, 0.97079, -5.5276, -0.77219, -6.942, -1.0289, -10.785, -1.1468},
+{6.4584, 8.6367, -19.056, -4.1736, 61.444, 8.7301, -15.932, -1.6493, -121.17, -14.254},
+{6.4584, 8.6367, 19.056, 4.1736, -15.932, -1.6493, 61.444, 8.7301, -121.17, -14.254},
     };
 //11
-    fp32 LQR_K[4][10] = {
-        {-2.6747, -3.762, -5.73, -1.0735, -8.0964, -1.4454, -5.9801, -0.89364, -13.038, -1.4133},
-{-2.6747, -3.762, 5.73, 1.0735, -5.9801, -0.89364, -8.0964, -1.4454, -13.038, -1.4133},
-{5.8814, 9.7153, -21.602, -4.35, 68.401, 13.55, -12.206, -1.8725, -113.15, -13.296},
-{5.8814, 9.7153, 21.602, 4.35, -12.206, -1.8725, 68.401, 13.55, -113.15, -13.296},
-    };
+//     fp32 LQR_K[4][10] = {
+//         {-2.6747, -3.762, -5.73, -1.0735, -8.0964, -1.4454, -5.9801, -0.89364, -13.038, -1.4133},
+// {-2.6747, -3.762, 5.73, 1.0735, -5.9801, -0.89364, -8.0964, -1.4454, -13.038, -1.4133},
+// {5.8814, 9.7153, -21.602, -4.35, 68.401, 13.55, -12.206, -1.8725, -113.15, -13.296},
+// {5.8814, 9.7153, 21.602, 4.35, -12.206, -1.8725, 68.401, 13.55, -113.15, -13.296},
+//     };
 
 
     fp32 LQR_A[10][10] = {
@@ -464,7 +464,7 @@ static void chassis_init(Chassis_Move *chassis_move_init)
     const static float chassis_DT7_x_order_filter[1] = {CHASSIS_ACCEL_X_NUM};
     const static float chassis_DT7_y_order_filter[1] = {CHASSIS_ACCEL_Y_NUM};
     const static fp32 chassis_leg_order_filter[1] = {CHASSIS_ACCEL_LEG_NUM};
-    const static fp32 chassis_leg_up_filter[1] = {CHASSIS_ACCEL_LEG_NUM};
+    const static fp32 chassis_leg_up_filter[1] = {CHASSIS_ACCEL_UP_NUM};
 
     /* 滤波初始化：DT7发送设定值的低通滤波 */
     first_order_filter_init(&chassis_move_init->chassis_cmd_slow_set_vx, CHASSIS_CONTROL_TIME, chassis_DT7_x_order_filter);
@@ -541,7 +541,7 @@ static void chassis_mode_change_control_transit(Chassis_Move *chassis_move_trans
         chassis_move_transit->chassis_v_set = 0.0f;
         chassis_move_transit->chassis_d_yaw_set = 0.0f;
         chassis_move_transit->chassis_yaw_set = chassis_move_transit->chassis_yaw;
-        chassis_move_transit->chassis_leg_set = 0.201f;
+        //chassis_move_transit->chassis_leg_set = 0.201f;
 
     }
 
@@ -557,7 +557,10 @@ static void chassis_mode_change_control_transit(Chassis_Move *chassis_move_trans
         chassis_move_transit->chassis_v_set = 0.0f;
         chassis_move_transit->chassis_d_yaw_set = 0.0f;
         chassis_move_transit->chassis_yaw_set = chassis_move_transit->chassis_yaw;
-        chassis_move_transit->chassis_leg_set = 0.201f;
+        chassis_move_transit->chassis_x_set += CHASSIS_X_BACK;
+        //chassis_move_transit->chassis_leg_set = 0.201f;
+
+        chassis_move_transit->chassis_yaw_target_base = chassis_move_transit->chassis_gimbal_data->final_pos;
     }
 
     else if ((chassis_move_transit->last_chassis_mode != CHASSIS_INIT) && (chassis_move_transit->chassis_mode == CHASSIS_INIT))
@@ -630,7 +633,7 @@ static void chassis_mode_change_control_transit(Chassis_Move *chassis_move_trans
         chassis_move_transit->chassis_right_control.up_angle_ramp.max_value = 2.0f * PI + 1.0f;
         chassis_move_transit->chassis_right_control.up_angle_ramp.min_value = -1.0f;
 
-        chassis_move_transit->chassis_UP_filter_set.out = 0.201; //准备伸腿缓冲
+        chassis_move_transit->chassis_UP_filter_set.out = 0.18; //准备伸腿缓冲
         chassis_move_transit->up_state = 1;   //进入伸腿阶段
         chassis_move_transit->up_leg_reached = 0; // 重置上台阶腿角度到位标志
 
@@ -694,12 +697,11 @@ static void chassis_set_contorl(Chassis_Move *chassis_move_control)
                                             / (2 * DRIVE_WHEEL_DIS);
 
         //chassis_move_control->chassis_yaw = chassis_move_control->chassis_gimbal_data->yaw_relative_angle;
-        chassis_move_control->chassis_yaw = shortest_angle_error(chassis_move_control->chassis_gimbal_data->init_yaw_angle,
-            chassis_move_control->chassis_gimbal_data->final_pos);
+        chassis_move_control->chassis_yaw = chassis_yaw_set;
         chassis_move_control->chassis_v_set = chassis_v_set;
         chassis_move_control->chassis_x_set += chassis_move_control->chassis_v_set * chassis_move_control->dt;
         chassis_move_control->chassis_yaw_set = 0.0f;
-        chassis_move_control->chassis_d_yaw_set = PID_Calc(&chassis_move_control->chassis_angle_pid, chassis_move_control->chassis_yaw, chassis_move_control->chassis_yaw_set); //转速pid计算
+        chassis_move_control->chassis_d_yaw_set = chassis_d_yaw_set;
         chassis_move_control->chassis_leg_set = chassis_leg_set;
     }
     /* 底盘跟随底盘yaw轴 */
@@ -735,8 +737,10 @@ static void chassis_set_contorl(Chassis_Move *chassis_move_control)
                                       + chassis_move_control->chassis_right_control.wbr_control.L * arm_sin_f32(chassis_move_control->chassis_right_control.wbr_control.theta_l))
                                       / (2 * DRIVE_WHEEL_DIS);
 
-        chassis_move_control->chassis_v_set = chassis_v_set;
-        chassis_move_control->chassis_x_set += chassis_move_control->chassis_v_set * chassis_move_control->dt;
+        //chassis_move_control->chassis_v_set = chassis_v_set;
+        chassis_move_control->chassis_v_set = 0.0f;
+        //chassis_move_control->chassis_x_set += chassis_move_control->chassis_v_set * chassis_move_control->dt;
+        chassis_move_control->chassis_x_set = chassis_move_control->x_filter;
         chassis_move_control->chassis_d_yaw_set = chassis_d_yaw_set;
         chassis_move_control->chassis_yaw_set += chassis_move_control->chassis_d_yaw_set * chassis_move_control->dt;
         chassis_move_control->chassis_leg_set = chassis_leg_set;
@@ -824,13 +828,13 @@ static void chassis_set_contorl(Chassis_Move *chassis_move_control)
         	}
     	    case 2: //已经到最长，跳起来了，接下来是收回腿
           	{
-          	    first_order_filter_cali(&chassis_move_control->chassis_leg_filter_set, 0.201f);
+          	    first_order_filter_cali(&chassis_move_control->chassis_leg_filter_set, 0.18f);
           	    chassis_move_control->chassis_leg_set = chassis_move_control->chassis_leg_filter_set.out;
 
           	    //成功收腿后
           	    if (Chassis_Behaviour_Mode == CHASSIS_JUMP && chassis_move_control->chassis_leg_set < 0.211)
           	    {
-          	        Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_FOLLOW_CHASSIS_YAW;
+          	        Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_FOLLOW_GIMBAL_YAW;
           	        chassis_move_control->jump_state = 0;
           	    }
           	    break;
@@ -880,11 +884,11 @@ static void chassis_set_contorl(Chassis_Move *chassis_move_control)
 
           	    // 特征 1：稳态推墙倾角。顶住台阶后，LQR为了发力必定会让车体产生持续的倾斜
           	    // (阈值设为 0.10 rad 约 5.7 度，平地匀速起步一般不会倾斜这么大)
-          	    bool_t is_pitch_tilt = (fabs(chassis_move_control->chassis_pitch) > 0.10f);
+          	    bool_t is_pitch_tilt = (fabs(chassis_move_control->chassis_pitch) > 0.15f);//0.1
 
           	    // 特征 2：机体速度突变 (IMU 捕捉到急刹车的冲击加速度)
           	    // 注意极性：假设向前加速为正，撞击减速则为负。阈值设为 -1.5m/s^2 左右
-          	    bool_t is_hard_impact = (chassis_move_control->chassis_accel_n_x < -2.0f);
+          	    bool_t is_hard_impact = (chassis_move_control->chassis_accel_n_x < -1.4f);
 
           	    // 特征 3：持续堵转大扭矩 (有前进指令，且轮毂持续爆发大扭矩推墙)
           	    bool_t is_pushing = (fabs(chassis_move_control->chassis_v_set) > 0.1f &&
@@ -924,14 +928,14 @@ static void chassis_set_contorl(Chassis_Move *chassis_move_control)
           	}
     	    case 3: // 腿角度已到位，开始收腿
           	{
-          	    first_order_filter_cali(&chassis_move_control->chassis_UP_filter_set, 0.201f);
+          	    first_order_filter_cali(&chassis_move_control->chassis_UP_filter_set, 0.18f);
           	    chassis_move_control->chassis_leg_set = chassis_move_control->chassis_UP_filter_set.out;
 
           	    //腿长小于阈值后，成功收腿，切回follow_chassis模式
           	    if (chassis_move_control->chassis_leg_set < CHASSIS_UP_LEG_LENGTH_THRESHOLD)
           	    {
 
-          	        Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_FOLLOW_CHASSIS_YAW;
+          	        Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_FOLLOW_GIMBAL_YAW;
           	        chassis_move_control->up_state = 0;
           	        chassis_move_control->up_leg_reached = 0;
           	    }
@@ -1085,18 +1089,18 @@ static void chassis_feedback_update(Chassis_Move *chassis_move_update)
     chassis_move_update->chassis_left_control.Fwn = chassis_move_update->chassis_left_control.wbr_control.Fbl_r * arm_cos_f32(chassis_move_update->chassis_left_control.wbr_control.theta_l)
                                                     + MASS_OF_LEG * (GRAVITY_ACCELERATION + chassis_move_update->chassis_accel_n_z
                                                     - (1 - chassis_move_update->chassis_left_control.eta) * chassis_move_update->chassis_left_control.wbr_control.dd_L
-                                                    * arm_cos_f32(chassis_move_update->chassis_left_control.wbr_control.theta_l))
-                                                    + Get_FeedForward_Force(chassis_move_update->chassis_left_control.wbr_control.L);
+                                                    * arm_cos_f32(chassis_move_update->chassis_left_control.wbr_control.theta_l));
+                                                    //+ Get_FeedForward_Force(chassis_move_update->chassis_left_control.wbr_control.L);
 
     // 右轮地面支持力
     chassis_move_update->chassis_right_control.Fwn = chassis_move_update->chassis_right_control.wbr_control.Fbl_r * arm_cos_f32(chassis_move_update->chassis_right_control.wbr_control.theta_l)
                                                     + MASS_OF_LEG * (GRAVITY_ACCELERATION + chassis_move_update->chassis_accel_n_z
                                                     - (1 - chassis_move_update->chassis_right_control.eta) * chassis_move_update->chassis_right_control.wbr_control.dd_L
-                                                    * arm_cos_f32(chassis_move_update->chassis_right_control.wbr_control.theta_l))
-                                                    + Get_FeedForward_Force(chassis_move_update->chassis_right_control.wbr_control.L);
+                                                    * arm_cos_f32(chassis_move_update->chassis_right_control.wbr_control.theta_l));
+                                                    //+ Get_FeedForward_Force(chassis_move_update->chassis_right_control.wbr_control.L);
 
     // 计算矩阵K，A，B
-    //decompose_fitted_matrix_to_K(&chassis_move_update->chassis_left_control.wbr_control, &chassis_move_update->chassis_right_control.wbr_control, fitted_matrix_K, LQR_K);
+    decompose_fitted_matrix_to_K(&chassis_move_update->chassis_left_control.wbr_control, &chassis_move_update->chassis_right_control.wbr_control, fitted_matrix_K, LQR_K);
 //    decompose_fitted_matrix_to_A(&chassis_move_update->chassis_left_control.wbr_control, &chassis_move_update->chassis_right_control.wbr_control, fitted_matrix_A, LQR_A);
 //    decompose_fitted_matrix_to_B(&chassis_move_update->chassis_left_control.wbr_control, &chassis_move_update->chassis_right_control.wbr_control, fitted_matrix_B, LQR_B);
 
@@ -1158,37 +1162,47 @@ static void chassis_feedback_update(Chassis_Move *chassis_move_update)
   */
     static void chassis_interference_prevention(Chassis_Move *chassis_move_prediction)
 {
-    if(chassis_move_prediction->chassis_mode == CHASSIS_INIT
-        || chassis_move_prediction->chassis_mode == CHASSIS_ZERO
-        || chassis_move_prediction->chassis_mode == CHASSIS_UP) {
+    // 用于防抖的计数器（假设控制周期2ms，15次等于30ms）
+    static uint16_t left_off_count = 0;
+    static uint16_t right_off_count = 0;
+
+    if(chassis_move_prediction->chassis_mode == CHASSIS_INIT ||
+       chassis_move_prediction->chassis_mode == CHASSIS_ZERO ||
+       chassis_move_prediction->chassis_mode == CHASSIS_UP)
+    {
         chassis_move_prediction->chassis_left_control.chassis_off_ground_detection = CHASSIS_TOUCH_GROUND;
         chassis_move_prediction->chassis_right_control.chassis_off_ground_detection = CHASSIS_TOUCH_GROUND;
+        left_off_count = right_off_count = 0;
+        return;
     }
-    else if (chassis_move_prediction->chassis_mode == CHASSIS_JUMP && chassis_move_prediction->jump_state == 2) {
+
+    if (chassis_move_prediction->chassis_mode == CHASSIS_JUMP && chassis_move_prediction->jump_state == 2) {
         chassis_move_prediction->chassis_left_control.chassis_off_ground_detection = CHASSIS_OFF_GROUND;
         chassis_move_prediction->chassis_right_control.chassis_off_ground_detection = CHASSIS_OFF_GROUND;
+        return;
     }
 
-    if(chassis_move_prediction->chassis_mode != CHASSIS_INIT && chassis_move_prediction->chassis_mode != CHASSIS_ZERO && chassis_move_prediction->chassis_mode != CHASSIS_JUMP)
-    {
-        // 如果腿部支持力小于10，则判断离地
-        if (chassis_move_prediction->chassis_left_control.Fwn <= 18.0f)
-        {
+    // ========== 左腿防抖检测 ==========
+    if (chassis_move_prediction->chassis_left_control.Fwn <= 8.0f) {
+        left_off_count++;
+        if (left_off_count > 5) {
             chassis_move_prediction->chassis_left_control.chassis_off_ground_detection = CHASSIS_OFF_GROUND;
+            left_off_count = 5; // 防止溢出
         }
-        else
-        {
-             chassis_move_prediction->chassis_left_control.chassis_off_ground_detection = CHASSIS_TOUCH_GROUND;
-        }
+    } else {
+        left_off_count = 0; // 一旦受力，立即判定落地
+        chassis_move_prediction->chassis_left_control.chassis_off_ground_detection = CHASSIS_TOUCH_GROUND;
+    }
 
-        if (chassis_move_prediction->chassis_right_control.Fwn <= -18.0f)
-        {
+    if (chassis_move_prediction->chassis_right_control.Fwn <= 8.0f) {
+        right_off_count++;
+        if (right_off_count > 5) {
             chassis_move_prediction->chassis_right_control.chassis_off_ground_detection = CHASSIS_OFF_GROUND;
+            right_off_count = 5;
         }
-        else
-        {
-             chassis_move_prediction->chassis_right_control.chassis_off_ground_detection = CHASSIS_TOUCH_GROUND;
-        }
+    } else {
+        right_off_count = 0;
+        chassis_move_prediction->chassis_right_control.chassis_off_ground_detection = CHASSIS_TOUCH_GROUND;
     }
 
     if (chassis_move_prediction->chassis_left_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND
@@ -1237,159 +1251,153 @@ static void chassis_control_loop(Chassis_Move *chassis_move_control_loop) {
         return;
     }
 
-    // 离地检测
-    if (chassis_move_control_loop->chassis_left_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND
-        && chassis_move_control_loop->chassis_right_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND)
-    {
-        // 1. 备份需要保留的腿部PD参数
-        // 对应矩阵第3行(Row 2)：左腿关节力矩 -> 对应 左腿角度(Col 4) 和 左腿角速度(Col 5)
-        fp32 k_left_p = LQR_K[2][4];
-        fp32 k_left_d = LQR_K[2][5];
-
-        // 对应矩阵第4行(Row 3)：右腿关节力矩 -> 对应 右腿角度(Col 6) 和 右腿角速度(Col 7)
-        fp32 k_right_p = LQR_K[3][6];
-        fp32 k_right_d = LQR_K[3][7];
-
-        // 2. 批量将整个矩阵置为 0
-        memset(LQR_K, 0, sizeof(LQR_K));
-
-        // 3. 还原保留的参数 (实现空中锁定腿部姿态)
-        LQR_K[2][4] = k_left_p;
-        LQR_K[2][5] = k_left_d;
-
-        LQR_K[3][6] = k_right_p;
-        LQR_K[3][7] = k_right_d;
-    }
 
     // ------------------- LQR 力矩拆解与功率分配 -------------------
 
     // // 1. 计算状态误差
-    // fp32 x_err    = -chassis_move_control_loop->x_filter + chassis_move_control_loop->chassis_x_set;
-    // fp32 v_err    = -chassis_move_control_loop->v_filter + chassis_move_control_loop->chassis_v_set;
-    // fp32 yaw_err  = chassis_move_control_loop->chassis_yaw - chassis_move_control_loop->chassis_yaw_set;
-    // fp32 dyaw_err = chassis_move_control_loop->chassis_d_yaw - chassis_move_control_loop->chassis_d_yaw_set;
-    //
-    // // 2. 提取平动和旋转的控制分量
-    // fp32 U_speed = LQR_K[0][0] * x_err + LQR_K[0][1] * v_err;
-    //
-    // // 旋转分量 (以左轮为正，右轮系数天然反号，因为 LQR_K[1][2] == -LQR_K[0][2])
-    // fp32 U_yaw   = - LQR_K[0][2] * yaw_err - LQR_K[0][3] * dyaw_err;
-    //
-    // // 3. 提取维持姿态平衡的扭矩分量
-    // fp32 U_else_L = LQR_K[0][4] * chassis_move_control_loop->chassis_left_control.theta_l
-    //               + LQR_K[0][5] * chassis_move_control_loop->chassis_left_control.d_theta_l
-    //               + LQR_K[0][6] * chassis_move_control_loop->chassis_right_control.theta_l
-    //               + LQR_K[0][7] * chassis_move_control_loop->chassis_right_control.d_theta_l
-    //               - LQR_K[0][8] * chassis_move_control_loop->chassis_pitch
-    //               - LQR_K[0][9] * chassis_move_control_loop->chassis_d_pitch
-    //               + chassis_move_control_loop->chassis_left_control.Tw_adapt;
-    //
-    // fp32 U_else_R = LQR_K[1][4] * chassis_move_control_loop->chassis_left_control.theta_l
-    //               + LQR_K[1][5] * chassis_move_control_loop->chassis_left_control.d_theta_l
-    //               + LQR_K[1][6] * chassis_move_control_loop->chassis_right_control.theta_l
-    //               + LQR_K[1][7] * chassis_move_control_loop->chassis_right_control.d_theta_l
-    //               - LQR_K[1][8] * chassis_move_control_loop->chassis_pitch
-    //               - LQR_K[1][9] * chassis_move_control_loop->chassis_d_pitch
-    //               + chassis_move_control_loop->chassis_right_control.Tw_adapt;
-    //
-    // // 4. 获取当前车轮转速并调用功率限制器计算衰减
-    // fp32 w_L = chassis_move_control_loop->chassis_wheel[0].vel;
-    // fp32 w_R = chassis_move_control_loop->chassis_wheel[1].vel;
-    //
-    // // 核心算法：送入各项分量，解一元二次方程
-    // WL_PowerManager.Calculate_Decay(U_speed, U_yaw, U_else_L, U_else_R, w_L, w_R);
-    //
-    // // 获取求解后被低通滤波平滑的衰减因子
-    // fp32 decay_Uspeed = WL_PowerManager.getDecayUspeed();
-    // fp32 decay_Uyaw   = WL_PowerManager.getDecayUyaw();
-    //
-    // // 5. 重新合成最终的安全力矩 (等比缩放 U_speed 和 U_yaw，原封不动保留 U_else)
-    // chassis_move_control_loop->chassis_wheel[0].wheel_T = (U_speed * decay_Uspeed) + (U_yaw * decay_Uyaw) + U_else_L;
-    // chassis_move_control_loop->chassis_wheel[1].wheel_T = (U_speed * decay_Uspeed) - (U_yaw * decay_Uyaw) + U_else_R;
+    fp32 x_err    = -chassis_move_control_loop->x_filter + chassis_move_control_loop->chassis_x_set;
+    fp32 v_err    = -chassis_move_control_loop->v_filter + chassis_move_control_loop->chassis_v_set;
+    fp32 yaw_err  = chassis_move_control_loop->chassis_yaw - chassis_move_control_loop->chassis_yaw_set;
+    fp32 dyaw_err = chassis_move_control_loop->chassis_d_yaw - chassis_move_control_loop->chassis_d_yaw_set;
+
+    // 2. 提取平动和旋转的控制分量
+    fp32 U_speed = LQR_K[0][0] * x_err + LQR_K[0][1] * v_err;
+
+    // 旋转分量 (以左轮为正，右轮系数天然反号，因为 LQR_K[1][2] == -LQR_K[0][2])
+    fp32 U_yaw   = - LQR_K[0][2] * yaw_err - LQR_K[0][3] * dyaw_err;
+
+    // 3. 提取维持姿态平衡的扭矩分量
+    fp32 U_else_L = LQR_K[0][4] * chassis_move_control_loop->chassis_left_control.theta_l
+                  + LQR_K[0][5] * chassis_move_control_loop->chassis_left_control.d_theta_l
+                  + LQR_K[0][6] * chassis_move_control_loop->chassis_right_control.theta_l
+                  + LQR_K[0][7] * chassis_move_control_loop->chassis_right_control.d_theta_l
+                  - LQR_K[0][8] * (chassis_move_control_loop->chassis_pitch)
+                  - LQR_K[0][9] * chassis_move_control_loop->chassis_d_pitch
+                  + chassis_move_control_loop->chassis_left_control.Tw_adapt;
+
+    fp32 U_else_R = LQR_K[1][4] * chassis_move_control_loop->chassis_left_control.theta_l
+                  + LQR_K[1][5] * chassis_move_control_loop->chassis_left_control.d_theta_l
+                  + LQR_K[1][6] * chassis_move_control_loop->chassis_right_control.theta_l
+                  + LQR_K[1][7] * chassis_move_control_loop->chassis_right_control.d_theta_l
+                  - LQR_K[1][8] * (chassis_move_control_loop->chassis_pitch)
+                  - LQR_K[1][9] * chassis_move_control_loop->chassis_d_pitch
+                  + chassis_move_control_loop->chassis_right_control.Tw_adapt;
+
+    // 4. 获取当前车轮转速并调用功率限制器计算衰减
+    fp32 w_L = chassis_move_control_loop->chassis_wheel[0].vel;
+    fp32 w_R = chassis_move_control_loop->chassis_wheel[1].vel;
+
+    // 核心算法：送入各项分量，解一元二次方程
+    WL_PowerManager.Calculate_Decay(U_speed, U_yaw, U_else_L, U_else_R, w_L, w_R);
+
+    // 获取求解后被低通滤波平滑的衰减因子
+    fp32 decay_Uspeed = WL_PowerManager.getDecayUspeed();
+    fp32 decay_Uyaw   = WL_PowerManager.getDecayUyaw();
+
+    // 5. 重新合成最终的安全力矩 (等比缩放 U_speed 和 U_yaw，原封不动保留 U_else)
+    chassis_move_control_loop->chassis_wheel[0].wheel_T = (U_speed * decay_Uspeed) + (U_yaw * decay_Uyaw) + U_else_L;
+    chassis_move_control_loop->chassis_wheel[1].wheel_T = (U_speed * decay_Uspeed) - (U_yaw * decay_Uyaw) + U_else_R;
 
 
-    // // 1. 左腿 Tbl_t 拆解
-    // // 注意原代码中是 -LQR_K[2][0] * (x_filter - x_set)，为了统一 x_err = -x_filter + x_set，这里直接提取
-    // fp32 U_speed_leg_L = LQR_K[2][0] * x_err + LQR_K[2][1] * v_err;
-    // fp32 U_yaw_leg_L   = LQR_K[2][2] * yaw_err + LQR_K[2][3] * dyaw_err;
-    // fp32 U_else_leg_L  = LQR_K[2][4] * chassis_move_control_loop->chassis_left_control.theta_l
-    //                    + LQR_K[2][5] * chassis_move_control_loop->chassis_left_control.d_theta_l
-    //                    + LQR_K[2][6] * chassis_move_control_loop->chassis_right_control.theta_l
-    //                    + LQR_K[2][7] * chassis_move_control_loop->chassis_right_control.d_theta_l
-    //                    - LQR_K[2][8] * chassis_move_control_loop->chassis_pitch
-    //                    - LQR_K[2][9] * chassis_move_control_loop->chassis_d_pitch;
-    //
-    // // 2. 右腿 Tbl_t 拆解
-    // fp32 U_speed_leg_R = LQR_K[3][0] * x_err + LQR_K[3][1] * v_err;
-    // fp32 U_yaw_leg_R   = LQR_K[3][2] * yaw_err + LQR_K[3][3] * dyaw_err;
-    // fp32 U_else_leg_R  = LQR_K[3][4] * chassis_move_control_loop->chassis_left_control.theta_l
-    //                    + LQR_K[3][5] * chassis_move_control_loop->chassis_left_control.d_theta_l
-    //                    + LQR_K[3][6] * chassis_move_control_loop->chassis_right_control.theta_l
-    //                    + LQR_K[3][7] * chassis_move_control_loop->chassis_right_control.d_theta_l
-    //                    - LQR_K[3][8] * chassis_move_control_loop->chassis_pitch
-    //                    - LQR_K[3][9] * chassis_move_control_loop->chassis_d_pitch;
-    //
-    // // 3. 应用前面解算出的衰减因子并重新合成
-    // chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t =
-    //     (U_speed_leg_L * decay_Uspeed) + (U_yaw_leg_L * decay_Uyaw) + U_else_leg_L;
-    //
-    // chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t =
-    //     (U_speed_leg_R * decay_Uspeed) + (U_yaw_leg_R * decay_Uyaw) + U_else_leg_R;
+    // 1. 左腿 Tbl_t 拆解
+    // 注意原代码中是 -LQR_K[2][0] * (x_filter - x_set)，为了统一 x_err = -x_filter + x_set，这里直接提取
+    fp32 U_speed_leg_L = LQR_K[2][0] * x_err + LQR_K[2][1] * v_err;
+    fp32 U_yaw_leg_L   = LQR_K[2][2] * yaw_err + LQR_K[2][3] * dyaw_err;
+    fp32 U_else_leg_L  = LQR_K[2][4] * chassis_move_control_loop->chassis_left_control.theta_l
+                       + LQR_K[2][5] * chassis_move_control_loop->chassis_left_control.d_theta_l
+                       + LQR_K[2][6] * chassis_move_control_loop->chassis_right_control.theta_l
+                       + LQR_K[2][7] * chassis_move_control_loop->chassis_right_control.d_theta_l
+                       - LQR_K[2][8] * (chassis_move_control_loop->chassis_pitch)
+                       - LQR_K[2][9] * chassis_move_control_loop->chassis_d_pitch;
+
+    // 2. 右腿 Tbl_t 拆解
+    fp32 U_speed_leg_R = LQR_K[3][0] * x_err + LQR_K[3][1] * v_err;
+    fp32 U_yaw_leg_R   = LQR_K[3][2] * yaw_err + LQR_K[3][3] * dyaw_err;
+    fp32 U_else_leg_R  = LQR_K[3][4] * chassis_move_control_loop->chassis_left_control.theta_l
+                       + LQR_K[3][5] * chassis_move_control_loop->chassis_left_control.d_theta_l
+                       + LQR_K[3][6] * chassis_move_control_loop->chassis_right_control.theta_l
+                       + LQR_K[3][7] * chassis_move_control_loop->chassis_right_control.d_theta_l
+                       - LQR_K[3][8] * (chassis_move_control_loop->chassis_pitch)
+                       - LQR_K[3][9] * chassis_move_control_loop->chassis_d_pitch;
+
+    // 3. 应用前面解算出的衰减因子并重新合成
+    chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t =
+        (U_speed_leg_L * decay_Uspeed) + (U_yaw_leg_L * decay_Uyaw) + U_else_leg_L;
+
+    chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t =
+        (U_speed_leg_R * decay_Uspeed) + (U_yaw_leg_R * decay_Uyaw) + U_else_leg_R;
 
 
     // 左轮毂力矩，直接输出
-    chassis_move_control_loop->chassis_wheel[0].wheel_T =
-                                                          LQR_K[0][0] * (-chassis_move_control_loop->x_filter + chassis_move_control_loop->chassis_x_set)
-                                                         + LQR_K[0][1] * (-chassis_move_control_loop->v_filter + chassis_move_control_loop->chassis_v_set)
-                                                         + LQR_K[0][2] * (-chassis_move_control_loop->chassis_yaw + chassis_move_control_loop->chassis_yaw_set)
-                                                         + LQR_K[0][3] * (-chassis_move_control_loop->chassis_d_yaw + chassis_move_control_loop->chassis_d_yaw_set)
-                                                         + LQR_K[0][4] * chassis_move_control_loop->chassis_left_control.theta_l
-                                                         + LQR_K[0][5] * chassis_move_control_loop->chassis_left_control.d_theta_l
-                                                         + LQR_K[0][6] * chassis_move_control_loop->chassis_right_control.theta_l
-                                                         + LQR_K[0][7] * chassis_move_control_loop->chassis_right_control.d_theta_l
-                                                        - LQR_K[0][8] * (chassis_move_control_loop->chassis_pitch)
-                                                        - LQR_K[0][9] * chassis_move_control_loop->chassis_d_pitch
-                                                        + chassis_move_control_loop->chassis_left_control.Tw_adapt;
+    // chassis_move_control_loop->chassis_wheel[0].wheel_T =
+    //                                                       LQR_K[0][0] * (-chassis_move_control_loop->x_filter + chassis_move_control_loop->chassis_x_set)
+    //                                                      + LQR_K[0][1] * (-chassis_move_control_loop->v_filter + chassis_move_control_loop->chassis_v_set)
+    //                                                      + LQR_K[0][2] * (-chassis_move_control_loop->chassis_yaw + chassis_move_control_loop->chassis_yaw_set)
+    //                                                      + LQR_K[0][3] * (-chassis_move_control_loop->chassis_d_yaw + chassis_move_control_loop->chassis_d_yaw_set)
+    //                                                      + LQR_K[0][4] * chassis_move_control_loop->chassis_left_control.theta_l
+    //                                                      + LQR_K[0][5] * chassis_move_control_loop->chassis_left_control.d_theta_l
+    //                                                      + LQR_K[0][6] * chassis_move_control_loop->chassis_right_control.theta_l
+    //                                                      + LQR_K[0][7] * chassis_move_control_loop->chassis_right_control.d_theta_l
+    //                                                     - LQR_K[0][8] * (chassis_move_control_loop->chassis_pitch)
+    //                                                     - LQR_K[0][9] * chassis_move_control_loop->chassis_d_pitch
+    //                                                     + chassis_move_control_loop->chassis_left_control.Tw_adapt;
+    //
+    // // 右轮毂力矩，直接输出
+    // chassis_move_control_loop->chassis_wheel[1].wheel_T =
+    //                                                       LQR_K[1][0] * (-chassis_move_control_loop->x_filter + chassis_move_control_loop->chassis_x_set)
+    //                                                      + LQR_K[1][1] * (-chassis_move_control_loop->v_filter + chassis_move_control_loop->chassis_v_set)
+    //                                                      + LQR_K[1][2] * (-chassis_move_control_loop->chassis_yaw + chassis_move_control_loop->chassis_yaw_set)
+    //                                                      + LQR_K[1][3] * (-chassis_move_control_loop->chassis_d_yaw + chassis_move_control_loop->chassis_d_yaw_set)
+    //                                                      + LQR_K[1][4] * chassis_move_control_loop->chassis_left_control.theta_l
+    //                                                      + LQR_K[1][5] * chassis_move_control_loop->chassis_left_control.d_theta_l
+    //                                                      + LQR_K[1][6] * chassis_move_control_loop->chassis_right_control.theta_l
+    //                                                      + LQR_K[1][7] * chassis_move_control_loop->chassis_right_control.d_theta_l
+    //                                                     - LQR_K[1][8] * (chassis_move_control_loop->chassis_pitch)
+    //                                                     - LQR_K[1][9] * chassis_move_control_loop->chassis_d_pitch
+    //                                                     + chassis_move_control_loop->chassis_right_control.Tw_adapt;
+    //
+    // // 左腿转矩
+    // chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t =
+    //                                                                       LQR_K[2][0] * (-chassis_move_control_loop->x_filter + chassis_move_control_loop->chassis_x_set)
+    //                                                                      + LQR_K[2][1] * (-chassis_move_control_loop->v_filter + chassis_move_control_loop->chassis_v_set)
+    //                                                                      + LQR_K[2][2] * (chassis_move_control_loop->chassis_yaw - chassis_move_control_loop->chassis_yaw_set)
+    //                                                                      + LQR_K[2][3] * (chassis_move_control_loop->chassis_d_yaw - chassis_move_control_loop->chassis_d_yaw_set)
+    //                                                                      + LQR_K[2][4] * chassis_move_control_loop->chassis_left_control.theta_l
+    //                                                                      + LQR_K[2][5] * chassis_move_control_loop->chassis_left_control.d_theta_l
+    //                                                                      + LQR_K[2][6] * chassis_move_control_loop->chassis_right_control.theta_l
+    //                                                                      + LQR_K[2][7] * chassis_move_control_loop->chassis_right_control.d_theta_l
+    //                                                                      - LQR_K[2][8] * (chassis_move_control_loop->chassis_pitch)
+    //                                                                      - LQR_K[2][9] * chassis_move_control_loop->chassis_d_pitch;
+    //
+    // // 右腿转矩
+    // chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t =
+    //                                                                       LQR_K[3][0] * (-chassis_move_control_loop->x_filter + chassis_move_control_loop->chassis_x_set)
+    //                                                                      + LQR_K[3][1] * (-chassis_move_control_loop->v_filter + chassis_move_control_loop->chassis_v_set)
+    //                                                                      + LQR_K[3][2] * (chassis_move_control_loop->chassis_yaw - chassis_move_control_loop->chassis_yaw_set)
+    //                                                                      + LQR_K[3][3] * (chassis_move_control_loop->chassis_d_yaw - chassis_move_control_loop->chassis_d_yaw_set)
+    //                                                                      + LQR_K[3][4] * chassis_move_control_loop->chassis_left_control.theta_l
+    //                                                                      + LQR_K[3][5] * chassis_move_control_loop->chassis_left_control.d_theta_l
+    //                                                                      + LQR_K[3][6] * chassis_move_control_loop->chassis_right_control.theta_l
+    //                                                                      + LQR_K[3][7] * chassis_move_control_loop->chassis_right_control.d_theta_l
+    //                                                                      - LQR_K[3][8] * (chassis_move_control_loop->chassis_pitch)
+    //                                                                      - LQR_K[3][9] * chassis_move_control_loop->chassis_d_pitch;
 
-    // 右轮毂力矩，直接输出
-    chassis_move_control_loop->chassis_wheel[1].wheel_T =
-                                                          LQR_K[1][0] * (-chassis_move_control_loop->x_filter + chassis_move_control_loop->chassis_x_set)
-                                                         + LQR_K[1][1] * (-chassis_move_control_loop->v_filter + chassis_move_control_loop->chassis_v_set)
-                                                         + LQR_K[1][2] * (-chassis_move_control_loop->chassis_yaw + chassis_move_control_loop->chassis_yaw_set)
-                                                         + LQR_K[1][3] * (-chassis_move_control_loop->chassis_d_yaw + chassis_move_control_loop->chassis_d_yaw_set)
-                                                         + LQR_K[1][4] * chassis_move_control_loop->chassis_left_control.theta_l
-                                                         + LQR_K[1][5] * chassis_move_control_loop->chassis_left_control.d_theta_l
-                                                         + LQR_K[1][6] * chassis_move_control_loop->chassis_right_control.theta_l
-                                                         + LQR_K[1][7] * chassis_move_control_loop->chassis_right_control.d_theta_l
-                                                        - LQR_K[1][8] * (chassis_move_control_loop->chassis_pitch)
-                                                        - LQR_K[1][9] * chassis_move_control_loop->chassis_d_pitch
-                                                        + chassis_move_control_loop->chassis_right_control.Tw_adapt;
+    if (chassis_move_control_loop->chassis_left_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND
+        && chassis_move_control_loop->chassis_right_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND)
+    {
+        // 轮子彻底断动力
+        chassis_move_control_loop->chassis_wheel[0].wheel_T = 0.0f;
+        chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t =
+            LQR_K[2][4] * chassis_move_control_loop->chassis_left_control.theta_l +
+            LQR_K[2][5] * chassis_move_control_loop->chassis_left_control.d_theta_l;
 
-    // 左腿转矩
-    chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t =
-                                                                          LQR_K[2][0] * (-chassis_move_control_loop->x_filter + chassis_move_control_loop->chassis_x_set)
-                                                                         + LQR_K[2][1] * (-chassis_move_control_loop->v_filter + chassis_move_control_loop->chassis_v_set)
-                                                                         + LQR_K[2][2] * (chassis_move_control_loop->chassis_yaw - chassis_move_control_loop->chassis_yaw_set)
-                                                                         + LQR_K[2][3] * (chassis_move_control_loop->chassis_d_yaw - chassis_move_control_loop->chassis_d_yaw_set)
-                                                                         + LQR_K[2][4] * chassis_move_control_loop->chassis_left_control.theta_l
-                                                                         + LQR_K[2][5] * chassis_move_control_loop->chassis_left_control.d_theta_l
-                                                                         + LQR_K[2][6] * chassis_move_control_loop->chassis_right_control.theta_l
-                                                                         + LQR_K[2][7] * chassis_move_control_loop->chassis_right_control.d_theta_l
-                                                                         - LQR_K[2][8] * (chassis_move_control_loop->chassis_pitch)
-                                                                         - LQR_K[2][9] * chassis_move_control_loop->chassis_d_pitch;
+        // 轮子彻底断动力
+        chassis_move_control_loop->chassis_wheel[1].wheel_T = 0.0f;
+        chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t =
+            LQR_K[3][6] * chassis_move_control_loop->chassis_right_control.theta_l +
+            LQR_K[3][7] * chassis_move_control_loop->chassis_right_control.d_theta_l;
+    }
 
-    // 右腿转矩
-    chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t =
-                                                                          LQR_K[3][0] * (-chassis_move_control_loop->x_filter + chassis_move_control_loop->chassis_x_set)
-                                                                         + LQR_K[3][1] * (-chassis_move_control_loop->v_filter + chassis_move_control_loop->chassis_v_set)
-                                                                         + LQR_K[3][2] * (chassis_move_control_loop->chassis_yaw - chassis_move_control_loop->chassis_yaw_set)
-                                                                         + LQR_K[3][3] * (chassis_move_control_loop->chassis_d_yaw - chassis_move_control_loop->chassis_d_yaw_set)
-                                                                         + LQR_K[3][4] * chassis_move_control_loop->chassis_left_control.theta_l
-                                                                         + LQR_K[3][5] * chassis_move_control_loop->chassis_left_control.d_theta_l
-                                                                         + LQR_K[3][6] * chassis_move_control_loop->chassis_right_control.theta_l
-                                                                         + LQR_K[3][7] * chassis_move_control_loop->chassis_right_control.d_theta_l
-                                                                         - LQR_K[3][8] * (chassis_move_control_loop->chassis_pitch)
-                                                                         - LQR_K[3][9] * chassis_move_control_loop->chassis_d_pitch;
 
     // 碰到台阶，用PID控制腿角度到目标位置（逆时针方向）
     if (chassis_move_control_loop->chassis_mode == CHASSIS_UP &&
@@ -1678,14 +1686,32 @@ static void chassis_control_loop(Chassis_Move *chassis_move_control_loop) {
         }
     }
 
-    static fp32 soft_lqr_ratio = 0.0f;
+    static fp32 soft_lqr_ratio = 0.0f; // 静态变量，默认 1.0（全功率）
+
+    // 1. 检测模式切换边缘：从 INIT 倒地 或 UP 台阶 切换到 正常平衡模式
+    if ((chassis_move_control_loop->last_chassis_mode == CHASSIS_INIT ||
+         chassis_move_control_loop->last_chassis_mode == CHASSIS_UP) &&
+        (chassis_move_control_loop->chassis_mode == CHASSIS_FOLLOW_GIMBAL_YAW))
+    {
+        // 刚切入正常模式瞬间，将力矩限制在 10% (或者 20%，根据你的机器人重量测试)
+        // 注意：不要给 0，给 0 的话机器人会瞬间失去支撑力往下掉
+        soft_lqr_ratio = 0.0f;
+    }
+
+    // 2. 斜坡恢复：如果比例还没到 1.0，就让它慢慢涨上来
+    if (soft_lqr_ratio < 1.0f)
+    {
+        // 假设控制频率是 500Hz，每次加 0.002，大约需要 0.45 秒恢复到 100% 动力
+        soft_lqr_ratio += 0.0005f;
+
+        // 限幅保护
+        if (soft_lqr_ratio > 1.0f) {
+            soft_lqr_ratio = 1.0f;
+        }
+    }
     // 初始化收腿阶段后，进入起身阶段，起身阶段使用收缩LQR输出
     if (chassis_move_control_loop->chassis_mode == CHASSIS_INIT && chassis_move_control_loop->init_leg_reached == 2)
     {
-        // 1. LQR 权重平滑上升 (从 0.0 到 1.0)
-        // 假设控制周期是 0.002s，每次加 0.004f，约 0.5 秒内完全切入 LQR 控制
-        soft_lqr_ratio += 0.004f;
-        if (soft_lqr_ratio > 1.0f) soft_lqr_ratio = 1.0f;
 
         // 2. 软启动轮出扭矩 (防止一接管轮子就狂转)
         chassis_move_control_loop->chassis_wheel[0].wheel_T *= soft_lqr_ratio;
@@ -1693,16 +1719,16 @@ static void chassis_control_loop(Chassis_Move *chassis_move_control_loop) {
 
         // 左前关节电机力矩
         chassis_move_control_loop->chassis_joint[0].joint_T = -chassis_move_control_loop->chassis_left_control.wbr_control.J[0][0] * chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t
-                                                            - chassis_move_control_loop->chassis_left_control.wbr_control.J[0][1] * chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t * soft_lqr_ratio;;
+                                                            - chassis_move_control_loop->chassis_left_control.wbr_control.J[0][1] * chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t* soft_lqr_ratio;
         // 左后关节电机力矩
         chassis_move_control_loop->chassis_joint[1].joint_T = chassis_move_control_loop->chassis_left_control.wbr_control.J[1][0] * chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t
-                                                            + chassis_move_control_loop->chassis_left_control.wbr_control.J[1][1] * chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t * soft_lqr_ratio;;
+                                                            + chassis_move_control_loop->chassis_left_control.wbr_control.J[1][1] * chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t* soft_lqr_ratio;
         // 右前关节电机力矩
         chassis_move_control_loop->chassis_joint[2].joint_T = chassis_move_control_loop->chassis_right_control.wbr_control.J[0][0] * chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t
-                                                            + chassis_move_control_loop->chassis_right_control.wbr_control.J[0][1] * chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t * soft_lqr_ratio;;
+                                                            + chassis_move_control_loop->chassis_right_control.wbr_control.J[0][1] * chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t* soft_lqr_ratio;
         // 右后关节电机力矩
         chassis_move_control_loop->chassis_joint[3].joint_T = -chassis_move_control_loop->chassis_right_control.wbr_control.J[1][0] * chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t
-                                                            - chassis_move_control_loop->chassis_right_control.wbr_control.J[1][1] * chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t * soft_lqr_ratio;;
+                                                            - chassis_move_control_loop->chassis_right_control.wbr_control.J[1][1] * chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t* soft_lqr_ratio;
     }
     else if (chassis_move_control_loop->chassis_mode == CHASSIS_INIT && chassis_move_control_loop->init_leg_reached == 1)
     {
@@ -1725,20 +1751,21 @@ static void chassis_control_loop(Chassis_Move *chassis_move_control_loop) {
     }
     else if (chassis_move_control_loop->chassis_mode != CHASSIS_INIT)
     {
-        soft_lqr_ratio = 0.0f; // 只要离开自启起身状态，就重置软启动系数
+        chassis_move_control_loop->chassis_wheel[0].wheel_T *= soft_lqr_ratio;
+        chassis_move_control_loop->chassis_wheel[1].wheel_T *= soft_lqr_ratio;
 
         // 左前关节电机力矩
         chassis_move_control_loop->chassis_joint[0].joint_T = -chassis_move_control_loop->chassis_left_control.wbr_control.J[0][0] * chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t
-                                                            - chassis_move_control_loop->chassis_left_control.wbr_control.J[0][1] * chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t;
+                                                            - chassis_move_control_loop->chassis_left_control.wbr_control.J[0][1] * chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t* soft_lqr_ratio;
         // 左后关节电机力矩
         chassis_move_control_loop->chassis_joint[1].joint_T = chassis_move_control_loop->chassis_left_control.wbr_control.J[1][0] * chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t
-                                                            + chassis_move_control_loop->chassis_left_control.wbr_control.J[1][1] * chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t;
+                                                            + chassis_move_control_loop->chassis_left_control.wbr_control.J[1][1] * chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t* soft_lqr_ratio;
         // 右前关节电机力矩
         chassis_move_control_loop->chassis_joint[2].joint_T = chassis_move_control_loop->chassis_right_control.wbr_control.J[0][0] * chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t
-                                                            + chassis_move_control_loop->chassis_right_control.wbr_control.J[0][1] * chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t;
+                                                            + chassis_move_control_loop->chassis_right_control.wbr_control.J[0][1] * chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t* soft_lqr_ratio;
         // 右后关节电机力矩
         chassis_move_control_loop->chassis_joint[3].joint_T = -chassis_move_control_loop->chassis_right_control.wbr_control.J[1][0] * chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t
-                                                            - chassis_move_control_loop->chassis_right_control.wbr_control.J[1][1] * chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t;
+                                                            - chassis_move_control_loop->chassis_right_control.wbr_control.J[1][1] * chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t* soft_lqr_ratio;
     }
 
     // 关节点击力矩限幅，最大值按照关节电机最大扭矩限制

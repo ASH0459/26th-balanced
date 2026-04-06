@@ -21,6 +21,7 @@
 
 #include "main.h"
 #include "HDL_SuperCap.hpp"
+#include "UC_Referee.h"
 #include "arm_math.h"
 
 extern FDCAN_HandleTypeDef hfdcan1;
@@ -74,8 +75,8 @@ Gimbal_Data gimbal_data;
 		chassis_can_send_data[1] = motor1_current;
 		chassis_can_send_data[2] = motor2_current >> 8;
 		chassis_can_send_data[3] = motor2_current;
-		chassis_can_send_data[4] = 0;
-		chassis_can_send_data[5] = 0;
+		chassis_can_send_data[4] = power_heat_data_t.shooter_id1_17mm_cooling_heat >> 8;
+		chassis_can_send_data[5] = power_heat_data_t.shooter_id1_17mm_cooling_heat;
 		chassis_can_send_data[6] = 0;
 		chassis_can_send_data[7] = 0;
 
@@ -115,6 +116,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 				{
 					SuperCap_RX_Callback(rx_data);
 					detect_hook(SuperCap_TOE);
+
 				}
 
 				default:

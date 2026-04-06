@@ -36,27 +36,46 @@
   <component name="ChangeListManager">
     <list default="true" id="c99c62c5-69e7-4aca-b202-4f830850dbbe" name="更改" comment="提交归档">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/CMakeLists.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Users/0-APL/APL_PowerLimitator/APL_PowerLimitator.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Users/0-APL/APL_PowerLimitator/APL_PowerLimitator.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Users/0-APL/APL_SuperCap/APL_SuperCap.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Users/0-APL/APL_SuperCap/APL_SuperCap.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Users/0-APL/APL_USART/APL_UASRT.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Users/0-APL/APL_USART/APL_UASRT.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Users/2-HDL/HDL_SuperCap/HDL_SuperCap.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Users/2-HDL/HDL_SuperCap/HDL_SuperCap.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Users/Algorithm/Alg_Support/Alg_UserLib.c" beforeDir="false" afterPath="$PROJECT_DIR$/Users/Algorithm/Alg_Support/Alg_UserLib.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Users/Algorithm/Alg_Support/Alg_UserLib.h" beforeDir="false" afterPath="$PROJECT_DIR$/Users/Algorithm/Alg_Support/Alg_UserLib.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Users/Application/APP_Buzzer/APP_Buzzer.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Users/Application/APP_Buzzer/APP_Buzzer.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Users/Application/APP_Chassis/App_Chassis_Behaviour.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Users/Application/APP_Chassis/App_Chassis_Behaviour.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Users/Application/APP_Chassis/App_Chassis_Task.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Users/Application/APP_Chassis/App_Chassis_Task.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Users/Application/APP_Chassis/App_Chassis_Task.h" beforeDir="false" afterPath="$PROJECT_DIR$/Users/Application/APP_Chassis/App_Chassis_Task.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Users/Bsp/Bsp_Boards/Board_CAN/bsp_can.c" beforeDir="false" afterPath="$PROJECT_DIR$/Users/Bsp/Bsp_Boards/Board_CAN/bsp_can.c" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Users/Application/App_Detect/App_Detect_Task.c" beforeDir="false" afterPath="$PROJECT_DIR$/Users/Application/App_Detect/App_Detect_Task.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Users/Bsp/Bsp_Device/Dev_Can_Receive/Dev_Can_Receive.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Users/Bsp/Bsp_Device/Dev_Can_Receive/Dev_Can_Receive.cpp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Users/Bsp/Bsp_Device/Dev_Can_Receive/Dev_Can_Receive.h" beforeDir="false" afterPath="$PROJECT_DIR$/Users/Bsp/Bsp_Device/Dev_Can_Receive/Dev_Can_Receive.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Users/Bsp/Bsp_Device/Dev_Remote_Control/Dev_Remote_Control.h" beforeDir="false" afterPath="$PROJECT_DIR$/Users/Bsp/Bsp_Device/Dev_Remote_Control/Dev_Remote_Control.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/.cmake/api/v1/reply/codemodel-v2-9689f817d43bc6335a2a.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/.cmake/api/v1/reply/target-26th_balance_infantry-Debug-f82651c229ed48e37825.json" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_deps" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_deps" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/.ninja_log" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/26th_balance_infantry.elf" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/26th_balance_infantry.elf" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/26th_balance_infantry.map" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/26th_balance_infantry.map" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Core/Src/fdcan.c.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Core/Src/fdcan.c.obj" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Core/Src/freertos.c.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Core/Src/freertos.c.obj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/Algorithm/Alg_Support/Alg_UserLib.c.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/Algorithm/Alg_Support/Alg_UserLib.c.obj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/Application/APP_Buzzer/APP_Buzzer.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/Application/APP_Buzzer/APP_Buzzer.cpp.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Core/Src/main.c.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Core/Src/main.c.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Core/Src/stm32h7xx_it.c.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Core/Src/stm32h7xx_it.c.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/0-APL/APL_PowerLimitator/APL_PowerLimitator.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/0-APL/APL_PowerLimitator/APL_PowerLimitator.cpp.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/0-APL/APL_RC_Hub/APL_RC_Hub.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/0-APL/APL_RC_Hub/APL_RC_Hub.cpp.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/0-APL/APL_SuperCap/APL_SuperCap.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/0-APL/APL_SuperCap/APL_SuperCap.cpp.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/0-APL/APL_USART/APL_UASRT.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/0-APL/APL_USART/APL_UASRT.cpp.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/2-HDL/HDL_PowerLimitator/HDL_PowerLimitator.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/2-HDL/HDL_PowerLimitator/HDL_PowerLimitator.cpp.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/2-HDL/HDL_SuperCap/HDL_SuperCap.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/2-HDL/HDL_SuperCap/HDL_SuperCap.cpp.obj" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/Application/APP_Chassis/App_Chassis_Behaviour.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/Application/APP_Chassis/App_Chassis_Behaviour.cpp.obj" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/Application/APP_Chassis/App_Chassis_Task.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/Application/APP_Chassis/App_Chassis_Task.cpp.obj" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/Application/APP_INS/INS_task.c.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/Application/APP_INS/INS_task.c.obj" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/Bsp/Bsp_Boards/Board_CAN/bsp_can.c.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/Bsp/Bsp_Boards/Board_CAN/bsp_can.c.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/Application/App_Custom/App_Custom_Task.c.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/Application/App_Custom/App_Custom_Task.c.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/Application/App_Detect/App_Detect_Task.c.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/Application/App_Detect/App_Detect_Task.c.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/Application/App_Referee/App_Referee_Task.c.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/Application/App_Referee/App_Referee_Task.c.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/Bsp/Bsp_Boards/Board_USART/Board_USART.c.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/Bsp/Bsp_Boards/Board_USART/Board_USART.c.obj" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/Bsp/Bsp_Device/Dev_Can_Receive/Dev_Can_Receive.cpp.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/Bsp/Bsp_Device/Dev_Can_Receive/Dev_Can_Receive.cpp.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/Bsp/Bsp_Device/Dev_Remote_Control/Dev_Remote_Control.c.obj" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/26th_balance_infantry.dir/Users/Bsp/Bsp_Device/Dev_Remote_Control/Dev_Remote_Control.c.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/build.ninja" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/build.ninja" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmake-build-debug/compile_commands.json" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/compile_commands.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -106,6 +125,7 @@
     <setting file="file://$PROJECT_DIR$/Users/Application/APP_Buzzer/APP_Buzzer.h" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Users/Application/APP_Chassis/App_Chassis_Behaviour.cpp" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Users/Application/APP_Chassis/App_Chassis_Power_Control.cpp" root0="FORCE_HIGHLIGHTING" />
+    <setting file="mock://D:/RM2026/26th_balance_infantry/26th_balanced_code/Users/Application/APP_Chassis/App_Chassis_Task.cpp" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Users/Application/APP_Chassis/App_Chassis_Task.cpp" root0="FORCE_HIGHLIGHTING" />
     <setting file="mock://D:/RM2026/26th_balance_infantry/26th_balanced_code/Users/Application/APP_Chassis/App_Chassis_Task.cpp" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Users/Application/APP_Chassis/App_Chassis_Task.h" root0="FORCE_HIGHLIGHTING" />
@@ -161,7 +181,7 @@
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;CMakeSettings&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
@@ -284,6 +304,17 @@
       <workItem from="1773378778191" duration="20291000" />
       <workItem from="1773672030808" duration="1529000" />
       <workItem from="1773854469604" duration="5257000" />
+      <workItem from="1774344232273" duration="1247000" />
+      <workItem from="1774349199541" duration="974000" />
+      <workItem from="1774353496056" duration="613000" />
+      <workItem from="1774434698352" duration="51855000" />
+      <workItem from="1774598481696" duration="11599000" />
+      <workItem from="1774671893504" duration="5766000" />
+      <workItem from="1775010004974" duration="2000" />
+      <workItem from="1775222498235" duration="7937000" />
+      <workItem from="1775281203513" duration="20572000" />
+      <workItem from="1775318223827" duration="5249000" />
+      <workItem from="1775460135017" duration="3000" />
     </task>
     <task id="LOCAL-00001" summary="半舵H7">
       <option name="closed" value="true" />

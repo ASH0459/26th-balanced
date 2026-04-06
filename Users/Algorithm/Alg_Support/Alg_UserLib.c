@@ -222,10 +222,10 @@ float shortest_angle_error(float target, float current) {
 
     // 核心逻辑：将误差归一化到 [-180, 180]
     while (error > PI) {
-        error -= 2*PI;
+        error -= 2.0f*PI;
     }
     while (error < -PI) {
-        error += 2*PI;
+        error += 2.0f*PI;
     }
 
     return error;

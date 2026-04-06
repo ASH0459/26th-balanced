@@ -91,12 +91,12 @@
 #define INIT_LEG_ANGLE_PID_MAX_IOUT     0.0f
 
 // 上台阶收腿目标角度 (0~2π坐标系, rad)
-#define CHASSIS_UP_LEG_ANGLE_TARGET_360   5.1f
+#define CHASSIS_UP_LEG_ANGLE_TARGET_360   5.2f
 // 上台阶收腿角度到位阈值 (rad)
 #define CHASSIS_UP_LEG_ANGLE_THRESHOLD    (0.1f)
 // 上台阶收腿完成腿长阈值
-#define CHASSIS_UP_LEG_LENGTH_THRESHOLD   0.211f
-// 上台阶收腿PID参数（复用init的PID参数，也可单独设置）
+#define CHASSIS_UP_LEG_LENGTH_THRESHOLD   0.18f
+// 上台阶收腿PID参数
 #define UP_LEG_ANGLE_PID_KP              5.0f
 #define UP_LEG_ANGLE_PID_KI              0.0f
 #define UP_LEG_ANGLE_PID_KD              10.0f
@@ -104,10 +104,11 @@
 #define UP_LEG_ANGLE_PID_MAX_IOUT        0.0f
 
 //yaw轴跟随PID
-#define YAW_PID_KP						3.0f
+#define YAW_PID_KP						6.0f
 #define YAW_PID_KI						0.0f
 #define YAW_PID_KD						3.0f
-#define YAW_PID_MAX_OUT				    5.0f
+
+#define YAW_PID_MAX_OUT				    6.0f
 #define YAW_PID_MAX_IOUT				0.0f
 
 // 左右腿roll轴PID
@@ -117,6 +118,7 @@
 #define ROLL_PID_MAX_OUT				400.0f
 #define ROLL_PID_MAX_IOUT				0.0f
 
+#define  CHASSIS_X_BACK                  0.45f
 // 左右腿长度PID
 #define LEG_PID_KP						2000.0f
 #define LEG_PID_KI						0.0f
@@ -209,7 +211,11 @@
 #define CHASSIS_RIGHT_KEY   KEY_PRESSED_OFFSET_D
 
 // 键盘控制最大速度 (m/s)
-#define CHASSIS_KEY_MAX_SPEED   1.5f
+#define CHASSIS_KEY_MAX_SPEED   2.0f
+#define CHASSIS_KEY_MAX_SPEED_UP   1.0f
+
+#define CHASSIS_KEY_ACCEL 1.8f
+
 // 键盘速度斜坡步长 (m/s per loop, 500Hz下 0→1.5m/s 约0.75秒)
 #define CHASSIS_KEY_RAMP_STEP   0.004f
 
@@ -234,7 +240,7 @@
 #define CHASSIS_SPIN_LOW_SPEED 1.5f
 
 //底盘小陀螺基本速度
-#define CHASSIS_SPIN_MAIN_SPEED 5
+#define CHASSIS_SPIN_MAIN_SPEED 10.0f
 
 //底盘小陀螺减去x,y方向的速度比例系数
 #define CHASSIS_SPIN_LOW_SEN 0.6
@@ -340,6 +346,7 @@ class Chassis_Move
     uint8_t up_state = 0;
     uint8_t up_leg_reached = 0;  // 上台阶腿角度是否到位标志 0:未到位 1:已到位
     uint8_t init_leg_reached = 0;  // 初始化收腿是否到位标志 0:未到位 1:已到位
+    bool is_up_mode = false;
 
     const dr16_control_t *chassis_RC;             //底盘使用的遥控器指针
     const remote_control_t *chassis_RC_0X304;     //底盘使用的图传链路数据指针
@@ -352,7 +359,7 @@ class Chassis_Move
     const Gimbal_Data *chassis_gimbal_data;      //获取云台数据
     uint32_t chassis_relative_angle_set;
 
-
+    float chassis_yaw_target_base;
     Chassis_Mode_e chassis_mode;                  //底盘控制状态机
     Chassis_Mode_e last_chassis_mode;             //底盘上次控制状态机
 

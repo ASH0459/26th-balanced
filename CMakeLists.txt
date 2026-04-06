@@ -132,7 +132,21 @@ add_executable(${CMAKE_PROJECT_NAME}
         Users/2-HDL/HDL_SuperCap/HDL_SuperCap.cpp
         Users/2-HDL/HDL_SuperCap/HDL_SuperCap.hpp
         Users/Bsp/Bsp_Device/Dev_LiDAR/Dev_LiDAR.c
-        Users/Bsp/Bsp_Device/Dev_LiDAR/Dev_LiDAR.h)
+        Users/Bsp/Bsp_Device/Dev_LiDAR/Dev_LiDAR.h
+        Users/Application/App_UI/UI_Frames/ui_g_move_0.c
+        Users/Application/App_UI/UI_Frames/ui_g_move_0.h
+        Users/Application/App_UI/UI_Frames/ui_g_text_0.c
+        Users/Application/App_UI/UI_Frames/ui_g_text_0.h
+        Users/Application/App_UI/UI_Frames/ui_g_text_1.c
+        Users/Application/App_UI/UI_Frames/ui_g_text_1.h
+        Users/Application/App_UI/UI_Frames/ui_g_Ungroup_0.c
+        Users/Application/App_UI/UI_Frames/ui_g_Ungroup_0.h
+        Users/Application/App_UI/App_UI_Task.cpp
+        Users/Application/App_UI/App_UI_Task.h
+        Users/Application/App_UI/ui.h
+        Users/Application/App_UI/ui_interface.c
+        Users/Application/App_UI/ui_interface.h
+        Users/Application/App_UI/ui_types.h)
 
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
@@ -163,7 +177,7 @@ include_directories(Core/Inc Drivers/STM32H7xx_HAL_Driver/Inc Drivers/STM32H7xx_
 include_directories(Middlewares/ST/ARM/DSP/Inc Users/Bsp/Bsp_Support/Sp_CRC8_CRC16 Users/Bsp/Bsp_Support/Sp_FIFO Users/Bsp/Bsp_Support/Sp_MEM_MANG Users/Bsp/Bsp_Support/)
 include_directories(Users/Bsp/Bsp_Device/Dev_Referee Users/Application/App_Referee Users/Bsp/Bsp_Boards/Board_USART Users/Algorithm/Alg_wbr  Users/Algorithm/Alg_EKF/kalman)
 include_directories(Users/0-APL/APL_SuperCap Users/0-APL/APL_PowerLimitator Users/2-HDL/HDL_PowerLimitator Users/2-HDL/HDL_SuperCap Users/Bsp/Bsp_Device/Dev_LiDAR)
-
+include_directories(Users/Application/App_UI Users/Application/App_UI/UI_Frames)
 # Add project symbols (macros)
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined symbols

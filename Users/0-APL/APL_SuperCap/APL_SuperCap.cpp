@@ -52,6 +52,15 @@ void SuperCap_Task(void *pvParameters) {
   while (1) {
 
       /*编辑控制值(待改，输入裁判系统给的功率值)*/
+      // SuperCap_TX_Config(&SuperCap_Data,
+      //                      1,
+      //                      robot_state.chassis_power_limit,
+      //                      power_heat_data_t.chassis_power_buffer,
+      //                      1,
+      //                      0,
+      //                      0
+      //                      );
+
       SuperCap_TX_Config(&SuperCap_Data,
                            1,
                            robot_state.chassis_power_limit,

@@ -153,24 +153,24 @@ void SuperCap_RX_Callback(uint8_t rx_data[8])
     // //uint8_t rx_data[64];
     // HAL_FDCAN_GetRxMessage(&SuperCap_CAN, FDCAN_RX_FIFO0, &rx_header, rx_data);
 
-    switch (rx_header.Identifier)
-    {
-        case SuperCap_1ID:
-        {
-            // 旧协议 0x51 数据解析
-            ParseSuperCapRx(rx_data, &SuperCap_Data);
-            break;
-        }
-        case SuperCap_2ID:
-        {
+    // switch (rx_header.Identifier)
+    // {
+    //     case SuperCap_1ID:
+    //     {
+    //         // 旧协议 0x51 数据解析
+    //         ParseSuperCapRx(rx_data, &SuperCap_Data);
+    //         break;
+    //     }
+    //     case SuperCap_2ID:
+    //     {
             // 新协议 0x52 数据解析
-            ParseSuperCapRxNew(rx_data, &SuperCap_Data);
-            break;
-        }
-        default: {
-            break;
-        }
-    }
+    ParseSuperCapRxNew(rx_data, &SuperCap_Data);
+    //         break;
+    //     }
+    //     default: {
+    //         break;
+    //     }
+    // }
 }
 
 /**
