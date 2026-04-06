@@ -29,7 +29,7 @@ extern "C" {
 
   static void playStartupSound(void);
 
-  void buzzer_task(void const * argument)
+  void buzzer_task(void * argument)
   {
     HAL_TIM_PWM_Start(&htim12, TIM_CHANNEL_2);
 

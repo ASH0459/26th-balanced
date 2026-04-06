@@ -11,7 +11,7 @@ extern DMA_HandleTypeDef  hdma_usart5_rx;
   *                 指定将DMA传输的数据存入rx1_buf与rx2_buf中，之后直接读取rx1_buf/rx2_buf即可
   * @retval         none
   */
-void RC_Init(UART_HandleTypeDef *huart, uint32_t *DstAddress, uint32_t *SecondMemAddress, uint32_t DataLength)
+void RC_Init(UART_HandleTypeDef *huart, uint8_t *DstAddress, uint8_t *SecondMemAddress, uint32_t DataLength)
 {
     huart->ReceptionType = HAL_UART_RECEPTION_TOIDLE;
 
@@ -42,7 +42,7 @@ void RC_Init(UART_HandleTypeDef *huart, uint32_t *DstAddress, uint32_t *SecondMe
 
 }
 
-void USART_RxDMA_DoubleBuffer_Init(UART_HandleTypeDef *huart, uint32_t *DstAddress, uint32_t *SecondMemAddress, uint32_t DataLength)
+void USART_RxDMA_DoubleBuffer_Init(UART_HandleTypeDef *huart, uint8_t *DstAddress, uint8_t *SecondMemAddress, uint32_t DataLength)
 {
 
     huart->ReceptionType = HAL_UART_RECEPTION_TOIDLE;

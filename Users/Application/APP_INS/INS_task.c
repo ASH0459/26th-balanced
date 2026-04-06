@@ -90,7 +90,7 @@ fp32 Zn[3] = {0.0f, 0.0f, 0.0f};
   * @param          pvParameters: NULL
   * @retval         none
   */
-void INS_task(void const *pvParameters)
+void INS_task(void *pvParameters)
 {
 	// 四元数EKF初始化
 	IMU_QuaternionEKF_Init(10, 0.001, 10000000, 1, 0);

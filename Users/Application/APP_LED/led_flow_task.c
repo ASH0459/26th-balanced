@@ -2,7 +2,7 @@
 #include "bsp_led.h"
 #include "cmsis_os.h"
 
-void led_RGB_flow_task(void const * argument)
+void led_RGB_flow_task(void * argument)
 {
     uint8_t red = 1;
 		uint8_t green = 1;

@@ -23,7 +23,7 @@ extern "C" {
 #endif
 
     /* 函数声明 */
-    void buzzer_task(void const * argument);
+    void buzzer_task(void * argument);
 #ifdef __cplusplus
 }
 #endif

@@ -1,0 +1,65 @@
+# Build outputs
+/build/
+/cmake-build-*/
+**/cmake-build-*/
+/Debug/
+/Release/
+**/Debug/
+**/Release/
+/out/
+/dist/
+
+# CMake and Ninja generated files
+CMakeCache.txt
+compile_commands.json
+cmake_install.cmake
+.cmake/
+CMakeFiles/
+*.ninja
+.ninja_deps
+.ninja_log
+
+# Firmware / toolchain outputs
+*.o
+*.obj
+*.d
+*.su
+*.elf
+*.axf
+*.bin
+*.hex
+*.map
+*.lst
+*.list
+
+# Keil / MDK local and generated files
+*.uvguix.*
+*.uvoptx
+*.dep
+*.bak
+*.tmp
+*.crf
+*.lnp
+*.sct.old
+*.tra
+*.iex
+JLinkLog.txt
+ULog/
+Listings/
+Objects/
+
+# IDE settings
+.idea/
+.vscode/
+.settings/
+!.vscode/
+!.vscode/settings.json
+!.vscode/c_cpp_properties.json
+
+# OS / editor noise
+Thumbs.db
+.DS_Store
+*.log
+*.swp
+*.swo
+*~

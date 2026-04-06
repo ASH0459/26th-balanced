@@ -1,5 +1,0 @@
-"H:\CLionToolchains\CLion 2024.2.3\bin\cmake\win\x64\bin\cmake.exe" -DCMAKE_BUILD_TYPE=Debug "-DCMAKE_MAKE_PROGRAM=H:/CLionToolchains/CLion 2024.2.3/bin/ninja/win/x64/ninja.exe" -DCMAKE_C_COMPILER=H:/CLionToolchains/gcc-arm-none-eabi-10.3-2021.10/bin/arm-none-eabi-gcc.exe -DCMAKE_CXX_COMPILER=H:/CLionToolchains/gcc-arm-none-eabi-10.3-2021.10/bin/arm-none-eabi-g++.exe -G Ninja -S D:\RM2026\26th_balance_infantry\26th_balanced_code -B D:\RM2026\26th_balance_infantry\26th_balanced_code\cmake-build-debug
-Build type: Debug
--- Configuring done (0.1s)
--- Generating done (0.0s)
--- Build files have been written to: D:/RM2026/26th_balance_infantry/26th_balanced_code/cmake-build-debug

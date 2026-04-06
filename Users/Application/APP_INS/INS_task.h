@@ -63,7 +63,7 @@ extern "C" {
   * @param          pvParameters: NULL
   * @retval         none
   */
-extern void INS_task(void const *pvParameters);
+extern void INS_task(void *pvParameters);
 
 /**
   * @brief          获取四元数

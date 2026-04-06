@@ -3,6 +3,6 @@
 
 #define LED_DELAY_TIME	10
 
-extern void led_RGB_flow_task(void const * argument);
+extern void led_RGB_flow_task(void * argument);
 
 #endif
