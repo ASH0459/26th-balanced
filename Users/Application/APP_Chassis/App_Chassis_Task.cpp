@@ -244,9 +244,9 @@ void Chassis_Task(void *pvParameters)
             toe_is_error(CHASSIS_JOINT3_TOE) || toe_is_error(CHASSIS_JOINT4_TOE) )
         {
             // 关节电机扭矩清零
-            for (int i = 0; i < 4; i++) {
-                chassis_move.chassis_joint[i].joint_T = 0.0f;
-            }
+            // for (int i = 0; i < 4; i++) {
+            //     chassis_move.chassis_joint[i].joint_T = 0.0f;
+            // }
             for (uint8_t i = 0; i < 4; i++)
             {
                 // 重新使能
@@ -254,12 +254,11 @@ void Chassis_Task(void *pvParameters)
                 HAL_Delay(JOINT_MOTOR_lIMIT_TIME);
             }
             // 轮电机扭矩清零
-            chassis_move.chassis_wheel[0].wheel_T = 0.0f;
-            chassis_move.chassis_wheel[1].wheel_T = 0.0f;
+            // chassis_move.chassis_wheel[0].wheel_T = 0.0f;
+            // chassis_move.chassis_wheel[1].wheel_T = 0.0f;
         }
 
-        else if (toe_is_error(CHASSIS_WHEEL1_TOE) || toe_is_error(CHASSIS_WHEEL2_TOE) ||
-                 toe_is_error(VT_TOE))
+        else if (toe_is_error(VT_TOE))
         {
             // 关节电机扭矩清零
             for (int i = 0; i < 4; i++) {
@@ -1099,7 +1098,7 @@ static void chassis_feedback_update(Chassis_Move *chassis_move_update)
                                                     + Get_FeedForward_Force(chassis_move_update->chassis_right_control.wbr_control.L);
 
     // 计算矩阵K，A，B
-    decompose_fitted_matrix_to_K(&chassis_move_update->chassis_left_control.wbr_control, &chassis_move_update->chassis_right_control.wbr_control, fitted_matrix_K, LQR_K);
+    //decompose_fitted_matrix_to_K(&chassis_move_update->chassis_left_control.wbr_control, &chassis_move_update->chassis_right_control.wbr_control, fitted_matrix_K, LQR_K);
 //    decompose_fitted_matrix_to_A(&chassis_move_update->chassis_left_control.wbr_control, &chassis_move_update->chassis_right_control.wbr_control, fitted_matrix_A, LQR_A);
 //    decompose_fitted_matrix_to_B(&chassis_move_update->chassis_left_control.wbr_control, &chassis_move_update->chassis_right_control.wbr_control, fitted_matrix_B, LQR_B);
 

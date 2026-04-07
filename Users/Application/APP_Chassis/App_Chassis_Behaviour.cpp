@@ -189,7 +189,9 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
         if (last_s <= 1 && chassis_move_mode->chassis_gimbal_data->chassis_mode == 2)
         {
             Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_INIT;
-            chassis_move_mode->is_up_mode = false; // 断电时顺便重置状态，防止重新上电猛然上台阶
+            chassis_move_mode->is_up_mode = false;
+
+            chassis_move_mode->init_leg_reached = 0;
         }
 
         // 进入一次起身模式后需要完全起身后才能自动切入行动模式
