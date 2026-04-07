@@ -1,20 +1,20 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2025 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * @file           : main.c
+ * @brief          : Main program body
+ ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2025 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
@@ -33,8 +33,8 @@
 /* USER CODE BEGIN Includes */
 #include "bsp_can.h"
 #include "BMI088driver.h"
-#include "Dev_Remote_Control.h"
 #include "bsp_dwt.h"
+#include "Dev_Referee.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -124,14 +124,12 @@ int main(void)
   MX_USB_OTG_HS_PCD_Init();
   MX_CRC_Init();
   MX_USART10_UART_Init();
-  MX_UART7_Init();
-  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
   DWT_Init(480);
   can_filter_init();
   BMI088_Init(&hspi2, 0);
-  Remote_Control_Init();
+  Referee_Init();
   /* USER CODE END 2 */
 
   /* Init scheduler */

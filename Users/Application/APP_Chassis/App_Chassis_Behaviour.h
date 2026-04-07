@@ -49,42 +49,42 @@
 #define INFANTRY_ROBOT_APP_CHASSIS_BEHAVIOUR_H
 
 #include "App_Chassis_Task.h"
-#include "Dev_Remote_Control.h"
 
-#define CHASSIS_OPEN_RC_SCALE 10 				//在chassis_open 模型下，遥控器乘以该比例发送到can上
+#define CHASSIS_OPEN_RC_SCALE 10 // 在chassis_open 模型下，遥控器乘以该比例发送到can上
 #define CHASSIS_SPIN_KEYBOARD KEY_PRESSED_OFFSET_CTRL
 
 typedef enum
 {
-    CHASSIS_BEHAVIOUR_FOLLOW_GIMBAL_YAW,   // 底盘跟随云台
-    CHASSIS_BEHAVIOUR_FOLLOW_CHASSIS_YAW,  // 底盘有底盘角度控制闭环
-    CHASSIS_BEHAVIOUR_ZERO_FORCE,          // 底盘无力模式
-    CHASSIS_BEHAVIOUR_GYROSCOPE,           // 底盘小陀螺模式
-    CHASSIS_BEHAVIOUR_INIT,                // 初始化，翻倒自救
-    CHASSIS_BEHAVIOUR_JUMP,                // 底盘跳跃模式
+    CHASSIS_BEHAVIOUR_FOLLOW_GIMBAL_YAW,  // 底盘跟随云台
+    CHASSIS_BEHAVIOUR_FOLLOW_CHASSIS_YAW, // 底盘有底盘角度控制闭环
+    CHASSIS_BEHAVIOUR_ZERO_FORCE,         // 底盘无力模式
+    CHASSIS_BEHAVIOUR_GYROSCOPE,          // 底盘小陀螺模式
+    CHASSIS_BEHAVIOUR_INIT,               // 初始化，翻倒自救
+    CHASSIS_BEHAVIOUR_JUMP,               // 底盘跳跃模式
     CHASSIS_BEHAVIOUR_UP
 } Chassis_Behaviour_e;
 
 #ifdef __cplusplus
-extern "C"{
+extern "C"
+{
 #endif
 
-/**
-  * @brief          通过逻辑判断，赋值"Chassis_Behaviour_Mode"成哪种模式
-  * @param[in]      chassis_move_mode: 底盘数据
-  * @retval         none
-  */
-extern void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode);
+    /**
+     * @brief          通过逻辑判断，赋值"Chassis_Behaviour_Mode"成哪种模式
+     * @param[in]      chassis_move_mode: 底盘数据
+     * @retval         none
+     */
+    extern void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode);
 
-/**
-  * @brief          设置控制量.根据不同底盘控制模式，三个参数会控制不同运动.在这个函数里面，会调用不同的控制函数.
-  * @param[out]     vx_set, 通常控制纵向移动.
-  * @param[out]     vy_set, 通常控制横向移动.
-  * @param[out]     wz_set, 通常控制旋转运动.
-  * @param[in]      chassis_move_rc_to_vector,  包括底盘所有信息.
-  * @retval         none
-  */
-extern void chassis_behaviour_control_set(fp32*vx_set, fp32 *yaw_set, fp32 *d_yaw_set, fp32 *leg_set, Chassis_Move *chassis_move_rc_to_vector);
+    /**
+     * @brief          设置控制量.根据不同底盘控制模式，三个参数会控制不同运动.在这个函数里面，会调用不同的控制函数.
+     * @param[out]     vx_set, 通常控制纵向移动.
+     * @param[out]     vy_set, 通常控制横向移动.
+     * @param[out]     wz_set, 通常控制旋转运动.
+     * @param[in]      chassis_move_rc_to_vector,  包括底盘所有信息.
+     * @retval         none
+     */
+    extern void chassis_behaviour_control_set(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set, fp32 *leg_set, Chassis_Move *chassis_move_rc_to_vector);
 
 #ifdef __cplusplus
 }
@@ -92,4 +92,4 @@ extern void chassis_behaviour_control_set(fp32*vx_set, fp32 *yaw_set, fp32 *d_ya
 
 extern Chassis_Behaviour_e Chassis_Behaviour_Mode; // 声明底盘行为模式的全局变量
 
-#endif //INFANTRY_ROBOT_APP_CHASSIS_BEHAVIOUR_H
+#endif // INFANTRY_ROBOT_APP_CHASSIS_BEHAVIOUR_H

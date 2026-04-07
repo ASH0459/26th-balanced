@@ -4,7 +4,6 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "Dev_Custom.h"
-#include "Dev_Remote_Control.h"
 #include "string.h"
 
 #define CUSTOM_TASK_INIT_TIME    201 // 任务初始化时间

@@ -35,43 +35,13 @@ extern "C" {
 
 extern UART_HandleTypeDef huart5;
 
-extern UART_HandleTypeDef huart7;
-
-extern UART_HandleTypeDef huart1;
-
 extern UART_HandleTypeDef huart10;
 
 /* USER CODE BEGIN Private defines */
 
-/* STP-23 激光雷达协议定义 */
-#define LIDAR_HEADER        0x54    // 帧头
-#define LIDAR_VERLEN        0x2C    // 固定版本+点数标识
-#define LIDAR_POINT_NUM     12      // 每帧测量点数
-#define LIDAR_FRAME_LEN     47      // 一帧总字节数
-
-/* 激光雷达单点数据结构 */
-typedef struct {
-    uint16_t distance;      // 距离值 (mm)
-    uint8_t  intensity;     // 置信度
-} LiDARPointTypeDef;
-
-/* 激光雷达一帧数据结构 */
-typedef struct {
-    uint8_t  header;                            // 帧头 0x54
-    uint8_t  ver_len;                           // 版本+点数
-    uint16_t temperature;                       // 温度 (ADC原始值)
-    uint16_t start_angle;                       // 起始角度 (放大100倍)
-    LiDARPointTypeDef point[LIDAR_POINT_NUM];   // 12个测量点
-    uint16_t end_angle;                         // 结束角度 (放大100倍)
-    uint16_t timestamp;                         // 时间戳
-    uint8_t  crc8;                              // CRC校验
-} LiDARFrameTypeDef;
-
 /* USER CODE END Private defines */
 
 void MX_UART5_Init(void);
-void MX_UART7_Init(void);
-void MX_USART1_UART_Init(void);
 void MX_USART10_UART_Init(void);
 
 /* USER CODE BEGIN Prototypes */

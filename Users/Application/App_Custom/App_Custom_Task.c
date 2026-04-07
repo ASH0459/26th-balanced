@@ -17,7 +17,6 @@
   ****************************(C) COPYRIGHT 2025 Robot_Z ****************************
   */
 #include <stdio.h>
-#include "Dev_Remote_Control.h"
 #include "Dev_Custom.h"
 #include "App_Custom_Task.h"
 #include "Board_CRC8_CRC16.h"
@@ -34,8 +33,6 @@ extern DMA_HandleTypeDef hdma_usart6_tx;
 /* 发送给自定义控制器的数据 */
 Data_Frame_t tx_data;
 uint8_t info_data[DATA_LENGTH]; // 数据段数组
-
-extern dr16_control_t rc_ctrl;
 
 /* 函数声明 */
 /**

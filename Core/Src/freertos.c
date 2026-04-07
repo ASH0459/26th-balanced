@@ -1,20 +1,20 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * File Name          : freertos.c
-  * Description        : Code for freertos applications
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2025 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * File Name          : freertos.c
+ * Description        : Code for freertos applications
+ ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2025 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
@@ -33,7 +33,7 @@
 #include "App_Referee_Task.h"
 #include "APL_PowerLimitator.hpp"
 #include "APL_SuperCap.hpp"
-#include "Dev_LiDAR.h"
+#include "App_UI_Task.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -78,8 +78,7 @@ void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
   */
 void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
-  Referee_Init();
-  LiDAR_Init();
+
   /* USER CODE END Init */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -105,7 +104,7 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* 创建检测任务 */
-  xTaskCreate(Detect_Task, "Detect_Task", 256, NULL, osPriorityNormal, NULL);
+  // xTaskCreate(Detect_Task, "Detect_Task", 256, NULL, osPriorityNormal, NULL);
 
   /* 创建底盘任务 */
   xTaskCreate(Chassis_Task, "Chassis_Task", 2048, NULL, osPriorityNormal, NULL);
@@ -114,7 +113,7 @@ void MX_FREERTOS_Init(void) {
   xTaskCreate(INS_task, "INS_Task", 1024, NULL, osPriorityRealtime, NULL);
 
   /* 创建校准任务 */
-  //xTaskCreate(Calibrate_Task, "Calibrate_Task", 512, NULL, osPriorityNormal, NULL);
+  // xTaskCreate(Calibrate_Task, "Calibrate_Task", 512, NULL, osPriorityNormal, NULL);
 
   /* 创建LED闪烁任务done */
   xTaskCreate(led_RGB_flow_task, "LED_RGB_Flow_Task", 256, NULL, osPriorityNormal, NULL);
@@ -125,8 +124,8 @@ void MX_FREERTOS_Init(void) {
   /* 创建裁判系统解包任务 */
   xTaskCreate(Referee_Task, "referee_task", 128, NULL, osPriorityNormal, NULL);
 
-  /* 远程数据中心 */
-  xTaskCreate(_Thread_RC_Hub_, "_Thread_RC_Hub_", 256, NULL, osPriorityHigh, NULL);
+  /* 创建UI发送任务 */
+  xTaskCreate(UI_Task, "UI_Task", 512, NULL, osPriorityNormal, NULL);
 
   /*创建功率控制任务*/
   xTaskCreate(PowerLimitator_Task, "PowerLimitator_Task", 1024, NULL, osPriorityNormal, NULL);
@@ -144,16 +143,16 @@ void MX_FREERTOS_Init(void) {
 
 /* USER CODE BEGIN Header_StartDefaultTask */
 /**
-  * @brief  Function implementing the defaultTask thread.
-  * @param  argument: Not used
-  * @retval None
-  */
+ * @brief  Function implementing the defaultTask thread.
+ * @param  argument: Not used
+ * @retval None
+ */
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN StartDefaultTask */
   /* Infinite loop */
-  for(;;)
+  for (;;)
   {
     osDelay(1);
   }

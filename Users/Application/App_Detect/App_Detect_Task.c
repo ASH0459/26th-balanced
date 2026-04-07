@@ -33,7 +33,6 @@
 
 #include "App_Detect_Task.h"
 #include "cmsis_os.h"
-#include "Dev_Remote_Control.h"
 /**
  * @brief          初始化error_list,赋值 offline_time, online_time, priority
  * @param[in]      time:系统时间
@@ -46,7 +45,6 @@ error_t error_list[ERROR_LIST_LENGHT + 1];
 #if INCLUDE_uxTaskGetStackHighWaterMark
 uint32_t detect_task_stack;
 #endif
-
 
 /**
  * @brief          检测任务
@@ -155,8 +153,8 @@ bool_t toe_is_error(uint8_t toe)
  */
 void detect_hook(uint8_t toe)
 {
-    error_list[toe].last_time = error_list[toe].new_time;  //更新上次时间
-    error_list[toe].new_time = xTaskGetTickCount();  //更新本次时间
+    error_list[toe].last_time = error_list[toe].new_time; // 更新上次时间
+    error_list[toe].new_time = xTaskGetTickCount();       // 更新本次时间
 
     if (error_list[toe].is_lost)
     {
@@ -202,7 +200,7 @@ const error_t *get_error_list_point(void)
     return error_list;
 }
 
-//extern void OLED_com_reset(void);
+// extern void OLED_com_reset(void);
 static void detect_init(uint32_t time)
 {
     // 设置离线时间，上线稳定工作时间，优先级 offlineTime onlinetime priority
@@ -210,25 +208,25 @@ static void detect_init(uint32_t time)
         {
             {100, 10, 15}, // DBUS
             {100, 10, 15}, // VT
-            {200, 2, 8}, // joint1
-            {200, 2, 8}, // joint2
-            {200, 2, 8},  // joint3
-            {200, 2, 8},  // joint4
+            {200, 2, 8},   // joint1
+            {200, 2, 8},   // joint2
+            {200, 2, 8},   // joint3
+            {200, 2, 8},   // joint4
             {200, 10, 8},  // motor5
             {200, 10, 8},  // motor6
             {10, 10, 12},  // trigger
-            {2, 3, 14},   // yaw
-            {2, 3, 13},   // pitch
-            {10, 10, 11}, // fric1
-            {10, 10, 10}, // fric2
-            {100, 100, 7}, //supcap
+            {2, 3, 14},    // yaw
+            {2, 3, 13},    // pitch
+            {10, 10, 11},  // fric1
+            {10, 10, 10},  // fric2
+            {100, 100, 7}, // supcap
             {2, 3, 7},     // board gyro
             {5, 5, 7},     // board accel
             {40, 200, 7},  // board mag
             {100, 100, 5}, // referee
             {10, 10, 7},   // rm imu
             {100, 100, 1}, // oled
-            {100, 10, 5}, // referee
+            {100, 10, 5},  // referee
         };
 
     for (uint8_t i = 0; i < ERROR_LIST_LENGHT; i++)
@@ -252,10 +250,10 @@ static void detect_init(uint32_t time)
     }
 
     error_list[OLED_TOE].data_is_error_fun = NULL;
-    //error_list[OLED_TOE].solve_lost_fun = OLED_com_reset;
+    // error_list[OLED_TOE].solve_lost_fun = OLED_com_reset;
     error_list[OLED_TOE].solve_data_error_fun = NULL;
 
-        // error_list[DBUSTOE].dataIsErrorFun = RC_data_is_error;
-        // error_list[DBUSTOE].solveLostFun = slove_RC_lost;
-        // error_list[DBUSTOE].solveDataErrorFun = slove_data_error;
+    // error_list[DBUSTOE].dataIsErrorFun = RC_data_is_error;
+    // error_list[DBUSTOE].solveLostFun = slove_RC_lost;
+    // error_list[DBUSTOE].solveDataErrorFun = slove_data_error;
 }
