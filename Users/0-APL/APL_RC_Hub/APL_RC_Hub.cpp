@@ -18,7 +18,6 @@
 #include "main.h"
 #include "Dev_Remote_Control.h"
 #include "App_Detect_Task.h"
-#include "HAL_USART.h"
 /**
  * @brief 构造数据解析对象
  */

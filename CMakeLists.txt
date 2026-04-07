@@ -42,12 +42,8 @@ enable_language(C ASM)
 add_executable(${CMAKE_PROJECT_NAME}
         Users/0-APL/APL_RC_Hub/APL_RC_Hub.cpp
         Users/0-APL/APL_RC_Hub/APL_RC_Hub.h
-        Users/0-APL/APL_USART/APL_UASRT.cpp
-        Users/0-APL/APL_USART/APL_UASRT.h
         Users/2-HDL/HDL_Video_Transmission/HDL_VT.cpp
         Users/2-HDL/HDL_Video_Transmission/HDL_VT.h
-        Users/3-HAL/HAL_USART/HAL_USART.cpp
-        Users/3-HAL/HAL_USART/HAL_USART.h
         Users/Algorithm/Alg_EKF/EKF/QuaternionEKF.c
         Users/Algorithm/Alg_EKF/EKF/QuaternionEKF.h
         Users/Algorithm/Alg_EKF/kalman/kalman_filter.c
@@ -70,8 +66,6 @@ add_executable(${CMAKE_PROJECT_NAME}
         Users/Application/APP_Chassis/App_Chassis_Power_Control.h
         Users/Application/APP_Chassis/App_Chassis_Task.cpp
         Users/Application/APP_Chassis/App_Chassis_Task.h
-        Users/Application/App_Custom/App_Custom_Task.c
-        Users/Application/App_Custom/App_Custom_Task.h
         Users/Application/App_Detect/App_Detect_Task.c
         Users/Application/App_Detect/App_Detect_Task.h
         Users/Application/APP_INS/INS_task.c
@@ -131,8 +125,6 @@ add_executable(${CMAKE_PROJECT_NAME}
         Users/2-HDL/HDL_PowerLimitator/HDL_PowerLimitator.hpp
         Users/2-HDL/HDL_SuperCap/HDL_SuperCap.cpp
         Users/2-HDL/HDL_SuperCap/HDL_SuperCap.hpp
-        Users/Bsp/Bsp_Device/Dev_LiDAR/Dev_LiDAR.c
-        Users/Bsp/Bsp_Device/Dev_LiDAR/Dev_LiDAR.h
         Users/Application/App_UI/UI_Frames/ui_g_move_0.c
         Users/Application/App_UI/UI_Frames/ui_g_move_0.h
         Users/Application/App_UI/UI_Frames/ui_g_text_0.c
@@ -167,16 +159,16 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
 )
 
 include_directories(Core/Inc Drivers/STM32H7xx_HAL_Driver/Inc Drivers/STM32H7xx_HAL_Driver/Inc/Legacy Middlewares/Third_Party/FreeRTOS/Source/include Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2 Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F Drivers/CMSIS/Device/ST/STM32H7xx/Include Drivers/CMSIS/Include Middlewares/ST/ARM/DSP/Inc)
-include_directories(Users/Application/Inc Users/Bsp/Bsp_Boards/Inc Components/Algorithm/Inc Components/Devices/Inc Users/Algorithm/Alg_EKF/EKF Users/Algorithm/Alg_Filter Users/Algorithm/Alg_PID Users/Algorithm/Alg_RLS Users/Algorithm/Alg_Support Users/Algorithm/Alg_VMC Users/0-APL/APL_RC_Hub Users/0-APL/APL_USART Users/2-HDL/HDL_Video_Transmission)
-include_directories(Users/Bsp/Bsp_Device/Dev_Remote_Control Users/Bsp/Bsp_Device/Dev_Can_Receive Users/Bsp/Bsp_Device/Dev_BMI088_Driver Users/Bsp/Bsp_Boards/Board_Remote_Control)
-include_directories(Users/3-HAL/HAL_USART Users/Application/App_Detect Users/Application/APP_Chassis Users/Algorithm/Alg_EKF/mahony)
+include_directories(Users/Application/Inc Users/Bsp/Bsp_Boards/Inc Components/Algorithm/Inc Components/Devices/Inc Users/Algorithm/Alg_EKF/EKF Users/Algorithm/Alg_Filter Users/Algorithm/Alg_PID Users/Algorithm/Alg_RLS Users/Algorithm/Alg_Support Users/Algorithm/Alg_VMC Users/0-APL/APL_RC_Hub Users/2-HDL/HDL_Video_Transmission)
+include_directories(Users/Bsp/Bsp_Device/Dev_Can_Receive Users/Bsp/Bsp_Device/Dev_BMI088_Driver Users/Bsp/Bsp_Device/Dev_Remote_Control)
+include_directories(Users/Application/App_Detect Users/Application/APP_Chassis Users/Algorithm/Alg_EKF/mahony)
 include_directories(Drivers/CMSIS/Device/ST/STM32H7xx/Include Users/Upper_Communication/UC_Referee Users/Bsp/Bsp_Device/Dev_Custom Users/Bsp/Bsp_Boards/Board_CRC)
 include_directories(Users/Bsp/Bsp_Boards/Board_Buzzer Users/Bsp/Bsp_Boards/Board_CAN Users/Bsp/Bsp_Boards/Board_IMU_Pwm Users/Bsp/Bsp_Boards/Board_Remote_Control)
-include_directories(Users/Bsp/Bsp_Boards/Bsp_Led Users/Application/APP_INS Users/Application/APP_LED Users/Application/APP_Buzzer Users/Bsp/Bsp_Boards/Board_Dwt Users/Application/App_Custom)
+include_directories(Users/Bsp/Bsp_Boards/Bsp_Led Users/Application/APP_INS Users/Application/APP_LED Users/Application/APP_Buzzer Users/Bsp/Bsp_Boards/Board_Dwt)
 include_directories(Core/Inc Drivers/STM32H7xx_HAL_Driver/Inc Drivers/STM32H7xx_HAL_Driver/Inc/Legacy Drivers/CMSIS/Device/ST/STM32H7xx/Include Drivers/CMSIS/Include DSP_LIB/Include)
 include_directories(Middlewares/ST/ARM/DSP/Inc Users/Bsp/Bsp_Support/Sp_CRC8_CRC16 Users/Bsp/Bsp_Support/Sp_FIFO Users/Bsp/Bsp_Support/Sp_MEM_MANG Users/Bsp/Bsp_Support/)
 include_directories(Users/Bsp/Bsp_Device/Dev_Referee Users/Application/App_Referee Users/Bsp/Bsp_Boards/Board_USART Users/Algorithm/Alg_wbr  Users/Algorithm/Alg_EKF/kalman)
-include_directories(Users/0-APL/APL_SuperCap Users/0-APL/APL_PowerLimitator Users/2-HDL/HDL_PowerLimitator Users/2-HDL/HDL_SuperCap Users/Bsp/Bsp_Device/Dev_LiDAR)
+include_directories(Users/0-APL/APL_SuperCap Users/0-APL/APL_PowerLimitator Users/2-HDL/HDL_PowerLimitator Users/2-HDL/HDL_SuperCap)
 include_directories(Users/Application/App_UI Users/Application/App_UI/UI_Frames)
 # Add project symbols (macros)
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE

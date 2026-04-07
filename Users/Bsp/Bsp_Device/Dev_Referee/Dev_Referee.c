@@ -37,20 +37,7 @@ void Referee_Init(void)
 {
     /* 串口不定长接收+DMA初始化 */
     HAL_UARTEx_ReceiveToIdle_DMA(&huart10, referee_rx_buf, sizeof(referee_rx_buf));
-
-//    /* 消息队列初始化 */
-//    xReferee_Queue = xQueueCreate(REFEREE_QUEUE_ITEM_NUM, REFEREE_QUEUE_ITEM_SIZE);
 }
-
-/**
-  * @brief          返回消息队列的句柄
-  * @param[in]      none
-  * @retval         none
-  */
-//QueueHandle_t xGet_Referee_Queue(void)
-//{
-//    return xReferee_Queue;
-//}
 
 
 /**
@@ -70,13 +57,6 @@ void UART10_ISR_Handler(UART_HandleTypeDef *huart,uint16_t Size)
         if (Size <= sizeof(referee_rx_buf))
         {
             HAL_UARTEx_ReceiveToIdle_DMA(&huart10, referee_rx_buf, sizeof(referee_rx_buf)); // 重新开启接收下一次串口中断数据
-//            /* 将数据写入队列 */
-//            QueueHandle_t xReferee_Queue = xGet_Referee_Queue();
-//            REFEREE_QUEUE_ITEM_TYPE referee_info_W;
-//
-//            memcpy(&referee_info_W, referee_rx_buf, REFEREE_QUEUE_ITEM_SIZE); // 将字节数组复制
-//            xQueueSendFromISR(xReferee_Queue, &referee_info_W, NULL);
-
             fifo_s_puts(&referee_fifo, (char*)referee_rx_buf, this_time_rx_len);
         }
         else

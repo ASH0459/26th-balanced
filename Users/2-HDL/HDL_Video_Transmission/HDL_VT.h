@@ -23,9 +23,13 @@
  */
 #include <string.h>
 #include "main.h"
-#include "HAL_USART.h"
 #include "main.h"
+#include "FreeRTOS.h"
 #include "queue.h"
+
+#define QUEUE_RX_ITEM_NUM 5
+
+typedef void UART_Manage_Object_t;
 
 #pragma pack(push, 1)  // 开始紧凑对齐
 /**
