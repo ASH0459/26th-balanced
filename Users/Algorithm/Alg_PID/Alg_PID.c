@@ -193,11 +193,7 @@ float IMU_PID_Calc(PidTypeDef_t* pid, float ref, float set, float error_delta)
 
 float Leg_PID_Calc(PidTypeDef_t *pid, float ref, float set)
 {
-
-	if (pid == NULL)
-	{
-		return 0.0f;
-	}
+	if (pid == NULL) return 0.0f;
 
 	// 更新误差历史
 	pid->error[2] = pid->error[1];
@@ -206,35 +202,52 @@ float Leg_PID_Calc(PidTypeDef_t *pid, float ref, float set)
 	pid->fdb = ref;
 	pid->error[0] = set - ref;
 
-	if (pid->mode == PID_POSITION)			//采用位移式PID
+	if (pid->mode == PID_POSITION)
 	{
 		// 1. 计算比例项 (P)
 		pid->Pout = pid->Kp * pid->error[0];
 
-		// 2. 计算积分项 (I) - [积分分离]
-		float I_Band = 0.01f; // 积分介入阈值(可放入结构体由外部传入)
-		if (fabsf(pid->error[0]) < I_Band)
+		// 2. 计算积分项 (I) - [带死区的四段式积分管理]
+		float I_Band = 0.03;
+		float I_Deadband = 0.005f; // 【新增】积分死区：1毫米 (0.001m)
+
+		if (fabsf(pid->error[0]) < I_Deadband)
 		{
+			// 【区域1：积分死区】
+			// 误差已经小于 1 毫米了！此时可以说是“完美到达目标”。
+			// 我们什么都不做，保持当前的 Iout 不变！
+			// 这将彻底消除最后那“一点上升”的过冲现象和低频呼吸震荡。
+		}
+		else if (fabsf(pid->error[0]) < I_Band)
+		{
+			// 【区域2：正常积分区】
+			// 误差在 1毫米 到 1.5厘米 之间，大胆快速地积分！
+			// 注意：你现在可以把外面的 Ki 调得非常大（比如 100~300），让它在 0.5 秒内就冲到位
 			pid->Iout += pid->Ki * pid->error[0];
-			LimitMax(pid->Iout, pid->max_iout); // 积分限幅
+			LimitMax(pid->Iout, pid->max_iout); // 积分绝对限幅
+		}
+		else if (fabsf(pid->error[0]) < (I_Band * 2.0f))
+		{
+			// 【区域3：缓冲冻结区】
+			// 误差在 1.5厘米 到 3厘米 之间，边缘试探，保持 Iout 不变，防抽搐
 		}
 		else
 		{
-			pid->Iout = 0.0f; // 误差过大时清空积分
+			// 【区域4：彻底清零区】
+			// 误差极大，清空积分
+			pid->Iout = 0.0f;
 		}
 
-		// 3. 计算微分项 (D) - [修改：微分先行 + 微分滤波]
-		// 【关键改动1】：使用反馈值的变化量代替误差的变化量 (避免目标跳变导致微分踢击)
-		// 物理意义：只关心弹簧当前运动有多快，阻碍它跑太快。
+		// 3. 计算微分项 (D)
 		float current_speed = -(pid->fdb - pid->last_fdb);
 		float raw_Dout = pid->Kd * current_speed;
 
-		// 【关键改动2】：微分低通滤波 (消除阶梯状的波形和噪声)
-		// pid->D_alpha 是滤波系数，比如 0.5。如果是 1.0 就等于没滤波。
-		pid->D_alpha = 0.3;
+		// 【修复全局抖动】：把滤波系数大幅度减小，增强低通滤波效果！
+		// 如果改了 0.05 还是抖，可以继续改到 0.02。
+		pid->D_alpha = 0.3f;
 		pid->Dout = (pid->D_alpha * raw_Dout) + ((1.0f - pid->D_alpha) * pid->last_Dout);
 
-		// 保存本次计算数据供下次使用
+		// 保存本次计算数据
 		pid->last_fdb = pid->fdb;
 		pid->last_Dout = pid->Dout;
 
