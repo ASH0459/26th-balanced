@@ -22,12 +22,10 @@
 #include "main.h"
 
 #include "Dev_CAN_Receive.h"
-#include "Dev_Remote_Control.h"
 
 #include "Alg_PID.h"
 #include "Alg_UserLib.h"
 
-#include "APL_RC_Hub.h"
 #include "wbr.h"
 #include "kalman_filter.h"
 //任务开始空闲一段时间
@@ -162,6 +160,23 @@
 
 //选择底盘状态 开关通道号
 #define CHASSIS_MODE_CHANNEL 0 //右侧按键开关
+
+#define KEY_PRESSED_OFFSET_W            ((uint16_t)1 << 0)
+#define KEY_PRESSED_OFFSET_S            ((uint16_t)1 << 1)
+#define KEY_PRESSED_OFFSET_A            ((uint16_t)1 << 2)
+#define KEY_PRESSED_OFFSET_D            ((uint16_t)1 << 3)
+#define KEY_PRESSED_OFFSET_SHIFT        ((uint16_t)1 << 4)
+#define KEY_PRESSED_OFFSET_CTRL         ((uint16_t)1 << 5)
+#define KEY_PRESSED_OFFSET_Q            ((uint16_t)1 << 6)
+#define KEY_PRESSED_OFFSET_E            ((uint16_t)1 << 7)
+#define KEY_PRESSED_OFFSET_R            ((uint16_t)1 << 8)
+#define KEY_PRESSED_OFFSET_F            ((uint16_t)1 << 9)
+#define KEY_PRESSED_OFFSET_G            ((uint16_t)1 << 10)
+#define KEY_PRESSED_OFFSET_Z            ((uint16_t)1 << 11)
+#define KEY_PRESSED_OFFSET_X            ((uint16_t)1 << 12)
+#define KEY_PRESSED_OFFSET_C            ((uint16_t)1 << 13)
+#define KEY_PRESSED_OFFSET_V            ((uint16_t)1 << 14)
+#define KEY_PRESSED_OFFSET_B            ((uint16_t)1 << 15)
 
 //遥控器前进摇杆（max 660）转化成车体前后速度（m/s）的比例
 #define CHASSIS_VX_RC_SEN 0.0025f
@@ -347,10 +362,6 @@ class Chassis_Move
     uint8_t up_leg_reached = 0;  // 上台阶腿角度是否到位标志 0:未到位 1:已到位
     uint8_t init_leg_reached = 0;  // 初始化收腿是否到位标志 0:未到位 1:已到位
     bool is_up_mode = false;
-
-    const dr16_control_t *chassis_RC;             //底盘使用的遥控器指针
-    const remote_control_t *chassis_RC_0X304;     //底盘使用的图传链路数据指针
-    const vt_rc_control_t *vt_rc_control;         //图传键位
 
     const fp32 *chassis_INS_gyro;				  //机体角速度指针
     const fp32 *chassis_INS_angle;                //获取陀螺仪解算出的欧拉角指针

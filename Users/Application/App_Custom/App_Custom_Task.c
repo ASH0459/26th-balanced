@@ -112,7 +112,6 @@ void Custom_Controller_Task(void *pvParameters)
 //        if(xTaskGetTickCount() - detect_time >= 500)
 //        {
 //            RC_controller.data_flag = 0;
-//            rc_ctrl.data_flag = 0;
 //            detect_time = xTaskGetTickCount();
 //        }
 

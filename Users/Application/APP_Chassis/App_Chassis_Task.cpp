@@ -23,7 +23,6 @@
 #include "Dev_CAN_Receive.h"
 #include "App_Detect_Task.h"
 #include "INS_Task.h"
-#include "APL_RC_Hub.h"
 #include "wbr.h"
 #include "bsp_dwt.h"
 #include "kalman_filter.h"
