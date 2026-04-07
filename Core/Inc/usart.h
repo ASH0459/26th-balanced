@@ -7,7 +7,7 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2025 STMicroelectronics.
+  * Copyright (c) 2026 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -29,11 +29,8 @@ extern "C" {
 #include "main.h"
 
 /* USER CODE BEGIN Includes */
-#include <string.h>
-#include <stdint.h>
-/* USER CODE END Includes */
 
-extern UART_HandleTypeDef huart5;
+/* USER CODE END Includes */
 
 extern UART_HandleTypeDef huart10;
 
@@ -41,7 +38,6 @@ extern UART_HandleTypeDef huart10;
 
 /* USER CODE END Private defines */
 
-void MX_UART5_Init(void);
 void MX_USART10_UART_Init(void);
 
 /* USER CODE BEGIN Prototypes */

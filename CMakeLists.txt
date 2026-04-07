@@ -117,14 +117,10 @@ add_executable(${CMAKE_PROJECT_NAME}
         Users/2-HDL/HDL_PowerLimitator/HDL_PowerLimitator.hpp
         Users/2-HDL/HDL_SuperCap/HDL_SuperCap.cpp
         Users/2-HDL/HDL_SuperCap/HDL_SuperCap.hpp
-        Users/Application/App_UI/UI_Frames/ui_g_move_0.c
-        Users/Application/App_UI/UI_Frames/ui_g_move_0.h
-        Users/Application/App_UI/UI_Frames/ui_g_text_0.c
-        Users/Application/App_UI/UI_Frames/ui_g_text_0.h
-        Users/Application/App_UI/UI_Frames/ui_g_text_1.c
-        Users/Application/App_UI/UI_Frames/ui_g_text_1.h
-        Users/Application/App_UI/UI_Frames/ui_g_Ungroup_0.c
-        Users/Application/App_UI/UI_Frames/ui_g_Ungroup_0.h
+        Users/Application/App_UI/UI_Frames/ui_start.c
+        Users/Application/App_UI/UI_Frames/ui_start.h
+        Users/Application/App_UI/UI_Frames/ui_normal.c
+        Users/Application/App_UI/UI_Frames/ui_normal.h
         Users/Application/App_UI/App_UI_Task.cpp
         Users/Application/App_UI/App_UI_Task.h
         Users/Application/App_UI/ui.h

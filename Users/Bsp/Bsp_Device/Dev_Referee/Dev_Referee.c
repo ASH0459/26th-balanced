@@ -1,7 +1,7 @@
 /**
   ****************************(C) COPYRIGHT 2025 Robot_Z ****************************
-  * @file       
-  * @brief      
+  * @file
+  * @brief
   * @note
   * @history
   *  Version    Date            Author          Modification
@@ -9,7 +9,7 @@
   *
   @verbatim
   ==============================================================================
-  * 
+  *
   ==============================================================================
   @endverbatim
   ****************************(C) COPYRIGHT 2025 Robot_Z ****************************
@@ -26,57 +26,89 @@ extern unpack_data_t referee_unpack_obj;
 
 /* 放在 .c 文件中，定义全局变量时 */
 __attribute__((section(".ram_d2"), aligned(4))) uint8_t referee_rx_buf[USART_RX_BUF_LENGHT];
-//QueueHandle_t xReferee_Queue;
+__attribute__((section(".ram_d2"), aligned(4))) uint8_t referee_tx_buf[512];
+// QueueHandle_t xReferee_Queue;
 
 /**
-  * @brief          裁判系统初始化
-  * @param[in]      本函数将会在FreeRTOS中的初始化环节被调用
-  * @retval         none
-  */
+ * @brief          裁判系统初始化
+ * @param[in]      本函数将会在FreeRTOS中的初始化环节被调用
+ * @retval         none
+ */
 void Referee_Init(void)
 {
-    /* 串口不定长接收+DMA初始化 */
-    HAL_UARTEx_ReceiveToIdle_DMA(&huart10, referee_rx_buf, sizeof(referee_rx_buf));
+  /* 串口不定长接收+DMA初始化 */
+  HAL_UARTEx_ReceiveToIdle_DMA(&huart10, referee_rx_buf, sizeof(referee_rx_buf));
 }
 
-
 /**
-  * @brief          串口中断服务函数
-  *                 将在HAL_UARTEx_RxEventCallback串口10的空闲中断回调函数中被调用
-  * @param[in]      huart: 对应的串口句柄
-  *                 Size : 数据长度
-  *@retval          none
-  */
-void UART10_ISR_Handler(UART_HandleTypeDef *huart,uint16_t Size)
+ * @brief          裁判系统串口10发送函数(DMA)
+ * @param[in]      data: 发送数据指针
+ * @param[in]      len : 数据长度
+ * @retval         none
+ */
+void Referee_send_data(uint8_t *data, uint16_t len)
 {
-    if (huart->Instance == USART10)
-    {
-        static uint16_t this_time_rx_len = 0;
-        this_time_rx_len = sizeof(referee_rx_buf) - __HAL_DMA_GET_COUNTER(huart10.hdmarx);
+  uint32_t tickstart;
 
-        if (Size <= sizeof(referee_rx_buf))
-        {
-            HAL_UARTEx_ReceiveToIdle_DMA(&huart10, referee_rx_buf, sizeof(referee_rx_buf)); // 重新开启接收下一次串口中断数据
-            fifo_s_puts(&referee_fifo, (char*)referee_rx_buf, this_time_rx_len);
-        }
-        else
-        {
-            HAL_UARTEx_ReceiveToIdle_DMA(&huart10, referee_rx_buf, sizeof(referee_rx_buf));
-            memset(referee_rx_buf, 0, sizeof(referee_rx_buf));
-        }
+  if ((data == NULL) || (len == 0))
+  {
+    return;
+  }
+
+  if (len > sizeof(referee_tx_buf))
+  {
+    len = sizeof(referee_tx_buf);
+  }
+
+  tickstart = HAL_GetTick();
+  while (huart10.gState != HAL_UART_STATE_READY)
+  {
+    if ((HAL_GetTick() - tickstart) > 10U)
+    {
+      return;
     }
+  }
+
+  memcpy(referee_tx_buf, data, len);
+  (void)HAL_UART_Transmit_DMA(&huart10, referee_tx_buf, len);
 }
 
+/**
+ * @brief          串口中断服务函数
+ *                 将在HAL_UARTEx_RxEventCallback串口10的空闲中断回调函数中被调用
+ * @param[in]      huart: 对应的串口句柄
+ *                 Size : 数据长度
+ *@retval          none
+ */
+void UART10_ISR_Handler(UART_HandleTypeDef *huart, uint16_t Size)
+{
+  if (huart->Instance == USART10)
+  {
+    static uint16_t this_time_rx_len = 0;
+    this_time_rx_len = sizeof(referee_rx_buf) - __HAL_DMA_GET_COUNTER(huart10.hdmarx);
+
+    if (Size <= sizeof(referee_rx_buf))
+    {
+      HAL_UARTEx_ReceiveToIdle_DMA(&huart10, referee_rx_buf, sizeof(referee_rx_buf)); // 重新开启接收下一次串口中断数据
+      fifo_s_puts(&referee_fifo, (char *)referee_rx_buf, this_time_rx_len);
+    }
+    else
+    {
+      HAL_UARTEx_ReceiveToIdle_DMA(&huart10, referee_rx_buf, sizeof(referee_rx_buf));
+      memset(referee_rx_buf, 0, sizeof(referee_rx_buf));
+    }
+  }
+}
 
 /**
-  * @brief          串口中断错误处理函数
-  *                 将在HAL_UART_ErrorCallback串口10的中断错误回调函数中被调用
-  * @param[in]      none
-  * @retval         none
-  */
+ * @brief          串口中断错误处理函数
+ *                 将在HAL_UART_ErrorCallback串口10的中断错误回调函数中被调用
+ * @param[in]      none
+ * @retval         none
+ */
 void UART10_Error_Handler(void)
 {
-    __HAL_UNLOCK(&huart10);
-    HAL_UARTEx_ReceiveToIdle_DMA(&huart10, referee_rx_buf, sizeof(referee_rx_buf));
-    memset(referee_rx_buf, 0, sizeof(referee_rx_buf));
+  __HAL_UNLOCK(&huart10);
+  HAL_UARTEx_ReceiveToIdle_DMA(&huart10, referee_rx_buf, sizeof(referee_rx_buf));
+  memset(referee_rx_buf, 0, sizeof(referee_rx_buf));
 }

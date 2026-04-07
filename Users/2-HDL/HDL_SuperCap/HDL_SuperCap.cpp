@@ -175,6 +175,19 @@ void SuperCap_RX_Callback(uint8_t rx_data[8])
 
 /**
 ************************************************************************
+* @brief:      	Get_SuperCap_Data_Point: 获取超级电容数据结构体指针
+* @param[in]:   void
+* @retval:     	SuperCap*: 超级电容数据结构体指针
+* @details:    	返回超级电容全局数据结构体地址
+************************************************************************
+**/
+SuperCap *Get_SuperCap_Data_Point(void)
+{
+    return &SuperCap_Data;
+}
+
+/**
+************************************************************************
 * @brief:      	FDCAN_cmd_SuperCap: 超电数据发送函数
 * @param[in]:   hfdcan: FDCAN句柄
 * @retval:     	void

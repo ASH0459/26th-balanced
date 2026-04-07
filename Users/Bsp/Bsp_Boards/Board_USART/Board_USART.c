@@ -38,24 +38,3 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
         UART10_Error_Handler();
     }
 }
-
-/**
- * @brief          裁判系统串口发送函数
- * @param[in]      none
- * @retval         none
- */
-
-void Referee_Tx_Dma_Enable(uint8_t *data, uint16_t len)
-{
-    if ((data == NULL) || (len == 0))
-    {
-        return;
-    }
-
-    // if (HAL_UART_GetState(&huart10) != HAL_UART_STATE_READY)
-    // {
-    //     HAL_UART_AbortTransmit(&huart10);
-    // }
-
-    HAL_UART_Transmit_DMA(&huart10, data, len);
-}

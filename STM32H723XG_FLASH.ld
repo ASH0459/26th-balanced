@@ -66,8 +66,8 @@ FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 1024K
 /* Highest address of the user mode stack */
 _estack = ORIGIN(DTCMRAM) + LENGTH(DTCMRAM);    /* end of RAM */
 /* Generate a link error if heap and stack don't fit into RAM */
-_Min_Heap_Size = 0x200;      /* required amount of heap  */
-_Min_Stack_Size = 0x400; /* required amount of stack */
+_Min_Heap_Size = 0x2000;      /* required amount of heap  */
+_Min_Stack_Size = 0x2000; /* required amount of stack */
 
 /* Define output sections */
 SECTIONS
@@ -168,14 +168,13 @@ SECTIONS
     . = ALIGN(4);
   } >DTCMRAM AT> FLASH
 
-  /* 手动添加 RAM_D2 的分配规则 */
+  /*手动添加RAM_D2部分内存定义*/
     .ram_d2 :
-    {
-      . = ALIGN(4);
-      *(.ram_d2)
-      *(.ram_d2*)
-      . = ALIGN(4);
-    } >RAM_D2
+  {
+    . = ALIGN(4);
+    *(.ram_d2)
+    *(.ram_d2*)
+  } >RAM_D2
 
  /* Initialized TLS data section */
   .tdata : ALIGN(4)

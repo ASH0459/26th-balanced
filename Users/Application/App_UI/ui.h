@@ -1,5 +1,6 @@
 //
 // Created by RM UI Designer
+// Static Edition
 //
 
 #ifndef UI_H
@@ -10,49 +11,25 @@ extern "C" {
 
 #include "ui_interface.h"
 
-#include "ui_g_move_0.h"
+#include "ui_normal.h"
 
-#define ui_init_g_move() \
-_ui_init_g_move_0()
+void ui_init_normal_DynamicGroup1();
+void ui_update_normal_DynamicGroup1();
+void ui_remove_normal_DynamicGroup1();
+void ui_init_normal_StaticGroup1();
+void ui_update_normal_StaticGroup1();
+void ui_remove_normal_StaticGroup1();
+void ui_init_normal_StaticTextGroup1();
+void ui_update_normal_StaticTextGroup1();
+void ui_remove_normal_StaticTextGroup1();
+#include "ui_start.h"
 
-#define ui_update_g_move() \
-_ui_update_g_move_0()
-
-#define ui_remove_g_move() \
-_ui_remove_g_move_0()
-    
-
-#include "ui_g_text_0.h"
-#include "ui_g_text_1.h"
-
-#define ui_init_g_text() \
-_ui_init_g_text_0(); \
-_ui_init_g_text_1()
-
-#define ui_update_g_text() \
-_ui_update_g_text_0(); \
-_ui_update_g_text_1()
-
-#define ui_remove_g_text() \
-_ui_remove_g_text_0(); \
-_ui_remove_g_text_1()
-    
-
-#include "ui_g_Ungroup_0.h"
-
-#define ui_init_g_Ungroup() \
-_ui_init_g_Ungroup_0()
-
-#define ui_update_g_Ungroup() \
-_ui_update_g_Ungroup_0()
-
-#define ui_remove_g_Ungroup() \
-_ui_remove_g_Ungroup_0()
-    
-
+void ui_init_start_start_group();
+void ui_update_start_start_group();
+void ui_remove_start_start_group();
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif //UI_H
+#endif // UI_H

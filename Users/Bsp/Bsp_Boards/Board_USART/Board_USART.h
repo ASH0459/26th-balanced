@@ -24,7 +24,7 @@ struct Struct_UART_Manage_Object
  * @retval         none
  */
 
-extern void Referee_Tx_Dma_Enable(uint8_t *data, uint16_t len);
+extern void Referee_send_data(uint8_t *data, uint16_t len);
 
 /**
  * @brief          裁判系统串口初始化发送函数
