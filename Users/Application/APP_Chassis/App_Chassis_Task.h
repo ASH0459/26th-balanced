@@ -281,17 +281,25 @@
 #define CHASSIS_DT7_Y_PID_MAX_OUT 10.0f
 #define CHASSIS_DT7_Y_PID_MAX_IOUT 2.0f
 
-/* 底盘状态 */
+/* 底盘模式 */
 typedef enum
 {
     CHASSIS_FOLLOW_GIMBAL_YAW,   // 底盘跟随云台
     CHASSIS_FOLLOW_CHASSIS_YAW,  // 底盘有底盘角度控制闭环
     CHASSIS_ZERO,                // 底盘无力模式
     CHASSIS_GYROSCOPE,           // 底盘小陀螺模式
-    CHASSIS_INIT,                // 初始化，翻倒自救
+    CHASSIS_INIT,                // 初始化（仅限于地盘状态正常）
     CHASSIS_JUMP,                 // 底盘跳跃模式
-    CHASSIS_UP                   // 上台阶模式
+    CHASSIS_UP,                   // 上台阶模式
+    CHASSIS_SAVE                  //底盘翻倒自救
 }Chassis_Mode_e;
+
+/*底盘状态*/
+typedef enum
+{
+    CHASSIS_NORMAL,					//正常状态
+    CHASSIS_DOWN,						//翻倒状态
+}Chassis_state_e;
 
 typedef enum
 {
