@@ -99,12 +99,12 @@
 #define CHASSIS_PITCH_LEVEL_THRESHOLD     0.7f
 
 // 初始化时机体未水平的自扶正腿部旋转参数
-#define CHASSIS_INIT_LEVEL_ANGLE_STEP     0.8f
-#define CHASSIS_INIT_LEVEL_ROTATE_SPEED   0.5f
-#define CHASSIS_INIT_LEVEL_TORQUE_LIMIT   10.0f
-#define CHASSIS_INIT_LEVEL_SPEED_LIMIT    1.5f
-#define CHASSIS_INIT_LEVEL_SYNC_ANGLE     0.5f
-#define CHASSIS_INIT_LEVEL_SYNC_MIN_RATIO 0.0f
+#define CHASSIS_INIT_LEVEL_ANGLE_STEP     0.8f // 机体未水平时腿部旋转角度 (rad/s)
+#define CHASSIS_INIT_LEVEL_ROTATE_SPEED   0.5f // 机体未水平时腿部旋转速度 (rad/s)
+#define CHASSIS_INIT_LEVEL_TORQUE_LIMIT   12.0f // 机体未水平时腿部旋转力矩限制 (Nm)
+#define CHASSIS_INIT_LEVEL_SPEED_LIMIT    1.5f  // 机体未水平时腿部旋转速度限制 (rad/s)
+#define CHASSIS_INIT_LEVEL_SYNC_ANGLE     0.5f // 机体未水平时两条腿的同步旋转角度差阈值 (rad)
+#define CHASSIS_INIT_LEVEL_SYNC_MIN_RATIO 0.0f // 机体未水平时两条腿的同步旋转最小速度比例
 
 // 上台阶收腿PID参数
 #define UP_LEG_ANGLE_PID_KP              5.0f
