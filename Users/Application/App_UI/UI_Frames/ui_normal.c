@@ -7,6 +7,140 @@
 
 #include "ui_interface.h"
 
+
+ui_string_frame_t ui_normal_ChangeTextGroup_0;
+ui_interface_string_t* ui_normal_ChangeTextGroup_DbusErr = &(ui_normal_ChangeTextGroup_0.option);
+
+void _ui_init_normal_ChangeTextGroup_0() {
+    ui_normal_ChangeTextGroup_0.option.figure_name[0] = 1;
+    ui_normal_ChangeTextGroup_0.option.figure_name[1] = 0;
+    ui_normal_ChangeTextGroup_0.option.figure_name[2] = 0;
+    ui_normal_ChangeTextGroup_0.option.operate_type = 1;
+
+    ui_normal_ChangeTextGroup_DbusErr->figure_type = 7;
+    ui_normal_ChangeTextGroup_DbusErr->operate_type = 1;
+    ui_normal_ChangeTextGroup_DbusErr->layer = 0;
+    ui_normal_ChangeTextGroup_DbusErr->color = 4;
+    ui_normal_ChangeTextGroup_DbusErr->start_x = 1583;
+    ui_normal_ChangeTextGroup_DbusErr->start_y = 414;
+    ui_normal_ChangeTextGroup_DbusErr->width = 5;
+    ui_normal_ChangeTextGroup_DbusErr->font_size = 50;
+    ui_normal_ChangeTextGroup_DbusErr->str_length = 4;
+    strcpy(ui_normal_ChangeTextGroup_DbusErr->string, "DUBS");
+
+
+    ui_proc_string_frame(&ui_normal_ChangeTextGroup_0);
+    SEND_MESSAGE((uint8_t *) &ui_normal_ChangeTextGroup_0, sizeof(ui_normal_ChangeTextGroup_0));
+}
+
+void _ui_update_normal_ChangeTextGroup_0() {
+    ui_normal_ChangeTextGroup_0.option.operate_type = 2;
+
+    ui_proc_string_frame(&ui_normal_ChangeTextGroup_0);
+    SEND_MESSAGE((uint8_t *) &ui_normal_ChangeTextGroup_0, sizeof(ui_normal_ChangeTextGroup_0));
+}
+
+void _ui_remove_normal_ChangeTextGroup_0() {
+    ui_normal_ChangeTextGroup_0.option.operate_type = 3;
+
+    ui_proc_string_frame(&ui_normal_ChangeTextGroup_0);
+    SEND_MESSAGE((uint8_t *) &ui_normal_ChangeTextGroup_0, sizeof(ui_normal_ChangeTextGroup_0));
+}
+ui_string_frame_t ui_normal_ChangeTextGroup_1;
+ui_interface_string_t* ui_normal_ChangeTextGroup_VTErr = &(ui_normal_ChangeTextGroup_1.option);
+
+void _ui_init_normal_ChangeTextGroup_1() {
+    ui_normal_ChangeTextGroup_1.option.figure_name[0] = 1;
+    ui_normal_ChangeTextGroup_1.option.figure_name[1] = 0;
+    ui_normal_ChangeTextGroup_1.option.figure_name[2] = 1;
+    ui_normal_ChangeTextGroup_1.option.operate_type = 1;
+
+    ui_normal_ChangeTextGroup_VTErr->figure_type = 7;
+    ui_normal_ChangeTextGroup_VTErr->operate_type = 1;
+    ui_normal_ChangeTextGroup_VTErr->layer = 0;
+    ui_normal_ChangeTextGroup_VTErr->color = 4;
+    ui_normal_ChangeTextGroup_VTErr->start_x = 1633;
+    ui_normal_ChangeTextGroup_VTErr->start_y = 410;
+    ui_normal_ChangeTextGroup_VTErr->width = 5;
+    ui_normal_ChangeTextGroup_VTErr->font_size = 50;
+    ui_normal_ChangeTextGroup_VTErr->str_length = 2;
+    strcpy(ui_normal_ChangeTextGroup_VTErr->string, "VT");
+
+
+    ui_proc_string_frame(&ui_normal_ChangeTextGroup_1);
+    SEND_MESSAGE((uint8_t *) &ui_normal_ChangeTextGroup_1, sizeof(ui_normal_ChangeTextGroup_1));
+}
+
+void _ui_update_normal_ChangeTextGroup_1() {
+    ui_normal_ChangeTextGroup_1.option.operate_type = 2;
+
+    ui_proc_string_frame(&ui_normal_ChangeTextGroup_1);
+    SEND_MESSAGE((uint8_t *) &ui_normal_ChangeTextGroup_1, sizeof(ui_normal_ChangeTextGroup_1));
+}
+
+void _ui_remove_normal_ChangeTextGroup_1() {
+    ui_normal_ChangeTextGroup_1.option.operate_type = 3;
+
+    ui_proc_string_frame(&ui_normal_ChangeTextGroup_1);
+    SEND_MESSAGE((uint8_t *) &ui_normal_ChangeTextGroup_1, sizeof(ui_normal_ChangeTextGroup_1));
+}
+ui_string_frame_t ui_normal_ChangeTextGroup_2;
+ui_interface_string_t* ui_normal_ChangeTextGroup_Jont1Err = &(ui_normal_ChangeTextGroup_2.option);
+
+void _ui_init_normal_ChangeTextGroup_2() {
+    ui_normal_ChangeTextGroup_2.option.figure_name[0] = 1;
+    ui_normal_ChangeTextGroup_2.option.figure_name[1] = 0;
+    ui_normal_ChangeTextGroup_2.option.figure_name[2] = 2;
+    ui_normal_ChangeTextGroup_2.option.operate_type = 1;
+
+    ui_normal_ChangeTextGroup_Jont1Err->figure_type = 7;
+    ui_normal_ChangeTextGroup_Jont1Err->operate_type = 1;
+    ui_normal_ChangeTextGroup_Jont1Err->layer = 0;
+    ui_normal_ChangeTextGroup_Jont1Err->color = 4;
+    ui_normal_ChangeTextGroup_Jont1Err->start_x = 1500;
+    ui_normal_ChangeTextGroup_Jont1Err->start_y = 412;
+    ui_normal_ChangeTextGroup_Jont1Err->width = 5;
+    ui_normal_ChangeTextGroup_Jont1Err->font_size = 50;
+    ui_normal_ChangeTextGroup_Jont1Err->str_length = 7;
+    strcpy(ui_normal_ChangeTextGroup_Jont1Err->string, "JOINT 1");
+
+
+    ui_proc_string_frame(&ui_normal_ChangeTextGroup_2);
+    SEND_MESSAGE((uint8_t *) &ui_normal_ChangeTextGroup_2, sizeof(ui_normal_ChangeTextGroup_2));
+}
+
+void _ui_update_normal_ChangeTextGroup_2() {
+    ui_normal_ChangeTextGroup_2.option.operate_type = 2;
+
+    ui_proc_string_frame(&ui_normal_ChangeTextGroup_2);
+    SEND_MESSAGE((uint8_t *) &ui_normal_ChangeTextGroup_2, sizeof(ui_normal_ChangeTextGroup_2));
+}
+
+void _ui_remove_normal_ChangeTextGroup_2() {
+    ui_normal_ChangeTextGroup_2.option.operate_type = 3;
+
+    ui_proc_string_frame(&ui_normal_ChangeTextGroup_2);
+    SEND_MESSAGE((uint8_t *) &ui_normal_ChangeTextGroup_2, sizeof(ui_normal_ChangeTextGroup_2));
+}
+
+void ui_init_normal_ChangeTextGroup() {
+    _ui_init_normal_ChangeTextGroup_0();
+    _ui_init_normal_ChangeTextGroup_1();
+    _ui_init_normal_ChangeTextGroup_2();
+}
+
+void ui_update_normal_ChangeTextGroup() {
+    _ui_update_normal_ChangeTextGroup_0();
+    _ui_update_normal_ChangeTextGroup_1();
+    _ui_update_normal_ChangeTextGroup_2();
+}
+
+void ui_remove_normal_ChangeTextGroup() {
+    _ui_remove_normal_ChangeTextGroup_0();
+    _ui_remove_normal_ChangeTextGroup_1();
+    _ui_remove_normal_ChangeTextGroup_2();
+}
+
 ui_5_frame_t ui_normal_DynamicGroup1_0;
 
 ui_interface_rect_t *ui_normal_DynamicGroup1_FricOrNot = (ui_interface_rect_t*)&(ui_normal_DynamicGroup1_0.data[0]);
@@ -17,8 +151,8 @@ ui_interface_rect_t *ui_normal_DynamicGroup1_ChassisStateRect = (ui_interface_re
 
 void _ui_init_normal_DynamicGroup1_0() {
     for (int i = 0; i < 5; i++) {
-        ui_normal_DynamicGroup1_0.data[i].figure_name[0] = 0;
-        ui_normal_DynamicGroup1_0.data[i].figure_name[1] = 0;
+        ui_normal_DynamicGroup1_0.data[i].figure_name[0] = 1;
+        ui_normal_DynamicGroup1_0.data[i].figure_name[1] = 1;
         ui_normal_DynamicGroup1_0.data[i].figure_name[2] = i + 0;
         ui_normal_DynamicGroup1_0.data[i].operate_type = 1;
     }
@@ -40,11 +174,11 @@ void _ui_init_normal_DynamicGroup1_0() {
     ui_normal_DynamicGroup1_FricStateRect->operate_type = 1;
     ui_normal_DynamicGroup1_FricStateRect->layer = 0;
     ui_normal_DynamicGroup1_FricStateRect->color = 8;
-    ui_normal_DynamicGroup1_FricStateRect->start_x = 374;
-    ui_normal_DynamicGroup1_FricStateRect->start_y = 786;
+    ui_normal_DynamicGroup1_FricStateRect->start_x = 1629;
+    ui_normal_DynamicGroup1_FricStateRect->start_y = 823;
     ui_normal_DynamicGroup1_FricStateRect->width = 5;
-    ui_normal_DynamicGroup1_FricStateRect->end_x = 532;
-    ui_normal_DynamicGroup1_FricStateRect->end_y = 843;
+    ui_normal_DynamicGroup1_FricStateRect->end_x = 1787;
+    ui_normal_DynamicGroup1_FricStateRect->end_y = 880;
 
     ui_normal_DynamicGroup1_SpinArc->figure_type = 4;
     ui_normal_DynamicGroup1_SpinArc->operate_type = 1;
@@ -114,6 +248,163 @@ void ui_remove_normal_DynamicGroup1() {
     _ui_remove_normal_DynamicGroup1_0();
 }
 
+
+ui_string_frame_t ui_normal_DynamicTextGroup1_0;
+ui_interface_string_t* ui_normal_DynamicTextGroup1_LowAmmoText = &(ui_normal_DynamicTextGroup1_0.option);
+
+void _ui_init_normal_DynamicTextGroup1_0() {
+    ui_normal_DynamicTextGroup1_0.option.figure_name[0] = 1;
+    ui_normal_DynamicTextGroup1_0.option.figure_name[1] = 2;
+    ui_normal_DynamicTextGroup1_0.option.figure_name[2] = 0;
+    ui_normal_DynamicTextGroup1_0.option.operate_type = 1;
+
+    ui_normal_DynamicTextGroup1_LowAmmoText->figure_type = 7;
+    ui_normal_DynamicTextGroup1_LowAmmoText->operate_type = 1;
+    ui_normal_DynamicTextGroup1_LowAmmoText->layer = 0;
+    ui_normal_DynamicTextGroup1_LowAmmoText->color = 5;
+    ui_normal_DynamicTextGroup1_LowAmmoText->start_x = 683;
+    ui_normal_DynamicTextGroup1_LowAmmoText->start_y = 844;
+    ui_normal_DynamicTextGroup1_LowAmmoText->width = 5;
+    ui_normal_DynamicTextGroup1_LowAmmoText->font_size = 50;
+    ui_normal_DynamicTextGroup1_LowAmmoText->str_length = 11;
+    strcpy(ui_normal_DynamicTextGroup1_LowAmmoText->string, "LOW AMMO!!!");
+
+
+    ui_proc_string_frame(&ui_normal_DynamicTextGroup1_0);
+    SEND_MESSAGE((uint8_t *) &ui_normal_DynamicTextGroup1_0, sizeof(ui_normal_DynamicTextGroup1_0));
+}
+
+void _ui_update_normal_DynamicTextGroup1_0() {
+    ui_normal_DynamicTextGroup1_0.option.operate_type = 2;
+
+    ui_proc_string_frame(&ui_normal_DynamicTextGroup1_0);
+    SEND_MESSAGE((uint8_t *) &ui_normal_DynamicTextGroup1_0, sizeof(ui_normal_DynamicTextGroup1_0));
+}
+
+void _ui_remove_normal_DynamicTextGroup1_0() {
+    ui_normal_DynamicTextGroup1_0.option.operate_type = 3;
+
+    ui_proc_string_frame(&ui_normal_DynamicTextGroup1_0);
+    SEND_MESSAGE((uint8_t *) &ui_normal_DynamicTextGroup1_0, sizeof(ui_normal_DynamicTextGroup1_0));
+}
+
+void ui_init_normal_DynamicTextGroup1() {
+    _ui_init_normal_DynamicTextGroup1_0();
+}
+
+void ui_update_normal_DynamicTextGroup1() {
+    _ui_update_normal_DynamicTextGroup1_0();
+}
+
+void ui_remove_normal_DynamicTextGroup1() {
+    _ui_remove_normal_DynamicTextGroup1_0();
+}
+
+ui_5_frame_t ui_normal_LegDynamicGroup_0;
+
+ui_interface_line_t *ui_normal_LegDynamicGroup_Leg1 = (ui_interface_line_t*)&(ui_normal_LegDynamicGroup_0.data[0]);
+ui_interface_line_t *ui_normal_LegDynamicGroup_Leg2 = (ui_interface_line_t*)&(ui_normal_LegDynamicGroup_0.data[1]);
+ui_interface_line_t *ui_normal_LegDynamicGroup_Leg3 = (ui_interface_line_t*)&(ui_normal_LegDynamicGroup_0.data[2]);
+ui_interface_line_t *ui_normal_LegDynamicGroup_Leg4 = (ui_interface_line_t*)&(ui_normal_LegDynamicGroup_0.data[3]);
+ui_interface_line_t *ui_normal_LegDynamicGroup_Leg5 = (ui_interface_line_t*)&(ui_normal_LegDynamicGroup_0.data[4]);
+
+void _ui_init_normal_LegDynamicGroup_0() {
+    for (int i = 0; i < 5; i++) {
+        ui_normal_LegDynamicGroup_0.data[i].figure_name[0] = 1;
+        ui_normal_LegDynamicGroup_0.data[i].figure_name[1] = 3;
+        ui_normal_LegDynamicGroup_0.data[i].figure_name[2] = i + 0;
+        ui_normal_LegDynamicGroup_0.data[i].operate_type = 1;
+    }
+    for (int i = 5; i < 5; i++) {
+        ui_normal_LegDynamicGroup_0.data[i].operate_type = 0;
+    }
+
+    ui_normal_LegDynamicGroup_Leg1->figure_type = 0;
+    ui_normal_LegDynamicGroup_Leg1->operate_type = 1;
+    ui_normal_LegDynamicGroup_Leg1->layer = 0;
+    ui_normal_LegDynamicGroup_Leg1->color = 0;
+    ui_normal_LegDynamicGroup_Leg1->start_x = 159;
+    ui_normal_LegDynamicGroup_Leg1->start_y = 783;
+    ui_normal_LegDynamicGroup_Leg1->width = 5;
+    ui_normal_LegDynamicGroup_Leg1->end_x = 236;
+    ui_normal_LegDynamicGroup_Leg1->end_y = 711;
+
+    ui_normal_LegDynamicGroup_Leg2->figure_type = 0;
+    ui_normal_LegDynamicGroup_Leg2->operate_type = 1;
+    ui_normal_LegDynamicGroup_Leg2->layer = 0;
+    ui_normal_LegDynamicGroup_Leg2->color = 0;
+    ui_normal_LegDynamicGroup_Leg2->start_x = 237;
+    ui_normal_LegDynamicGroup_Leg2->start_y = 716;
+    ui_normal_LegDynamicGroup_Leg2->width = 5;
+    ui_normal_LegDynamicGroup_Leg2->end_x = 146;
+    ui_normal_LegDynamicGroup_Leg2->end_y = 617;
+
+    ui_normal_LegDynamicGroup_Leg3->figure_type = 0;
+    ui_normal_LegDynamicGroup_Leg3->operate_type = 1;
+    ui_normal_LegDynamicGroup_Leg3->layer = 0;
+    ui_normal_LegDynamicGroup_Leg3->color = 0;
+    ui_normal_LegDynamicGroup_Leg3->start_x = 332;
+    ui_normal_LegDynamicGroup_Leg3->start_y = 776;
+    ui_normal_LegDynamicGroup_Leg3->width = 5;
+    ui_normal_LegDynamicGroup_Leg3->end_x = 409;
+    ui_normal_LegDynamicGroup_Leg3->end_y = 704;
+
+    ui_normal_LegDynamicGroup_Leg4->figure_type = 0;
+    ui_normal_LegDynamicGroup_Leg4->operate_type = 1;
+    ui_normal_LegDynamicGroup_Leg4->layer = 0;
+    ui_normal_LegDynamicGroup_Leg4->color = 0;
+    ui_normal_LegDynamicGroup_Leg4->start_x = 410;
+    ui_normal_LegDynamicGroup_Leg4->start_y = 709;
+    ui_normal_LegDynamicGroup_Leg4->width = 5;
+    ui_normal_LegDynamicGroup_Leg4->end_x = 319;
+    ui_normal_LegDynamicGroup_Leg4->end_y = 610;
+
+    ui_normal_LegDynamicGroup_Leg5->figure_type = 0;
+    ui_normal_LegDynamicGroup_Leg5->operate_type = 1;
+    ui_normal_LegDynamicGroup_Leg5->layer = 0;
+    ui_normal_LegDynamicGroup_Leg5->color = 0;
+    ui_normal_LegDynamicGroup_Leg5->start_x = 111;
+    ui_normal_LegDynamicGroup_Leg5->start_y = 792;
+    ui_normal_LegDynamicGroup_Leg5->width = 5;
+    ui_normal_LegDynamicGroup_Leg5->end_x = 411;
+    ui_normal_LegDynamicGroup_Leg5->end_y = 791;
+
+
+    ui_proc_5_frame(&ui_normal_LegDynamicGroup_0);
+    SEND_MESSAGE((uint8_t *) &ui_normal_LegDynamicGroup_0, sizeof(ui_normal_LegDynamicGroup_0));
+}
+
+void _ui_update_normal_LegDynamicGroup_0() {
+    for (int i = 0; i < 5; i++) {
+        ui_normal_LegDynamicGroup_0.data[i].operate_type = 2;
+    }
+
+    ui_proc_5_frame(&ui_normal_LegDynamicGroup_0);
+    SEND_MESSAGE((uint8_t *) &ui_normal_LegDynamicGroup_0, sizeof(ui_normal_LegDynamicGroup_0));
+}
+
+void _ui_remove_normal_LegDynamicGroup_0() {
+    for (int i = 0; i < 5; i++) {
+        ui_normal_LegDynamicGroup_0.data[i].operate_type = 3;
+    }
+
+    ui_proc_5_frame(&ui_normal_LegDynamicGroup_0);
+    SEND_MESSAGE((uint8_t *) &ui_normal_LegDynamicGroup_0, sizeof(ui_normal_LegDynamicGroup_0));
+}
+
+
+void ui_init_normal_LegDynamicGroup() {
+    _ui_init_normal_LegDynamicGroup_0();
+}
+
+void ui_update_normal_LegDynamicGroup() {
+    _ui_update_normal_LegDynamicGroup_0();
+}
+
+void ui_remove_normal_LegDynamicGroup() {
+    _ui_remove_normal_LegDynamicGroup_0();
+}
+
 ui_7_frame_t ui_normal_StaticGroup1_0;
 
 ui_interface_rect_t *ui_normal_StaticGroup1_SuperCapRect = (ui_interface_rect_t*)&(ui_normal_StaticGroup1_0.data[0]);
@@ -126,8 +417,8 @@ ui_interface_line_t *ui_normal_StaticGroup1_RemainLine = (ui_interface_line_t*)&
 
 void _ui_init_normal_StaticGroup1_0() {
     for (int i = 0; i < 7; i++) {
-        ui_normal_StaticGroup1_0.data[i].figure_name[0] = 0;
-        ui_normal_StaticGroup1_0.data[i].figure_name[1] = 1;
+        ui_normal_StaticGroup1_0.data[i].figure_name[0] = 1;
+        ui_normal_StaticGroup1_0.data[i].figure_name[1] = 4;
         ui_normal_StaticGroup1_0.data[i].figure_name[2] = i + 0;
         ui_normal_StaticGroup1_0.data[i].operate_type = 1;
     }
@@ -244,8 +535,8 @@ ui_string_frame_t ui_normal_StaticTextGroup1_0;
 ui_interface_string_t* ui_normal_StaticTextGroup1_FricOnText = &(ui_normal_StaticTextGroup1_0.option);
 
 void _ui_init_normal_StaticTextGroup1_0() {
-    ui_normal_StaticTextGroup1_0.option.figure_name[0] = 0;
-    ui_normal_StaticTextGroup1_0.option.figure_name[1] = 2;
+    ui_normal_StaticTextGroup1_0.option.figure_name[0] = 1;
+    ui_normal_StaticTextGroup1_0.option.figure_name[1] = 5;
     ui_normal_StaticTextGroup1_0.option.figure_name[2] = 0;
     ui_normal_StaticTextGroup1_0.option.operate_type = 1;
 
@@ -253,8 +544,8 @@ void _ui_init_normal_StaticTextGroup1_0() {
     ui_normal_StaticTextGroup1_FricOnText->operate_type = 1;
     ui_normal_StaticTextGroup1_FricOnText->layer = 0;
     ui_normal_StaticTextGroup1_FricOnText->color = 8;
-    ui_normal_StaticTextGroup1_FricOnText->start_x = 378;
-    ui_normal_StaticTextGroup1_FricOnText->start_y = 823;
+    ui_normal_StaticTextGroup1_FricOnText->start_x = 1633;
+    ui_normal_StaticTextGroup1_FricOnText->start_y = 860;
     ui_normal_StaticTextGroup1_FricOnText->width = 2;
     ui_normal_StaticTextGroup1_FricOnText->font_size = 20;
     ui_normal_StaticTextGroup1_FricOnText->str_length = 7;
@@ -282,8 +573,8 @@ ui_string_frame_t ui_normal_StaticTextGroup1_1;
 ui_interface_string_t* ui_normal_StaticTextGroup1_FricOffText = &(ui_normal_StaticTextGroup1_1.option);
 
 void _ui_init_normal_StaticTextGroup1_1() {
-    ui_normal_StaticTextGroup1_1.option.figure_name[0] = 0;
-    ui_normal_StaticTextGroup1_1.option.figure_name[1] = 2;
+    ui_normal_StaticTextGroup1_1.option.figure_name[0] = 1;
+    ui_normal_StaticTextGroup1_1.option.figure_name[1] = 5;
     ui_normal_StaticTextGroup1_1.option.figure_name[2] = 1;
     ui_normal_StaticTextGroup1_1.option.operate_type = 1;
 
@@ -291,8 +582,8 @@ void _ui_init_normal_StaticTextGroup1_1() {
     ui_normal_StaticTextGroup1_FricOffText->operate_type = 1;
     ui_normal_StaticTextGroup1_FricOffText->layer = 0;
     ui_normal_StaticTextGroup1_FricOffText->color = 8;
-    ui_normal_StaticTextGroup1_FricOffText->start_x = 379;
-    ui_normal_StaticTextGroup1_FricOffText->start_y = 769;
+    ui_normal_StaticTextGroup1_FricOffText->start_x = 1634;
+    ui_normal_StaticTextGroup1_FricOffText->start_y = 805;
     ui_normal_StaticTextGroup1_FricOffText->width = 2;
     ui_normal_StaticTextGroup1_FricOffText->font_size = 20;
     ui_normal_StaticTextGroup1_FricOffText->str_length = 8;
@@ -320,8 +611,8 @@ ui_string_frame_t ui_normal_StaticTextGroup1_2;
 ui_interface_string_t* ui_normal_StaticTextGroup1_FricErrorText = &(ui_normal_StaticTextGroup1_2.option);
 
 void _ui_init_normal_StaticTextGroup1_2() {
-    ui_normal_StaticTextGroup1_2.option.figure_name[0] = 0;
-    ui_normal_StaticTextGroup1_2.option.figure_name[1] = 2;
+    ui_normal_StaticTextGroup1_2.option.figure_name[0] = 1;
+    ui_normal_StaticTextGroup1_2.option.figure_name[1] = 5;
     ui_normal_StaticTextGroup1_2.option.figure_name[2] = 2;
     ui_normal_StaticTextGroup1_2.option.operate_type = 1;
 
@@ -329,8 +620,8 @@ void _ui_init_normal_StaticTextGroup1_2() {
     ui_normal_StaticTextGroup1_FricErrorText->operate_type = 1;
     ui_normal_StaticTextGroup1_FricErrorText->layer = 0;
     ui_normal_StaticTextGroup1_FricErrorText->color = 5;
-    ui_normal_StaticTextGroup1_FricErrorText->start_x = 377;
-    ui_normal_StaticTextGroup1_FricErrorText->start_y = 726;
+    ui_normal_StaticTextGroup1_FricErrorText->start_x = 1632;
+    ui_normal_StaticTextGroup1_FricErrorText->start_y = 762;
     ui_normal_StaticTextGroup1_FricErrorText->width = 2;
     ui_normal_StaticTextGroup1_FricErrorText->font_size = 20;
     ui_normal_StaticTextGroup1_FricErrorText->str_length = 11;
@@ -358,8 +649,8 @@ ui_string_frame_t ui_normal_StaticTextGroup1_3;
 ui_interface_string_t* ui_normal_StaticTextGroup1_ChassisNormalText = &(ui_normal_StaticTextGroup1_3.option);
 
 void _ui_init_normal_StaticTextGroup1_3() {
-    ui_normal_StaticTextGroup1_3.option.figure_name[0] = 0;
-    ui_normal_StaticTextGroup1_3.option.figure_name[1] = 2;
+    ui_normal_StaticTextGroup1_3.option.figure_name[0] = 1;
+    ui_normal_StaticTextGroup1_3.option.figure_name[1] = 5;
     ui_normal_StaticTextGroup1_3.option.figure_name[2] = 3;
     ui_normal_StaticTextGroup1_3.option.operate_type = 1;
 
@@ -396,8 +687,8 @@ ui_string_frame_t ui_normal_StaticTextGroup1_4;
 ui_interface_string_t* ui_normal_StaticTextGroup1_ChassisStopText = &(ui_normal_StaticTextGroup1_4.option);
 
 void _ui_init_normal_StaticTextGroup1_4() {
-    ui_normal_StaticTextGroup1_4.option.figure_name[0] = 0;
-    ui_normal_StaticTextGroup1_4.option.figure_name[1] = 2;
+    ui_normal_StaticTextGroup1_4.option.figure_name[0] = 1;
+    ui_normal_StaticTextGroup1_4.option.figure_name[1] = 5;
     ui_normal_StaticTextGroup1_4.option.figure_name[2] = 4;
     ui_normal_StaticTextGroup1_4.option.operate_type = 1;
 

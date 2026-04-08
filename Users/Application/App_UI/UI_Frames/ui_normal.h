@@ -8,6 +8,18 @@
 
 #include "ui_interface.h"
 
+extern ui_interface_string_t *ui_normal_ChangeTextGroup_DbusErr;
+extern ui_interface_string_t *ui_normal_ChangeTextGroup_VTErr;
+extern ui_interface_string_t *ui_normal_ChangeTextGroup_Jont1Err;
+
+void ui_init_normal_ChangeTextGroup();
+void ui_update_normal_ChangeTextGroup();
+void ui_remove_normal_ChangeTextGroup();
+
+void _ui_init_normal_ChangeTextGroup_0();
+void _ui_init_normal_ChangeTextGroup_1();
+void _ui_init_normal_ChangeTextGroup_2();
+
 extern ui_interface_rect_t *ui_normal_DynamicGroup1_FricOrNot;
 extern ui_interface_rect_t *ui_normal_DynamicGroup1_FricStateRect;
 extern ui_interface_arc_t *ui_normal_DynamicGroup1_SpinArc;
@@ -17,6 +29,22 @@ extern ui_interface_rect_t *ui_normal_DynamicGroup1_ChassisStateRect;
 void ui_init_normal_DynamicGroup1();
 void ui_update_normal_DynamicGroup1();
 void ui_remove_normal_DynamicGroup1();
+
+extern ui_interface_string_t *ui_normal_DynamicTextGroup1_LowAmmoText;
+
+void ui_init_normal_DynamicTextGroup1();
+void ui_update_normal_DynamicTextGroup1();
+void ui_remove_normal_DynamicTextGroup1();
+
+extern ui_interface_line_t *ui_normal_LegDynamicGroup_Leg1;
+extern ui_interface_line_t *ui_normal_LegDynamicGroup_Leg2;
+extern ui_interface_line_t *ui_normal_LegDynamicGroup_Leg3;
+extern ui_interface_line_t *ui_normal_LegDynamicGroup_Leg4;
+extern ui_interface_line_t *ui_normal_LegDynamicGroup_Leg5;
+
+void ui_init_normal_LegDynamicGroup();
+void ui_update_normal_LegDynamicGroup();
+void ui_remove_normal_LegDynamicGroup();
 
 extern ui_interface_rect_t *ui_normal_StaticGroup1_SuperCapRect;
 extern ui_interface_line_t *ui_normal_StaticGroup1_SuperCapMidLine;

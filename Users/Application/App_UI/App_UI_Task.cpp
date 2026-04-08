@@ -1,5 +1,6 @@
 #include "App_UI_Task.h"
 #include "ui.h"
+#include "ui_normal.h"
 #include "main.h"
 #include "cmsis_os.h"
 #include "App_Chassis_Task.h"
@@ -37,11 +38,14 @@ void UI_Task(void *argument)
 /* UI初始化函数，设置UI初始状态 */
 static void UI_Init(void)
 {
-  ui_init_normal_DynamicGroup1();
-  osDelay(20);
-  ui_init_normal_StaticGroup1();
-  osDelay(20);
-  ui_init_normal_StaticTextGroup1();
+  // ui_init_normal_DynamicGroup1();
+  // osDelay(20);
+  // ui_init_normal_StaticGroup1();
+  // osDelay(20);
+  // ui_init_normal_StaticTextGroup1();
+  // osDelay(20);
+  // ui_init_normal_ChangeTextGroup();
+  _ui_init_normal_ChangeTextGroup_0();
   osDelay(20);
 }
 
@@ -61,12 +65,6 @@ static void cap_energy_Update(void)
 {
   SuperCap *super_cap = Get_SuperCap_Data_Point();
   float cap_energy = super_cap->Data.capEnergy;
-  cap_energy = cap_test;
-  cap_test -= 1.0f;
-  if (cap_test < 0.0f)
-  {
-    cap_test = 100.0f;
-  }
 
   if (cap_energy < CAP_ENERGY_LOW_THRESHOLD)
   {
