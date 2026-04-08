@@ -896,7 +896,7 @@ static void chassis_set_contorl(Chassis_Move *chassis_move_control)
 
           	    // 特征 1：稳态推墙倾角。顶住台阶后，LQR为了发力必定会让车体产生持续的倾斜
           	    // (阈值设为 0.10 rad 约 5.7 度，平地匀速起步一般不会倾斜这么大)
-          	    bool_t is_pitch_tilt = (fabs(chassis_move_control->chassis_pitch) > 0.15f);//0.1
+          	    bool_t is_pitch_tilt = (fabs(chassis_move_control->chassis_pitch) > CHASSIS_PITCH_LEVEL_THRESHOLD);//0.1
 
           	    // 特征 2：机体速度突变 (IMU 捕捉到急刹车的冲击加速度)
           	    // 注意极性：假设向前加速为正，撞击减速则为负。阈值设为 -1.5m/s^2 左右
@@ -1023,6 +1023,17 @@ static void chassis_feedback_update(Chassis_Move *chassis_move_update)
     // 更新底盘姿态角（yaw轴根据电机角度计算，pitch和roll根据陀螺仪直接读取）
     chassis_move_update->chassis_pitch = *(chassis_move_update->chassis_INS_angle + INS_PITCH_ADDRESS_OFFSET);
     chassis_move_update->chassis_roll = -*(chassis_move_update->chassis_INS_angle + INS_ROLL_ADDRESS_OFFSET);
+
+    // 根据机体pitch角度判断底盘是否处于正常水平状态
+    chassis_move_update->last_chassis_state = chassis_move_update->chassis_state;
+    if (fabs(chassis_move_update->chassis_pitch) <= CHASSIS_PITCH_LEVEL_THRESHOLD)
+    {
+        chassis_move_update->chassis_state = CHASSIS_NORMAL;
+    }
+    else
+    {
+        chassis_move_update->chassis_state = CHASSIS_DOWN;
+    }
 
     // 调用WBR计算右腿和左腿的角度以及角速度，用于LQR控制
      wbr_calc(&chassis_move_update->chassis_left_control.wbr_control);
@@ -1451,8 +1462,7 @@ static void chassis_control_loop(Chassis_Move *chassis_move_control_loop) {
                                                                 * chassis_move_control_loop->chassis_d_yaw * chassis_move_control_loop->v_filter / (2 * DRIVE_WHEEL_DIS);
 
 
-    if ((chassis_move_control_loop->chassis_mode == CHASSIS_INIT && chassis_move_control_loop->init_leg_reach_state == INIT_LEG_REACH) ||
-        chassis_move_control_loop->init_leg_reach_state == INIT_LEG_UNREACH)
+    if ((chassis_move_control_loop->chassis_mode == CHASSIS_INIT && chassis_move_control_loop->init_leg_reach_state == INIT_LEG_REACH) || chassis_move_control_loop->init_leg_reach_state == INIT_LEG_UNREACH)//起身阶段支持力的处理
     {
         // 收腿阶段：停止轮子和LQR转矩输出
         chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t = 0.0f;
@@ -1497,7 +1507,7 @@ static void chassis_control_loop(Chassis_Move *chassis_move_control_loop) {
         }
 
     }
-    else
+    else//正常情况下支持力处理
     {
 
         // 五连杆左右腿支持力计算
@@ -1536,9 +1546,7 @@ static void chassis_control_loop(Chassis_Move *chassis_move_control_loop) {
     static fp32 soft_lqr_ratio = 0.0f; // 静态变量，默认 1.0（全功率）
 
     // 1. 检测模式切换边缘：从 INIT 倒地 或 UP 台阶 切换到 正常平衡模式
-    if ((chassis_move_control_loop->last_chassis_mode == CHASSIS_INIT ||
-         chassis_move_control_loop->last_chassis_mode == CHASSIS_UP) &&
-        (chassis_move_control_loop->chassis_mode == CHASSIS_FOLLOW_GIMBAL_YAW))
+    if ((chassis_move_control_loop->last_chassis_mode == CHASSIS_INIT ||chassis_move_control_loop->last_chassis_mode == CHASSIS_UP) &&(chassis_move_control_loop->chassis_mode == CHASSIS_FOLLOW_GIMBAL_YAW))
     {
         // 刚切入正常模式瞬间，将力矩限制在 10% (或者 20%，根据你的机器人重量测试)
         // 注意：不要给 0，给 0 的话机器人会瞬间失去支撑力往下掉
@@ -1661,7 +1669,7 @@ static void chassis_init_standup(Chassis_Move *chassis_init_standup)
     }
 
     /* 初始化收腿阶段：判断左右腿角度是否到达目标角度 */
-    if (chassis_init_standup->init_leg_reach_state == INIT_LEG_UNREACH)
+    if (chassis_init_standup->init_leg_reach_state == INIT_LEG_UNREACH && chassis_init_standup->chassis_state == CHASSIS_NORMAL)
     {
         // 先停止轮子以及LQR输出
         chassis_init_standup->chassis_left_control.wbr_control.Tbl_t = 0.0f;

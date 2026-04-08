@@ -94,6 +94,10 @@
 #define CHASSIS_UP_LEG_ANGLE_THRESHOLD    (0.1f)
 // 上台阶收腿完成腿长阈值
 #define CHASSIS_UP_LEG_LENGTH_THRESHOLD   0.18f
+
+// 机体pitch角度正常水平阈值 (rad)
+#define CHASSIS_PITCH_LEVEL_THRESHOLD     0.7f
+
 // 上台阶收腿PID参数
 #define UP_LEG_ANGLE_PID_KP              5.0f
 #define UP_LEG_ANGLE_PID_KI              0.0f
