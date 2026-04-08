@@ -201,6 +201,14 @@ static void chassis_control_loop(Chassis_Move *chassis_move_control_loop);
   */
 static void chassis_init_standup(Chassis_Move *chassis_init_standup);
 
+static void chassis_zero_output(Chassis_Move *chassis_move_control_loop);
+static void chassis_up_leg_angle_control(Chassis_Move *chassis_move_control_loop);
+static void chassis_calc_support_force(Chassis_Move *chassis_move_control_loop);
+static fp32 chassis_update_soft_lqr_ratio(Chassis_Move *chassis_move_control_loop);
+static void chassis_apply_joint_output(Chassis_Move *chassis_move_control_loop, fp32 soft_lqr_ratio);
+static void chassis_limit_output(Chassis_Move *chassis_move_control_loop);
+static void chassis_save_last_feedback(Chassis_Move *chassis_move_control_loop);
+
 /**
   * @brief          LQR力矩拆解和功率限制控制
   * @param[out]     chassis_move_control_loop:"chassis_move"变量指针.
@@ -1331,12 +1339,11 @@ static void chassis_lqr_power_control(Chassis_Move *chassis_move_control_loop)
   * @retval         none
   */
 static void chassis_control_loop(Chassis_Move *chassis_move_control_loop) {
-    /*本部分代码包括以下部分：
-     * 1.底盘运动学逆解算得到底盘电机速度设定值
-     * 2.对电机速度设定值进行线性缩放并计算速度环PID
-     * 3.功率控制（内含缓冲能量环PID计算）
-     * 4.输出give_current给电机
-     * 5.待续
+    /* 本部分代码包括以下阶段：
+     * 1. 基础LQR与功率限制
+     * 2. INIT/UP等特殊阶段控制
+     * 3. 支持力和关节输出计算
+     * 4. 输出限幅和历史反馈保存
      * */
 
     if (chassis_move_control_loop == NULL)
@@ -1347,97 +1354,111 @@ static void chassis_control_loop(Chassis_Move *chassis_move_control_loop) {
     // 初始化模式直接跳出函数
     if (chassis_move_control_loop->chassis_mode == CHASSIS_ZERO)
     {
-        chassis_move_control_loop->chassis_joint[0].joint_T = 0.0f;
-        chassis_move_control_loop->chassis_joint[1].joint_T = 0.0f;
-        chassis_move_control_loop->chassis_joint[2].joint_T = 0.0f;
-        chassis_move_control_loop->chassis_joint[3].joint_T = 0.0f;
-        chassis_move_control_loop->chassis_wheel[0].wheel_T = 0.0f;
-        chassis_move_control_loop->chassis_wheel[1].wheel_T = 0.0f;
+        chassis_zero_output(chassis_move_control_loop);
         return;
     }
 
-    /*此函数已进行：功率控制+所有力矩计算*/
-    /*后方的所有函数和处理均是作为支持力计算和其他附加功能的实现*/
+    /* 此函数已进行：功率控制+所有力矩计算 */
+    /* 后方的所有函数和处理均是作为支持力计算和其他附加功能的实现 */
     chassis_lqr_power_control(chassis_move_control_loop);
 
+    chassis_up_leg_angle_control(chassis_move_control_loop);
+    chassis_init_standup(chassis_move_control_loop);
+    chassis_calc_support_force(chassis_move_control_loop);
 
-    // 碰到台阶，用PID控制腿角度到目标位置（逆时针方向）
-    if (chassis_move_control_loop->chassis_mode == CHASSIS_UP &&
-       (chassis_move_control_loop->up_state == 2 || chassis_move_control_loop->up_state == 3))
+    fp32 soft_lqr_ratio = chassis_update_soft_lqr_ratio(chassis_move_control_loop);
+    chassis_apply_joint_output(chassis_move_control_loop, soft_lqr_ratio);
+    chassis_limit_output(chassis_move_control_loop);
+    chassis_save_last_feedback(chassis_move_control_loop);
+}
+
+static void chassis_zero_output(Chassis_Move *chassis_move_control_loop)
+{
+    chassis_move_control_loop->chassis_joint[0].joint_T = 0.0f;
+    chassis_move_control_loop->chassis_joint[1].joint_T = 0.0f;
+    chassis_move_control_loop->chassis_joint[2].joint_T = 0.0f;
+    chassis_move_control_loop->chassis_joint[3].joint_T = 0.0f;
+    chassis_move_control_loop->chassis_wheel[0].wheel_T = 0.0f;
+    chassis_move_control_loop->chassis_wheel[1].wheel_T = 0.0f;
+}
+
+static void chassis_up_leg_angle_control(Chassis_Move *chassis_move_control_loop)
+{
+    if (chassis_move_control_loop->chassis_mode != CHASSIS_UP ||
+       (chassis_move_control_loop->up_state != 2 && chassis_move_control_loop->up_state != 3))
     {
-        chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t = 0.0f;
-        chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t = 0.0f;
-        chassis_move_control_loop->chassis_wheel[0].wheel_T = 0.0f;
-        chassis_move_control_loop->chassis_wheel[1].wheel_T = 0.0f;
-
-        if(chassis_move_control_loop->up_state == 2)
-        {
-            /* 上台阶腿角度控制阶段：PID控制腿角度到目标 */
-            if (chassis_move_control_loop->up_leg_reached == 0)
-            {
-                // 获取原始角度 (范围 -π ~ +π)
-                fp32 left_theta_raw = chassis_move_control_loop->chassis_left_control.theta_l;
-                fp32 right_theta_raw = chassis_move_control_loop->chassis_right_control.theta_l;
-
-                // 目标角度 (0~2π坐标系)
-                fp32 target_base = CHASSIS_UP_LEG_ANGLE_TARGET_360;
-
-                // 设定旋转角速度 (rad/s)
-                fp32 rotate_speed = ROTATE_SPEED;
-
-                // 如果目标比当前位置大，就不断减去 2PI，直到目标值严格小于当前位置，强制它向后退
-                fp32 left_target = target_base;
-                while (left_target > chassis_move_control_loop->chassis_left_control.up_angle_ramp.out) {
-                    left_target -= 2.0f * PI;
-                }
-
-                fp32 right_target = target_base;
-                while (right_target > chassis_move_control_loop->chassis_right_control.up_angle_ramp.out) {
-                    right_target -= 2.0f * PI;
-                }
-
-                chassis_move_control_loop->chassis_left_control.up_angle_ramp.min_value = left_target;
-                ramp_calc(&chassis_move_control_loop->chassis_left_control.up_angle_ramp, -rotate_speed); // 给负数，只允许递减
-
-                chassis_move_control_loop->chassis_right_control.up_angle_ramp.min_value = right_target;
-                ramp_calc(&chassis_move_control_loop->chassis_right_control.up_angle_ramp, -rotate_speed);
-
-                fp32 left_error = chassis_move_control_loop->chassis_left_control.up_angle_ramp.out - left_theta_raw;
-                fp32 right_error = chassis_move_control_loop->chassis_right_control.up_angle_ramp.out - right_theta_raw;
-
-                bool_t left_perfect = (fabs(left_target - left_theta_raw) < CHASSIS_UP_LEG_ANGLE_THRESHOLD);
-                bool_t right_perfect = (fabs(right_target - right_theta_raw) < CHASSIS_UP_LEG_ANGLE_THRESHOLD);
-
-                // 计算旋转扭矩
-                fp32 left_torque = PID_Calc(&chassis_move_control_loop->chassis_left_control.up_leg_angle_pid, 0.0f, left_error);
-                fp32 right_torque = PID_Calc(&chassis_move_control_loop->chassis_right_control.up_leg_angle_pid, 0.0f, right_error);
-
-
-                // 确保扭矩方向只能是顺时针 (负方向)
-                if (left_torque > 0.0f) left_torque = 0.0f;
-                if (right_torque > 0.0f) right_torque = 0.0f;
-
-                // 0号1号关节电机控制左腿，扭矩方向为顺时针（取负）
-                chassis_move_control_loop->chassis_joint[0].joint_T = -left_torque;
-                chassis_move_control_loop->chassis_joint[1].joint_T = -left_torque;
-                // 2号3号关节电机控制右腿，扭矩方向为顺时针（取负）
-                chassis_move_control_loop->chassis_joint[2].joint_T = right_torque;
-                chassis_move_control_loop->chassis_joint[3].joint_T = right_torque;
-
-                // 两边腿都到位后，标记到位
-                if (left_perfect && right_perfect)
-                {
-                    chassis_move_control_loop->up_leg_reached = 1;
-                    PID_clear(&chassis_move_control_loop->chassis_left_control.up_leg_angle_pid);
-                    PID_clear(&chassis_move_control_loop->chassis_right_control.up_leg_angle_pid);
-                }
-            }
-        }
+        return;
     }
 
+    chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t = 0.0f;
+    chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t = 0.0f;
+    chassis_move_control_loop->chassis_wheel[0].wheel_T = 0.0f;
+    chassis_move_control_loop->chassis_wheel[1].wheel_T = 0.0f;
 
-    chassis_init_standup(chassis_move_control_loop);
+    if (chassis_move_control_loop->up_state != 2 || chassis_move_control_loop->up_leg_reached != 0)
+    {
+        return;
+    }
 
+    // 获取原始角度 (范围 -π ~ +π)
+    fp32 left_theta_raw = chassis_move_control_loop->chassis_left_control.theta_l;
+    fp32 right_theta_raw = chassis_move_control_loop->chassis_right_control.theta_l;
+
+    // 目标角度 (0~2π坐标系)
+    fp32 target_base = CHASSIS_UP_LEG_ANGLE_TARGET_360;
+
+    // 设定旋转角速度 (rad/s)
+    fp32 rotate_speed = ROTATE_SPEED;
+
+    // 如果目标比当前位置大，就不断减去 2PI，直到目标值严格小于当前位置，强制它向后退
+    fp32 left_target = target_base;
+    while (left_target > chassis_move_control_loop->chassis_left_control.up_angle_ramp.out) {
+        left_target -= 2.0f * PI;
+    }
+
+    fp32 right_target = target_base;
+    while (right_target > chassis_move_control_loop->chassis_right_control.up_angle_ramp.out) {
+        right_target -= 2.0f * PI;
+    }
+
+    chassis_move_control_loop->chassis_left_control.up_angle_ramp.min_value = left_target;
+    ramp_calc(&chassis_move_control_loop->chassis_left_control.up_angle_ramp, -rotate_speed); // 给负数，只允许递减
+
+    chassis_move_control_loop->chassis_right_control.up_angle_ramp.min_value = right_target;
+    ramp_calc(&chassis_move_control_loop->chassis_right_control.up_angle_ramp, -rotate_speed);
+
+    fp32 left_error = chassis_move_control_loop->chassis_left_control.up_angle_ramp.out - left_theta_raw;
+    fp32 right_error = chassis_move_control_loop->chassis_right_control.up_angle_ramp.out - right_theta_raw;
+
+    bool_t left_perfect = (fabs(left_target - left_theta_raw) < CHASSIS_UP_LEG_ANGLE_THRESHOLD);
+    bool_t right_perfect = (fabs(right_target - right_theta_raw) < CHASSIS_UP_LEG_ANGLE_THRESHOLD);
+
+    // 计算旋转扭矩
+    fp32 left_torque = PID_Calc(&chassis_move_control_loop->chassis_left_control.up_leg_angle_pid, 0.0f, left_error);
+    fp32 right_torque = PID_Calc(&chassis_move_control_loop->chassis_right_control.up_leg_angle_pid, 0.0f, right_error);
+
+    // 确保扭矩方向只能是顺时针 (负方向)
+    if (left_torque > 0.0f) left_torque = 0.0f;
+    if (right_torque > 0.0f) right_torque = 0.0f;
+
+    // 0号1号关节电机控制左腿，扭矩方向为顺时针（取负）
+    chassis_move_control_loop->chassis_joint[0].joint_T = -left_torque;
+    chassis_move_control_loop->chassis_joint[1].joint_T = -left_torque;
+    // 2号3号关节电机控制右腿，扭矩方向为顺时针（取负）
+    chassis_move_control_loop->chassis_joint[2].joint_T = right_torque;
+    chassis_move_control_loop->chassis_joint[3].joint_T = right_torque;
+
+    // 两边腿都到位后，标记到位
+    if (left_perfect && right_perfect)
+    {
+        chassis_move_control_loop->up_leg_reached = 1;
+        PID_clear(&chassis_move_control_loop->chassis_left_control.up_leg_angle_pid);
+        PID_clear(&chassis_move_control_loop->chassis_right_control.up_leg_angle_pid);
+    }
+}
+
+static void chassis_calc_support_force(Chassis_Move *chassis_move_control_loop)
+{
     // roll轴PID补偿
     chassis_move_control_loop->chassis_left_control.fd_roll = PID_Calc(&chassis_move_control_loop->chassis_left_control.roll_control, chassis_move_control_loop->chassis_roll, chassis_move_control_loop->chassis_roll_set);
     chassis_move_control_loop->chassis_right_control.fd_roll = PID_Calc(&chassis_move_control_loop->chassis_right_control.roll_control, chassis_move_control_loop->chassis_roll, chassis_move_control_loop->chassis_roll_set);
@@ -1454,15 +1475,15 @@ static void chassis_control_loop(Chassis_Move *chassis_move_control_loop) {
     chassis_move_control_loop->chassis_left_control.Fbl_spring = Get_FeedForward_Force(chassis_move_control_loop->chassis_left_control.wbr_control.L);
     chassis_move_control_loop->chassis_right_control.Fbl_spring = Get_FeedForward_Force(chassis_move_control_loop->chassis_right_control.wbr_control.L);
 
-
     // 侧向惯性力矩补偿前馈
     chassis_move_control_loop->chassis_left_control.Fbl_inertial = (MASS_OF_BODY / 2 + chassis_move_control_loop->chassis_left_control.eta * MASS_OF_LEG) * chassis_move_control_loop->chassis_left_control.wbr_control.L
                                                                 * chassis_move_control_loop->chassis_d_yaw * chassis_move_control_loop->v_filter / (2 * DRIVE_WHEEL_DIS);
     chassis_move_control_loop->chassis_right_control.Fbl_inertial = (MASS_OF_BODY / 2 + chassis_move_control_loop->chassis_right_control.eta * MASS_OF_LEG) * chassis_move_control_loop->chassis_right_control.wbr_control.L
                                                                 * chassis_move_control_loop->chassis_d_yaw * chassis_move_control_loop->v_filter / (2 * DRIVE_WHEEL_DIS);
 
-
-    if ((chassis_move_control_loop->chassis_mode == CHASSIS_INIT && chassis_move_control_loop->init_leg_reach_state == INIT_LEG_REACH) || chassis_move_control_loop->init_leg_reach_state == INIT_LEG_UNREACH)//起身阶段支持力的处理
+    if (chassis_move_control_loop->chassis_mode == CHASSIS_INIT &&
+        (chassis_move_control_loop->init_leg_reach_state == INIT_LEG_REACH ||
+         chassis_move_control_loop->init_leg_reach_state == INIT_LEG_UNREACH)) // 起身阶段支持力的处理
     {
         // 收腿阶段：停止轮子和LQR转矩输出
         chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t = 0.0f;
@@ -1477,8 +1498,6 @@ static void chassis_control_loop(Chassis_Move *chassis_move_control_loop) {
         //右腿腿长PID
         chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t = - chassis_move_control_loop->chassis_right_control.fd_leg
                                                                              +chassis_move_control_loop->chassis_right_control.Fbl_spring;
-
-
     }
     else if (chassis_move_control_loop->chassis_mode == CHASSIS_JUMP) //对于跳跃伸腿过程以及收腿过程力的处理
     {
@@ -1488,7 +1507,6 @@ static void chassis_control_loop(Chassis_Move *chassis_move_control_loop) {
             chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t = - chassis_move_control_loop->chassis_left_control.fd_leg
                                                                                 - chassis_move_control_loop->chassis_left_control.Fbl_gravity
                                                                                 - 300;
-
 
             // 重力补偿 + 右腿腿长PID + 跳跃补偿
             chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t = - chassis_move_control_loop->chassis_right_control.fd_leg
@@ -1505,11 +1523,9 @@ static void chassis_control_loop(Chassis_Move *chassis_move_control_loop) {
             chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t = - chassis_move_control_loop->chassis_right_control.fd_leg
                                                                                  + chassis_move_control_loop->chassis_right_control.Fbl_spring;
         }
-
     }
-    else//正常情况下支持力处理
+    else // 正常情况下支持力处理
     {
-
         // 五连杆左右腿支持力计算
         if (chassis_move_control_loop->chassis_left_control.chassis_off_ground_detection == CHASSIS_TOUCH_GROUND || chassis_move_control_loop->chassis_right_control.chassis_off_ground_detection == CHASSIS_TOUCH_GROUND)
         {
@@ -1525,7 +1541,7 @@ static void chassis_control_loop(Chassis_Move *chassis_move_control_loop) {
                                                                                  - chassis_move_control_loop->chassis_right_control.fd_leg
                                                                                  + chassis_move_control_loop->chassis_right_control.Fbl_spring
                                                                                  - chassis_move_control_loop->chassis_right_control.Fbl_gravity
-                                                                                - chassis_move_control_loop->chassis_right_control.Fbl_inertial;
+                                                                                 - chassis_move_control_loop->chassis_right_control.Fbl_inertial;
         }
         else
         {
@@ -1542,11 +1558,16 @@ static void chassis_control_loop(Chassis_Move *chassis_move_control_loop) {
                                                                                  - chassis_move_control_loop->chassis_right_control.Fbl_inertial;
         }
     }
+}
 
+static fp32 chassis_update_soft_lqr_ratio(Chassis_Move *chassis_move_control_loop)
+{
     static fp32 soft_lqr_ratio = 0.0f; // 静态变量，默认 1.0（全功率）
 
     // 1. 检测模式切换边缘：从 INIT 倒地 或 UP 台阶 切换到 正常平衡模式
-    if ((chassis_move_control_loop->last_chassis_mode == CHASSIS_INIT ||chassis_move_control_loop->last_chassis_mode == CHASSIS_UP) &&(chassis_move_control_loop->chassis_mode == CHASSIS_FOLLOW_GIMBAL_YAW))
+    if ((chassis_move_control_loop->last_chassis_mode == CHASSIS_INIT ||
+         chassis_move_control_loop->last_chassis_mode == CHASSIS_UP) &&
+        (chassis_move_control_loop->chassis_mode == CHASSIS_FOLLOW_GIMBAL_YAW))
     {
         // 刚切入正常模式瞬间，将力矩限制在 10% (或者 20%，根据你的机器人重量测试)
         // 注意：不要给 0，给 0 的话机器人会瞬间失去支撑力往下掉
@@ -1564,10 +1585,15 @@ static void chassis_control_loop(Chassis_Move *chassis_move_control_loop) {
             soft_lqr_ratio = 1.0f;
         }
     }
+
+    return soft_lqr_ratio;
+}
+
+static void chassis_apply_joint_output(Chassis_Move *chassis_move_control_loop, fp32 soft_lqr_ratio)
+{
     // 初始化收腿阶段后，进入起身阶段，起身阶段使用收缩LQR输出
     if (chassis_move_control_loop->chassis_mode == CHASSIS_INIT && chassis_move_control_loop->init_leg_reach_state == INIT_LEG_STANDUP)
     {
-
         // 2. 软启动轮出扭矩 (防止一接管轮子就狂转)
         chassis_move_control_loop->chassis_wheel[0].wheel_T *= soft_lqr_ratio;
         chassis_move_control_loop->chassis_wheel[1].wheel_T *= soft_lqr_ratio;
@@ -1622,7 +1648,10 @@ static void chassis_control_loop(Chassis_Move *chassis_move_control_loop) {
         chassis_move_control_loop->chassis_joint[3].joint_T = -chassis_move_control_loop->chassis_right_control.wbr_control.J[1][0] * chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t
                                                             - chassis_move_control_loop->chassis_right_control.wbr_control.J[1][1] * chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t* soft_lqr_ratio;
     }
+}
 
+static void chassis_limit_output(Chassis_Move *chassis_move_control_loop)
+{
     // 关节点击力矩限幅，最大值按照关节电机最大扭矩限制
     chassis_move_control_loop->chassis_wheel[0].wheel_T = float_constrain(chassis_move_control_loop->chassis_wheel[0].wheel_T, -6.3f, 6.3f);
     chassis_move_control_loop->chassis_wheel[1].wheel_T = float_constrain(chassis_move_control_loop->chassis_wheel[1].wheel_T, -6.3f, 6.3f);
@@ -1630,7 +1659,10 @@ static void chassis_control_loop(Chassis_Move *chassis_move_control_loop) {
     chassis_move_control_loop->chassis_joint[1].joint_T = float_constrain(chassis_move_control_loop->chassis_joint[1].joint_T, JOINT_MIN_TORQUE, JOINT_MAX_TORQUE);
     chassis_move_control_loop->chassis_joint[2].joint_T = float_constrain(chassis_move_control_loop->chassis_joint[2].joint_T, JOINT_MIN_TORQUE, JOINT_MAX_TORQUE);
     chassis_move_control_loop->chassis_joint[3].joint_T = float_constrain(chassis_move_control_loop->chassis_joint[3].joint_T, JOINT_MIN_TORQUE, JOINT_MAX_TORQUE);
+}
 
+static void chassis_save_last_feedback(Chassis_Move *chassis_move_control_loop)
+{
     // 数据更新，用于离地
     chassis_move_control_loop->x_real_last = chassis_move_control_loop->x_real;
     chassis_move_control_loop->v_real_last = chassis_move_control_loop->v_real;
