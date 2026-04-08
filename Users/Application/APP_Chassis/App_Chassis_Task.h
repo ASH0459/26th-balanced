@@ -288,7 +288,7 @@ typedef enum
     CHASSIS_FOLLOW_CHASSIS_YAW,  // 底盘有底盘角度控制闭环
     CHASSIS_ZERO,                // 底盘无力模式
     CHASSIS_GYROSCOPE,           // 底盘小陀螺模式
-    CHASSIS_INIT,                // 初始化（仅限于地盘状态正常）
+    CHASSIS_INIT,                // 初始化（仅限于底盘状态正常）
     CHASSIS_JUMP,                 // 底盘跳跃模式
     CHASSIS_UP,                   // 上台阶模式
     CHASSIS_SAVE                  //底盘翻倒自救
@@ -306,6 +306,13 @@ typedef enum
     CHASSIS_OFF_GROUND,													// 离地
     CHASSIS_TOUCH_GROUND												// 触底
 } chassis_off_ground_detection_e;
+
+typedef enum
+{
+    INIT_LEG_UNREACH = 0,
+    INIT_LEG_REACH = 1,
+    INIT_LEG_STANDUP = 2,
+} init_leg_reach_e;
 
 #ifdef __cplusplus
 
@@ -368,7 +375,7 @@ class Chassis_Move
     uint8_t jump_state = 0;
     uint8_t up_state = 0;
     uint8_t up_leg_reached = 0;  // 上台阶腿角度是否到位标志 0:未到位 1:已到位
-    uint8_t init_leg_reached = 0;  // 初始化收腿是否到位标志 0:未到位 1:已到位
+    init_leg_reach_e init_leg_reach_state = INIT_LEG_UNREACH;  // 初始化收腿状态
     bool is_up_mode = false;
 
     const fp32 *chassis_INS_gyro;				  //机体角速度指针
@@ -381,6 +388,9 @@ class Chassis_Move
     float chassis_yaw_target_base;
     Chassis_Mode_e chassis_mode;                  //底盘控制状态机
     Chassis_Mode_e last_chassis_mode;             //底盘上次控制状态机
+
+    Chassis_state_e chassis_state;                //底盘状态
+    Chassis_state_e last_chassis_state;           //底盘上次状态
 
     Chassis_Joint_Motor chassis_joint[4]; //底盘关节电机数据
     Chassis_Wheel_Motor chassis_wheel[2]; //底盘轮电机数据

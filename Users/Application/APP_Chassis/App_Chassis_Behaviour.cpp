@@ -191,16 +191,16 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
             Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_INIT;
             chassis_move_mode->is_up_mode = false;
 
-            chassis_move_mode->init_leg_reached = 0;
+            chassis_move_mode->init_leg_reach_state = INIT_LEG_UNREACH;
         }
 
         // 进入一次起身模式后需要完全起身后才能自动切入行动模式
-        if (Chassis_Behaviour_Mode == CHASSIS_BEHAVIOUR_INIT && chassis_move_mode->init_leg_reached != 2)
+        if (Chassis_Behaviour_Mode == CHASSIS_BEHAVIOUR_INIT && chassis_move_mode->init_leg_reach_state != INIT_LEG_STANDUP)
         {
             Chassis_Behaviour_Mode = CHASSIS_BEHAVIOUR_INIT;
             chassis_move_mode->is_up_mode = false; // 断电时顺便重置状态，防止重新上电猛然上台阶
         }
-        else if (Chassis_Behaviour_Mode == CHASSIS_BEHAVIOUR_INIT && chassis_move_mode->init_leg_reached == 2)
+        else if (Chassis_Behaviour_Mode == CHASSIS_BEHAVIOUR_INIT && chassis_move_mode->init_leg_reach_state == INIT_LEG_STANDUP)
         // && fabs(chassis_move_mode->chassis_left_control.theta_l) < 0.1
         // && fabs(chassis_move_mode->chassis_right_control.theta_l) < 0.1
         // && fabs(chassis_move_mode->chassis_pitch) < 0.1)
@@ -788,7 +788,7 @@ static void chassis_init_control(fp32 *vx_set, fp32 *d_yaw_set, fp32 *leg_set, C
     *d_yaw_set = 0.0f;
 
     // Phase 1: 触地后，用力收腿
-    if (chassis_move_rc_to_vector->init_leg_reached == 1)
+    if (chassis_move_rc_to_vector->init_leg_reach_state == INIT_LEG_REACH)
     {
         first_order_filter_cali(&chassis_move_rc_to_vector->chassis_leg_filter_set, 0.18f);
         *leg_set = chassis_move_rc_to_vector->chassis_leg_filter_set.out;
@@ -796,11 +796,11 @@ static void chassis_init_control(fp32 *vx_set, fp32 *d_yaw_set, fp32 *leg_set, C
         // 当腿收缩到 0.21m 以下时，准备切入 LQR 平衡模式
         if (chassis_move_rc_to_vector->chassis_left_control.wbr_control.L <= 0.185f && chassis_move_rc_to_vector->chassis_right_control.wbr_control.L <= 0.185f)
         {
-            chassis_move_rc_to_vector->init_leg_reached = 2;
+            chassis_move_rc_to_vector->init_leg_reach_state = INIT_LEG_STANDUP;
         }
     }
     // Phase 2: LQR 已经接管，开始平滑起立
-    else if (chassis_move_rc_to_vector->init_leg_reached == 2)
+    else if (chassis_move_rc_to_vector->init_leg_reach_state == INIT_LEG_STANDUP)
     {
         // 【新增：恢复站立高度】把目标腿长滤滑到正常高度（例如 0.25f 或更高）
         // 这样机器人在切入平衡后，会从蹲姿慢慢站起来，极大地增加抗扰动能力

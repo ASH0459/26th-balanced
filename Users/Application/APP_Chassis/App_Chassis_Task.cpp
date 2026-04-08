@@ -195,6 +195,13 @@ static void chassis_set_contorl(Chassis_Move *chassis_move_control);
 static void chassis_control_loop(Chassis_Move *chassis_move_control_loop);
 
 /**
+  * @brief          底盘初始化起身处理
+  * @param[out]     chassis_init_standup:"chassis_move"变量指针.
+  * @retval         none
+  */
+static void chassis_init_standup(Chassis_Move *chassis_init_standup);
+
+/**
   * @brief          LQR力矩拆解和功率限制控制
   * @param[out]     chassis_move_control_loop:"chassis_move"变量指针.
   * @retval         none
@@ -571,7 +578,7 @@ static void chassis_mode_change_control_transit(Chassis_Move *chassis_move_trans
     else if ((chassis_move_transit->last_chassis_mode != CHASSIS_INIT) && (chassis_move_transit->chassis_mode == CHASSIS_INIT))
     {
         // 重置初始化收腿到位标志
-        chassis_move_transit->init_leg_reached = 0;
+        chassis_move_transit->init_leg_reach_state = INIT_LEG_UNREACH;
 
         // 记录进入时的当前角度(0~2π坐标系)，将其设为斜坡函数的起始输出值
         fp32 left_raw = chassis_move_transit->chassis_left_control.theta_l;
@@ -1418,110 +1425,7 @@ static void chassis_control_loop(Chassis_Move *chassis_move_control_loop) {
     }
 
 
-    if (chassis_move_control_loop->chassis_mode == CHASSIS_INIT) {
-
-        /* 初始化收腿阶段：判断左右腿角度是否到达目标角度 */
-        if (chassis_move_control_loop->init_leg_reached == 0)
-        {
-            // 先停止轮子以及LQR输出
-            chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t = 0.0f;
-            chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t = 0.0f;
-            chassis_move_control_loop->chassis_wheel[0].wheel_T = 0.0f;
-            chassis_move_control_loop->chassis_wheel[1].wheel_T = 0.0f;
-
-            // 获取原始角度 (范围 -π ~ +π)
-            fp32 left_theta_raw = chassis_move_control_loop->chassis_left_control.theta_l;
-            fp32 right_theta_raw = chassis_move_control_loop->chassis_right_control.theta_l;
-
-            // 换算到 0 ~ 2π 范围
-            fp32 left_theta_360 = left_theta_raw < 0.0f ? left_theta_raw + 2.0f * PI : left_theta_raw;
-            fp32 right_theta_360 = right_theta_raw < 0.0f ? right_theta_raw + 2.0f * PI : right_theta_raw;
-
-            // 目标角度 (0~2π坐标系)
-            fp32 target_360 = CHASSIS_INIT_LEG_ANGLE_TARGET_360;
-
-            // 设定旋转角速度 (rad/s)
-            fp32 rotate_speed = ROTATE_SPEED;
-
-            // 左腿斜坡：动态设置限幅，并以设定的角速度逼近目标
-            if (chassis_move_control_loop->chassis_left_control.init_angle_ramp.out < target_360) {
-                chassis_move_control_loop->chassis_left_control.init_angle_ramp.max_value = target_360;
-                ramp_calc(&chassis_move_control_loop->chassis_left_control.init_angle_ramp, rotate_speed);
-            } else {
-                chassis_move_control_loop->chassis_left_control.init_angle_ramp.min_value = target_360;
-                ramp_calc(&chassis_move_control_loop->chassis_left_control.init_angle_ramp, -rotate_speed);
-            }
-
-            // 右腿斜坡：动态设置限幅，并以设定的角速度逼近目标
-            if (chassis_move_control_loop->chassis_right_control.init_angle_ramp.out < target_360) {
-                chassis_move_control_loop->chassis_right_control.init_angle_ramp.max_value = target_360;
-                ramp_calc(&chassis_move_control_loop->chassis_right_control.init_angle_ramp, rotate_speed);
-            } else {
-                chassis_move_control_loop->chassis_right_control.init_angle_ramp.min_value = target_360;
-                ramp_calc(&chassis_move_control_loop->chassis_right_control.init_angle_ramp, -rotate_speed);
-            }
-
-
-            // 计算逆时针方向的误差 (逆时针 = 角度增大方向)
-            // 逆时针误差 = (target - current) mod 2π，保证误差 >= 0 为逆时针转
-            fp32 left_error = chassis_move_control_loop->chassis_left_control.init_angle_ramp.out - left_theta_360;
-            fp32 right_error = chassis_move_control_loop->chassis_right_control.init_angle_ramp.out - right_theta_360;
-
-            // 1. 目标斜坡是否已经跑到底 (说明控制器的设定值已经拉满了)
-            bool_t left_ramp_finished = (chassis_move_control_loop->chassis_left_control.init_angle_ramp.out >= target_360 - 0.05f);
-            bool_t right_ramp_finished = (chassis_move_control_loop->chassis_right_control.init_angle_ramp.out >= target_360 - 0.05f);
-
-            // 2. 腿是否已经停转 (角速度接近 0，说明被地面顶住了)
-            // 设置 0.2 rad/s 的极小速度阈值
-            bool_t left_stopped = (fabs(chassis_move_control_loop->chassis_left_control.d_theta_l) < 0.2f);
-            bool_t right_stopped = (fabs(chassis_move_control_loop->chassis_right_control.d_theta_l) < 0.2f);
-
-            // 3. 角度是否在安全的“触地区间” (防止在半空中或者刚起步时卡住就误判)
-            bool_t left_in_zone = (left_theta_360 > 4.8f);
-            bool_t right_in_zone = (right_theta_360 > 4.8f);
-
-            // 4. 综合判断：
-            // 情况A：完美进入 0.1 rad 的阈值 (地面较软，或者机体姿态恰好完美)
-            bool_t left_perfect = (fabs(target_360 - left_theta_360) < CHASSIS_INIT_LEG_ANGLE_THRESHOLD);
-            bool_t right_perfect = (fabs(target_360 - right_theta_360) < CHASSIS_INIT_LEG_ANGLE_THRESHOLD);
-
-            // 情况B：目标已经拉满，但在触地区间内腿停住了 (说明结结实实地顶到了地面，不用等那个 0.1 的阈值了！)
-            bool_t left_stalled = (left_ramp_finished && left_stopped && left_in_zone);
-            bool_t right_stalled = (right_ramp_finished && right_stopped && right_in_zone);
-
-            // 只要满足其一，即可果断判定触地！
-            bool_t left_reached = left_perfect || left_stalled;
-            bool_t right_reached = right_perfect || right_stalled;
-            // ============================================================
-
-            // PID计算关节电机扭矩，使用逆时针误差作为输入
-            // 注意：PID输入为 (测量值, 设定值)，这里我们直接用误差控制
-            // 将误差作为set=error, measure=0，这样PID输出 = Kp*error + ...，保证扭矩方向为逆时针
-            fp32 left_torque = PID_Calc(&chassis_move_control_loop->chassis_left_control.init_leg_angle_pid,
-                                        0.0f, left_error);
-            fp32 right_torque = PID_Calc(&chassis_move_control_loop->chassis_right_control.init_leg_angle_pid,
-                                         0.0f, right_error);
-
-            // 确保扭矩方向只能是逆时针 (正方向)，不允许顺时针回转
-            // if (left_torque < 0.0f) left_torque = 0.0f;
-            // if (right_torque < 0.0f) right_torque = 0.0f;
-
-            // 0号1号关节电机控制左腿，扭矩大小和方向相同
-            chassis_move_control_loop->chassis_joint[0].joint_T = -left_torque;
-            chassis_move_control_loop->chassis_joint[1].joint_T = -left_torque;
-            // 2号3号关节电机控制右腿，扭矩大小和方向相同
-            chassis_move_control_loop->chassis_joint[2].joint_T = right_torque;
-            chassis_move_control_loop->chassis_joint[3].joint_T = right_torque;
-
-            // 两边腿都到位后，进入正常CHASSIS_INIT步骤
-            if (left_reached && right_reached)
-            {
-                chassis_move_control_loop->init_leg_reached = 1;
-                PID_clear(&chassis_move_control_loop->chassis_left_control.init_leg_angle_pid);
-                PID_clear(&chassis_move_control_loop->chassis_right_control.init_leg_angle_pid);
-            }
-        }
-    }
+    chassis_init_standup(chassis_move_control_loop);
 
     // roll轴PID补偿
     chassis_move_control_loop->chassis_left_control.fd_roll = PID_Calc(&chassis_move_control_loop->chassis_left_control.roll_control, chassis_move_control_loop->chassis_roll, chassis_move_control_loop->chassis_roll_set);
@@ -1547,7 +1451,8 @@ static void chassis_control_loop(Chassis_Move *chassis_move_control_loop) {
                                                                 * chassis_move_control_loop->chassis_d_yaw * chassis_move_control_loop->v_filter / (2 * DRIVE_WHEEL_DIS);
 
 
-    if(chassis_move_control_loop->chassis_mode == CHASSIS_INIT && chassis_move_control_loop->init_leg_reached == 1|| chassis_move_control_loop->init_leg_reached == 0)
+    if ((chassis_move_control_loop->chassis_mode == CHASSIS_INIT && chassis_move_control_loop->init_leg_reach_state == INIT_LEG_REACH) ||
+        chassis_move_control_loop->init_leg_reach_state == INIT_LEG_UNREACH)
     {
         // 收腿阶段：停止轮子和LQR转矩输出
         chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t = 0.0f;
@@ -1652,7 +1557,7 @@ static void chassis_control_loop(Chassis_Move *chassis_move_control_loop) {
         }
     }
     // 初始化收腿阶段后，进入起身阶段，起身阶段使用收缩LQR输出
-    if (chassis_move_control_loop->chassis_mode == CHASSIS_INIT && chassis_move_control_loop->init_leg_reached == 2)
+    if (chassis_move_control_loop->chassis_mode == CHASSIS_INIT && chassis_move_control_loop->init_leg_reach_state == INIT_LEG_STANDUP)
     {
 
         // 2. 软启动轮出扭矩 (防止一接管轮子就狂转)
@@ -1672,7 +1577,7 @@ static void chassis_control_loop(Chassis_Move *chassis_move_control_loop) {
         chassis_move_control_loop->chassis_joint[3].joint_T = -chassis_move_control_loop->chassis_right_control.wbr_control.J[1][0] * chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t
                                                             - chassis_move_control_loop->chassis_right_control.wbr_control.J[1][1] * chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t* soft_lqr_ratio;
     }
-    else if (chassis_move_control_loop->chassis_mode == CHASSIS_INIT && chassis_move_control_loop->init_leg_reached == 1)
+    else if (chassis_move_control_loop->chassis_mode == CHASSIS_INIT && chassis_move_control_loop->init_leg_reach_state == INIT_LEG_REACH)
     {
         // 收腿阶段：只输出Fbl_t（腿长PID力），不输出LQR转矩
         chassis_move_control_loop->chassis_joint[0].joint_T = -chassis_move_control_loop->chassis_left_control.wbr_control.J[0][0] * chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t;
@@ -1740,6 +1645,122 @@ fp32 Get_FeedForward_Force(fp32 leg_length_m)
            (-3103.49246 * H * H) +
            (1291.20462 * H) +
            (-63.14450);
+}
+
+/*底盘正常状态下初始化起身过程*/
+static void chassis_init_standup(Chassis_Move *chassis_init_standup)
+{
+    if (chassis_init_standup == NULL)
+    {
+        return;
+    }
+
+    if (chassis_init_standup->chassis_mode != CHASSIS_INIT)
+    {
+        return;
+    }
+
+    /* 初始化收腿阶段：判断左右腿角度是否到达目标角度 */
+    if (chassis_init_standup->init_leg_reach_state == INIT_LEG_UNREACH)
+    {
+        // 先停止轮子以及LQR输出
+        chassis_init_standup->chassis_left_control.wbr_control.Tbl_t = 0.0f;
+        chassis_init_standup->chassis_right_control.wbr_control.Tbl_t = 0.0f;
+        chassis_init_standup->chassis_wheel[0].wheel_T = 0.0f;
+        chassis_init_standup->chassis_wheel[1].wheel_T = 0.0f;
+
+        // 获取原始角度 (范围 -π ~ +π)
+        fp32 left_theta_raw = chassis_init_standup->chassis_left_control.theta_l;
+        fp32 right_theta_raw = chassis_init_standup->chassis_right_control.theta_l;
+
+        // 换算到 0 ~ 2π 范围
+        fp32 left_theta_360 = left_theta_raw < 0.0f ? left_theta_raw + 2.0f * PI : left_theta_raw;
+        fp32 right_theta_360 = right_theta_raw < 0.0f ? right_theta_raw + 2.0f * PI : right_theta_raw;
+
+        // 目标角度 (0~2π坐标系)
+        fp32 target_360 = CHASSIS_INIT_LEG_ANGLE_TARGET_360;
+
+        // 设定旋转角速度 (rad/s)
+        fp32 rotate_speed = ROTATE_SPEED;
+
+        // 左腿斜坡：动态设置限幅，并以设定的角速度逼近目标
+        if (chassis_init_standup->chassis_left_control.init_angle_ramp.out < target_360) {
+            chassis_init_standup->chassis_left_control.init_angle_ramp.max_value = target_360;
+            ramp_calc(&chassis_init_standup->chassis_left_control.init_angle_ramp, rotate_speed);
+        } else {
+            chassis_init_standup->chassis_left_control.init_angle_ramp.min_value = target_360;
+            ramp_calc(&chassis_init_standup->chassis_left_control.init_angle_ramp, -rotate_speed);
+        }
+
+        // 右腿斜坡：动态设置限幅，并以设定的角速度逼近目标
+        if (chassis_init_standup->chassis_right_control.init_angle_ramp.out < target_360) {
+            chassis_init_standup->chassis_right_control.init_angle_ramp.max_value = target_360;
+            ramp_calc(&chassis_init_standup->chassis_right_control.init_angle_ramp, rotate_speed);
+        } else {
+            chassis_init_standup->chassis_right_control.init_angle_ramp.min_value = target_360;
+            ramp_calc(&chassis_init_standup->chassis_right_control.init_angle_ramp, -rotate_speed);
+        }
+
+
+        // 计算逆时针方向的误差 (逆时针 = 角度增大方向)
+        // 逆时针误差 = (target - current) mod 2π，保证误差 >= 0 为逆时针转
+        fp32 left_error = chassis_init_standup->chassis_left_control.init_angle_ramp.out - left_theta_360;
+        fp32 right_error = chassis_init_standup->chassis_right_control.init_angle_ramp.out - right_theta_360;
+
+        // 1. 目标斜坡是否已经跑到底 (说明控制器的设定值已经拉满了)
+        bool_t left_ramp_finished = (chassis_init_standup->chassis_left_control.init_angle_ramp.out >= target_360 - 0.05f);
+        bool_t right_ramp_finished = (chassis_init_standup->chassis_right_control.init_angle_ramp.out >= target_360 - 0.05f);
+
+        // 2. 腿是否已经停转 (角速度接近 0，说明被地面顶住了)
+        // 设置 0.2 rad/s 的极小速度阈值
+        bool_t left_stopped = (fabs(chassis_init_standup->chassis_left_control.d_theta_l) < 0.2f);
+        bool_t right_stopped = (fabs(chassis_init_standup->chassis_right_control.d_theta_l) < 0.2f);
+
+        // 3. 角度是否在安全的“触地区间” (防止在半空中或者刚起步时卡住就误判)
+        bool_t left_in_zone = (left_theta_360 > 4.8f);
+        bool_t right_in_zone = (right_theta_360 > 4.8f);
+
+        // 4. 综合判断：
+        // 情况A：完美进入 0.1 rad 的阈值 (地面较软，或者机体姿态恰好完美)
+        bool_t left_perfect = (fabs(target_360 - left_theta_360) < CHASSIS_INIT_LEG_ANGLE_THRESHOLD);
+        bool_t right_perfect = (fabs(target_360 - right_theta_360) < CHASSIS_INIT_LEG_ANGLE_THRESHOLD);
+
+        // 情况B：目标已经拉满，但在触地区间内腿停住了 (说明结结实实地顶到了地面，不用等那个 0.1 的阈值了！)
+        bool_t left_stalled = (left_ramp_finished && left_stopped && left_in_zone);
+        bool_t right_stalled = (right_ramp_finished && right_stopped && right_in_zone);
+
+        // 只要满足其一，即可果断判定触地！
+        bool_t left_reached = left_perfect || left_stalled;
+        bool_t right_reached = right_perfect || right_stalled;
+        // ============================================================
+
+        // PID计算关节电机扭矩，使用逆时针误差作为输入
+        // 注意：PID输入为 (测量值, 设定值)，这里我们直接用误差控制
+        // 将误差作为set=error, measure=0，这样PID输出 = Kp*error + ...，保证扭矩方向为逆时针
+        fp32 left_torque = PID_Calc(&chassis_init_standup->chassis_left_control.init_leg_angle_pid,
+                                    0.0f, left_error);
+        fp32 right_torque = PID_Calc(&chassis_init_standup->chassis_right_control.init_leg_angle_pid,
+                                     0.0f, right_error);
+
+        // 确保扭矩方向只能是逆时针 (正方向)，不允许顺时针回转
+        // if (left_torque < 0.0f) left_torque = 0.0f;
+        // if (right_torque < 0.0f) right_torque = 0.0f;
+
+        // 0号1号关节电机控制左腿，扭矩大小和方向相同
+        chassis_init_standup->chassis_joint[0].joint_T = -left_torque;
+        chassis_init_standup->chassis_joint[1].joint_T = -left_torque;
+        // 2号3号关节电机控制右腿，扭矩大小和方向相同
+        chassis_init_standup->chassis_joint[2].joint_T = right_torque;
+        chassis_init_standup->chassis_joint[3].joint_T = right_torque;
+
+        // 两边腿都到位后，进入正常CHASSIS_INIT步骤
+        if (left_reached && right_reached)
+        {
+            chassis_init_standup->init_leg_reach_state = INIT_LEG_REACH;
+            PID_clear(&chassis_init_standup->chassis_left_control.init_leg_angle_pid);
+            PID_clear(&chassis_init_standup->chassis_right_control.init_leg_angle_pid);
+        }
+    }
 }
 
 #ifdef __cplusplus
