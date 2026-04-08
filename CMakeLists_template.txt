@@ -98,8 +98,6 @@ add_executable(${PROJECT_NAME}.elf ${SOURCES} ${LINKER_SCRIPT}
         Users/Bsp/Bsp_Device/Dev_BMI088_Driver/BMI088driver.c
         Users/Application/App_Detect/App_Detect_Task.c
         Users/Application/App_Detect/App_Detect_Task.h
-        Users/Application/APP_Chassis/App_Chassis_Power_Control.cpp
-        Users/Application/APP_Chassis/App_Chassis_Power_Control.h
         Users/Application/APP_Chassis/App_Chassis_Behaviour.cpp
         Users/Application/APP_Chassis/App_Chassis_Behaviour.h
         Users/Application/APP_Chassis/App_Chassis_Task.h

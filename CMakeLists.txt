@@ -58,8 +58,6 @@ add_executable(${CMAKE_PROJECT_NAME}
         Users/Application/APP_Buzzer/APP_Buzzer.h
         Users/Application/APP_Chassis/App_Chassis_Behaviour.cpp
         Users/Application/APP_Chassis/App_Chassis_Behaviour.h
-        Users/Application/APP_Chassis/App_Chassis_Power_Control.cpp
-        Users/Application/APP_Chassis/App_Chassis_Power_Control.h
         Users/Application/APP_Chassis/App_Chassis_Task.cpp
         Users/Application/APP_Chassis/App_Chassis_Task.h
         Users/Application/App_Detect/App_Detect_Task.c
