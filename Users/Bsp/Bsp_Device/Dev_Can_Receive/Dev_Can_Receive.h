@@ -280,6 +280,12 @@ class Gimbal_Data {
     float yaw_relative_pos;
     float total_pos, final_pos;
 
+    fp32 v_tmp;
+    fp32 chassis_yaw_err;
+    fp32 chassis_relative_angle;
+    uint8_t fric_state;
+    uint8_t chassis_behaviour_mode;
+
     float init_yaw_angle;
 
     // 全局或静态变量：记录电机圈数和上一次的单圈角度
@@ -444,6 +450,8 @@ extern Joint_Motor_Measure chassis_joint[4];
 extern Wheel_Motor_Measure chassis_wheel[2];
 
 extern Gimbal_Data gimbal_data;
+
+extern void CAN_cmd_gimbal_receive(uint8_t* received_data);
 
 extern void CAN_cmd_wheel(const fp32 motor1, const fp32 motor2);
 

@@ -47,6 +47,47 @@ Wheel_Motor_Measure chassis_wheel[2] = {
 
 Gimbal_Data gimbal_data;
 
+static fp32 int16_to_float(const int16_t value, const fp32 scale)
+{
+	return (fp32)value / scale;
+}
+
+static fp32 uint8_to_float(const uint8_t value, const fp32 scale)
+{
+	return (fp32)value / scale;
+}
+
+/**
+  * @brief          接收云台数据并解包
+  * @param[in]      received_data: 云台发送的8字节CAN数据
+  * @retval         none
+  * @note           预留接口，当前未接入CAN接收回调
+  */
+void CAN_cmd_gimbal_receive(uint8_t* received_data)
+{
+	if (received_data == nullptr)
+	{
+		return;
+	}
+
+	int16_t v_set_tmp, relative_angle_tmp;
+	uint8_t yaw_set_tmp;
+	uint8_t chassis_behaviour, fric_state;
+
+	v_set_tmp = (received_data[0] << 8) | received_data[1];
+	yaw_set_tmp = received_data[2];
+	// received_data[3] reserved
+	chassis_behaviour = received_data[4];
+	fric_state = received_data[5];
+	relative_angle_tmp = (received_data[6] << 8) | received_data[7];
+
+	gimbal_data.v_tmp = int16_to_float(v_set_tmp, 1000.0f);
+	gimbal_data.chassis_yaw_err = -uint8_to_float(yaw_set_tmp, 1000.0f);
+	gimbal_data.chassis_relative_angle = int16_to_float(relative_angle_tmp, 1000.0f);
+	gimbal_data.fric_state = fric_state;
+	gimbal_data.chassis_behaviour_mode = chassis_behaviour;
+}
+
 /**
   * @brief          发送轮电机控制电流(0x201,0x202)
   * @param[in]      motor1: (0x201) 左边轮电机控制扭矩, 范围 [-5,5]
