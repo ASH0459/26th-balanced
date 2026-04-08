@@ -79,12 +79,12 @@ extern "C" {
     fp32 fitted_matrix_B[20][6];
 
     //
-    fp32 LQR_K[4][10] = {
-        {-3.1034, -3.4756, -4.8629, -0.99033, -6.696, -0.99177, -5.6914, -0.79448, -11.003, -1.1729},
-{-3.1034, -3.4756, 4.8629, 0.99033, -5.6914, -0.79448, -6.696, -0.99177, -11.003, -1.1729},
-{10.519, 13.766, -20.138, -4.1627, 80.596, 12.6, -16.652, -1.9162, -162.76, -19.32},
-{10.519, 13.766, 20.138, 4.1627, -16.652, -1.9162, 80.596, 12.6, -162.76, -19.32},
-    };
+//     fp32 LQR_K[4][10] = {
+//         {-3.1034, -3.4756, -4.8629, -0.99033, -6.696, -0.99177, -5.6914, -0.79448, -11.003, -1.1729},
+// {-3.1034, -3.4756, 4.8629, 0.99033, -5.6914, -0.79448, -6.696, -0.99177, -11.003, -1.1729},
+// {10.519, 13.766, -20.138, -4.1627, 80.596, 12.6, -16.652, -1.9162, -162.76, -19.32},
+// {10.519, 13.766, 20.138, 4.1627, -16.652, -1.9162, 80.596, 12.6, -162.76, -19.32},
+//     };
 
     // 起身用LQR
     fp32 LQR_RISE_K[4][10] = {
@@ -94,12 +94,12 @@ extern "C" {
 {6.4584, 8.6367, 19.056, 4.1736, -15.932, -1.6493, 61.444, 8.7301, -121.17, -14.254},
     };
 //11
-//     fp32 LQR_K[4][10] = {
-//         {-2.6747, -3.762, -5.73, -1.0735, -8.0964, -1.4454, -5.9801, -0.89364, -13.038, -1.4133},
-// {-2.6747, -3.762, 5.73, 1.0735, -5.9801, -0.89364, -8.0964, -1.4454, -13.038, -1.4133},
-// {5.8814, 9.7153, -21.602, -4.35, 68.401, 13.55, -12.206, -1.8725, -113.15, -13.296},
-// {5.8814, 9.7153, 21.602, 4.35, -12.206, -1.8725, 68.401, 13.55, -113.15, -13.296},
-//     };
+    fp32 LQR_K[4][10] = {
+        {-2.1886, -3.0378, -4.8629, -0.99033, -6.5059, -0.94899, -5.5013, -0.7517, -10.876, -1.1616},
+{-2.1886, -3.0378, 4.8629, 0.99033, -5.5013, -0.7517, -6.5059, -0.94899, -10.876, -1.1616},
+{7.9367, 12.317, -20.138, -4.1627, 80.51, 12.568, -16.738, -1.9475, -162.37, -19.27},
+{7.9367, 12.317, 20.138, 4.1627, -16.738, -1.9475, 80.51, 12.568, -162.37, -19.27},
+    };
 
 
     fp32 LQR_A[10][10] = {
@@ -1195,38 +1195,38 @@ static void chassis_feedback_update(Chassis_Move *chassis_move_update)
     }
 
     // ========== 左腿防抖检测 ==========
-    // if (chassis_move_prediction->chassis_left_control.Fwn <= 8.0f) {
-    //     left_off_count++;
-    //     if (left_off_count > 5) {
-    //         chassis_move_prediction->chassis_left_control.chassis_off_ground_detection = CHASSIS_OFF_GROUND;
-    //         left_off_count = 5; // 防止溢出
-    //     }
-    // } else {
-    //     left_off_count = 0; // 一旦受力，立即判定落地
-    //     chassis_move_prediction->chassis_left_control.chassis_off_ground_detection = CHASSIS_TOUCH_GROUND;
-    // }
-    //
-    // if (chassis_move_prediction->chassis_right_control.Fwn <= 8.0f) {
-    //     right_off_count++;
-    //     if (right_off_count > 5) {
-    //         chassis_move_prediction->chassis_right_control.chassis_off_ground_detection = CHASSIS_OFF_GROUND;
-    //         right_off_count = 5;
-    //     }
-    // } else {
-    //     right_off_count = 0;
-    //     chassis_move_prediction->chassis_right_control.chassis_off_ground_detection = CHASSIS_TOUCH_GROUND;
-    // }
-    //
-    // if (chassis_move_prediction->chassis_left_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND
-    // && chassis_move_prediction->chassis_right_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND)
-    // {
-    //     //数据不再更新，保持为离地前的那一刻
-    //     chassis_move_prediction->v_real = chassis_move_prediction->v_real_last;
-    //     chassis_move_prediction->x_real = chassis_move_prediction->x_real_last;
-    //     chassis_move_prediction->v_filter = chassis_move_prediction->v_filter_last;
-    //     chassis_move_prediction->chassis_yaw = chassis_move_prediction->chassis_yaw_p;
-    //     chassis_move_prediction->chassis_d_yaw = chassis_move_prediction->chassis_d_yaw_p;
-    // }
+    if (chassis_move_prediction->chassis_left_control.Fwn <= 60.0f) {
+        left_off_count++;
+        if (left_off_count > 2) {
+            chassis_move_prediction->chassis_left_control.chassis_off_ground_detection = CHASSIS_OFF_GROUND;
+            left_off_count = 2; // 防止溢出
+        }
+    } else {
+        left_off_count = 0; // 一旦受力，立即判定落地
+        chassis_move_prediction->chassis_left_control.chassis_off_ground_detection = CHASSIS_TOUCH_GROUND;
+    }
+
+    if (chassis_move_prediction->chassis_right_control.Fwn <= 60.0f) {
+        right_off_count++;
+        if (right_off_count > 2) {
+            chassis_move_prediction->chassis_right_control.chassis_off_ground_detection = CHASSIS_OFF_GROUND;
+            right_off_count = 2;
+        }
+    } else {
+        right_off_count = 0;
+        chassis_move_prediction->chassis_right_control.chassis_off_ground_detection = CHASSIS_TOUCH_GROUND;
+    }
+
+    if (chassis_move_prediction->chassis_left_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND
+    && chassis_move_prediction->chassis_right_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND)
+    {
+        //数据不再更新，保持为离地前的那一刻
+        chassis_move_prediction->v_real = chassis_move_prediction->v_real_last;
+        chassis_move_prediction->x_real = chassis_move_prediction->x_real_last;
+        chassis_move_prediction->v_filter = chassis_move_prediction->v_filter_last;
+        chassis_move_prediction->chassis_yaw = chassis_move_prediction->chassis_yaw_p;
+        chassis_move_prediction->chassis_d_yaw = chassis_move_prediction->chassis_d_yaw_p;
+    }
 
 }
 
