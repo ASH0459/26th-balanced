@@ -203,6 +203,7 @@ static void chassis_init_standup(Chassis_Move *chassis_init_standup);
 
 static void chassis_zero_output(Chassis_Move *chassis_move_control_loop);
 static void chassis_up_leg_angle_control(Chassis_Move *chassis_move_control_loop);
+static void chassis_init_level_control(Chassis_Move *chassis_move_control_loop);
 static void chassis_calc_support_force(Chassis_Move *chassis_move_control_loop);
 static fp32 chassis_update_soft_lqr_ratio(Chassis_Move *chassis_move_control_loop);
 static void chassis_apply_joint_output(Chassis_Move *chassis_move_control_loop, fp32 soft_lqr_ratio);
@@ -1363,6 +1364,7 @@ static void chassis_control_loop(Chassis_Move *chassis_move_control_loop) {
     chassis_lqr_power_control(chassis_move_control_loop);
 
     chassis_up_leg_angle_control(chassis_move_control_loop);
+    chassis_init_level_control(chassis_move_control_loop);
     chassis_init_standup(chassis_move_control_loop);
     chassis_calc_support_force(chassis_move_control_loop);
 
@@ -1455,6 +1457,90 @@ static void chassis_up_leg_angle_control(Chassis_Move *chassis_move_control_loop
         PID_clear(&chassis_move_control_loop->chassis_left_control.up_leg_angle_pid);
         PID_clear(&chassis_move_control_loop->chassis_right_control.up_leg_angle_pid);
     }
+}
+
+static void chassis_init_level_control(Chassis_Move *chassis_move_control_loop)
+{
+    if (chassis_move_control_loop->chassis_mode != CHASSIS_INIT ||
+        chassis_move_control_loop->init_leg_reach_state != INIT_LEG_UNREACH ||
+        chassis_move_control_loop->chassis_state == CHASSIS_NORMAL)
+    {
+        return;
+    }
+
+    chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t = 0.0f;
+    chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t = 0.0f;
+    chassis_move_control_loop->chassis_wheel[0].wheel_T = 0.0f;
+    chassis_move_control_loop->chassis_wheel[1].wheel_T = 0.0f;
+
+    fp32 direction = (chassis_move_control_loop->chassis_pitch > 0.0f) ? -1.0f : 1.0f;
+    fp32 rotate_speed = CHASSIS_INIT_LEVEL_ROTATE_SPEED;
+
+    fp32 left_theta_raw = chassis_move_control_loop->chassis_left_control.theta_l;
+    fp32 right_theta_raw = chassis_move_control_loop->chassis_right_control.theta_l;
+    fp32 left_theta_360 = left_theta_raw < 0.0f ? left_theta_raw + 2.0f * PI : left_theta_raw;
+    fp32 right_theta_360 = right_theta_raw < 0.0f ? right_theta_raw + 2.0f * PI : right_theta_raw;
+
+    fp32 left_target = chassis_move_control_loop->chassis_left_control.init_angle_ramp.out +
+                       direction * CHASSIS_INIT_LEVEL_ANGLE_STEP;
+    fp32 right_target = chassis_move_control_loop->chassis_right_control.init_angle_ramp.out +
+                        direction * CHASSIS_INIT_LEVEL_ANGLE_STEP;
+
+    if (direction > 0.0f)
+    {
+        chassis_move_control_loop->chassis_left_control.init_angle_ramp.max_value = left_target;
+        chassis_move_control_loop->chassis_right_control.init_angle_ramp.max_value = right_target;
+        ramp_calc(&chassis_move_control_loop->chassis_left_control.init_angle_ramp, rotate_speed);
+        ramp_calc(&chassis_move_control_loop->chassis_right_control.init_angle_ramp, rotate_speed);
+    }
+    else
+    {
+        chassis_move_control_loop->chassis_left_control.init_angle_ramp.min_value = left_target;
+        chassis_move_control_loop->chassis_right_control.init_angle_ramp.min_value = right_target;
+        ramp_calc(&chassis_move_control_loop->chassis_left_control.init_angle_ramp, -rotate_speed);
+        ramp_calc(&chassis_move_control_loop->chassis_right_control.init_angle_ramp, -rotate_speed);
+    }
+
+    fp32 left_error = chassis_move_control_loop->chassis_left_control.init_angle_ramp.out - left_theta_360;
+    fp32 right_error = chassis_move_control_loop->chassis_right_control.init_angle_ramp.out - right_theta_360;
+
+    fp32 left_torque = PID_Calc(&chassis_move_control_loop->chassis_left_control.init_leg_angle_pid,
+                                0.0f, left_error);
+    fp32 right_torque = PID_Calc(&chassis_move_control_loop->chassis_right_control.init_leg_angle_pid,
+                                 0.0f, right_error);
+
+    left_torque = float_constrain(left_torque, -CHASSIS_INIT_LEVEL_TORQUE_LIMIT, CHASSIS_INIT_LEVEL_TORQUE_LIMIT);
+    right_torque = float_constrain(right_torque, -CHASSIS_INIT_LEVEL_TORQUE_LIMIT, CHASSIS_INIT_LEVEL_TORQUE_LIMIT);
+
+    fp32 leg_progress_error = direction * (left_theta_360 - right_theta_360);
+    fp32 lead_torque_ratio = 1.0f - fabs(leg_progress_error) / CHASSIS_INIT_LEVEL_SYNC_ANGLE;
+    lead_torque_ratio = float_constrain(lead_torque_ratio, CHASSIS_INIT_LEVEL_SYNC_MIN_RATIO, 1.0f);
+    if (leg_progress_error > 0.0f)
+    {
+        left_torque *= lead_torque_ratio;
+    }
+    else if (leg_progress_error < 0.0f)
+    {
+        right_torque *= lead_torque_ratio;
+    }
+
+    if (fabs(chassis_move_control_loop->chassis_left_control.d_theta_l) > CHASSIS_INIT_LEVEL_SPEED_LIMIT &&
+        left_torque * chassis_move_control_loop->chassis_left_control.d_theta_l > 0.0f)
+    {
+        left_torque = 0.0f;
+    }
+
+    if (fabs(chassis_move_control_loop->chassis_right_control.d_theta_l) > CHASSIS_INIT_LEVEL_SPEED_LIMIT &&
+        right_torque * chassis_move_control_loop->chassis_right_control.d_theta_l > 0.0f)
+    {
+        right_torque = 0.0f;
+    }
+
+    // 按机体pitch倾斜方向分别控制左右腿，直到feedback_update把chassis_state更新为CHASSIS_NORMAL
+    chassis_move_control_loop->chassis_joint[0].joint_T = -left_torque;
+    chassis_move_control_loop->chassis_joint[1].joint_T = -left_torque;
+    chassis_move_control_loop->chassis_joint[2].joint_T = right_torque;
+    chassis_move_control_loop->chassis_joint[3].joint_T = right_torque;
 }
 
 static void chassis_calc_support_force(Chassis_Move *chassis_move_control_loop)
@@ -1698,6 +1784,17 @@ static void chassis_init_standup(Chassis_Move *chassis_init_standup)
     if (chassis_init_standup->chassis_mode != CHASSIS_INIT)
     {
         return;
+    }
+
+    if (chassis_init_standup->last_chassis_state != CHASSIS_NORMAL &&
+        chassis_init_standup->chassis_state == CHASSIS_NORMAL)
+    {
+        fp32 left_raw = chassis_init_standup->chassis_left_control.theta_l;
+        fp32 right_raw = chassis_init_standup->chassis_right_control.theta_l;
+        chassis_init_standup->chassis_left_control.init_angle_ramp.out = left_raw < 0.0f ? left_raw + 2.0f * PI : left_raw;
+        chassis_init_standup->chassis_right_control.init_angle_ramp.out = right_raw < 0.0f ? right_raw + 2.0f * PI : right_raw;
+        PID_clear(&chassis_init_standup->chassis_left_control.init_leg_angle_pid);
+        PID_clear(&chassis_init_standup->chassis_right_control.init_leg_angle_pid);
     }
 
     /* 初始化收腿阶段：判断左右腿角度是否到达目标角度 */
