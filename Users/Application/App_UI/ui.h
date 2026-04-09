@@ -13,9 +13,6 @@ extern "C" {
 
 #include "ui_normal.h"
 
-void ui_init_normal_ChangeTextGroup();
-void ui_update_normal_ChangeTextGroup();
-void ui_remove_normal_ChangeTextGroup();
 void ui_init_normal_DynamicGroup1();
 void ui_update_normal_DynamicGroup1();
 void ui_remove_normal_DynamicGroup1();
