@@ -207,6 +207,16 @@
 #define CHASSIS_ACCEL_Y_NUM 0.3333333333f
 #define CHASSIS_ACCEL_LEG_NUM 0.3333333333f
 #define CHASSIS_ACCEL_UP_NUM 0.5f
+#define CHASSIS_THETA_L_LOWPASS_NUM 0.01f
+#define CHASSIS_D_THETA_L_LOWPASS_NUM 0.005f
+
+#define CHASSIS_FILTER_KALMAN 0
+#define CHASSIS_FILTER_LOWPASS 1
+
+#define CHASSIS_LEFT_THETA_FILTER_SOURCE CHASSIS_FILTER_LOWPASS
+#define CHASSIS_LEFT_D_THETA_FILTER_SOURCE CHASSIS_FILTER_LOWPASS
+#define CHASSIS_RIGHT_THETA_FILTER_SOURCE CHASSIS_FILTER_LOWPASS
+#define CHASSIS_RIGHT_D_THETA_FILTER_SOURCE CHASSIS_FILTER_LOWPASS
 
 //摇杆死区
 #define CHASSIS_RC_DEADLINE 10
@@ -350,6 +360,8 @@ class Chassis_Wheel_Motor {
 class leg_control {
 public:
     KalmanFilter_t chassis_vaestimatekf_theta;							// 卡尔曼滤波观测器
+    first_order_filter_type_t theta_l_lowpass_filter;                  // 腿角度一阶低通
+    first_order_filter_type_t d_theta_l_lowpass_filter;                // 腿角速度一阶低通
     chassis_off_ground_detection_e chassis_off_ground_detection;		// 离地检测枚举
 
     ramp_function_source_t init_angle_ramp;                             // 用于倒地自启的斜坡函数
@@ -373,9 +385,13 @@ public:
     fp32 chassis_d_yaw_n;												// yaw轴角速度预测
     fp32 d_theta_w_n;													// 驱动轮角速度预测
     fp32 Tw_adapt;														// 驱动轮力矩补偿
-    fp32 theta_l;                                                       // 腿角度
+    fp32 theta_l;                                                       // 腿原始角度
     fp32 theta_l_set;                                                   // 腿角度设置
-    fp32 d_theta_l;                                                     // 腿角速度
+    fp32 d_theta_l;                                                     // 腿原始角速度
+    fp32 theta_l_filter;                                                // 腿滤波后角度
+    fp32 d_theta_l_filter;                                              // 腿滤波后角速度
+    fp32 theta_l_lowpass;                                               // 腿低通后角度
+    fp32 d_theta_l_lowpass;                                             // 腿低通后角速度
     fp32 d_theta_l_set;                                                 // 腿角速度设置
 };
 
@@ -494,6 +510,15 @@ extern Chassis_Move chassis_move;
   * @retval         none
   */
 extern void Chassis_RC_To_Control_Vector(float *vx_set, float *vy_set, Chassis_Move *chassis_move_rc_to_vector);
+
+/**+
+ * @brief          获取底盘控制类指针
+ * @param[in]      none
+ * @retval         底盘控制类指针
+ */
+extern Chassis_Move* Get_Chassis_Move_Point(void);
+
+
 
 #endif
 

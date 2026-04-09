@@ -28,6 +28,8 @@
 #include "kalman_filter.h"
 #include "APL_PowerLimitator.hpp"
 
+Chassis_Move chassis_move;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -146,6 +148,36 @@ extern "C" {
 #endif
 
     static  fp32 Get_FeedForward_Force(fp32 leg_length_m);
+
+static inline fp32 chassis_select_theta_signal(const leg_control *leg, uint8_t filter_source)
+{
+    return (filter_source == CHASSIS_FILTER_LOWPASS) ? leg->theta_l_lowpass : leg->theta_l_filter;
+}
+
+static inline fp32 chassis_select_d_theta_signal(const leg_control *leg, uint8_t filter_source)
+{
+    return (filter_source == CHASSIS_FILTER_LOWPASS) ? leg->d_theta_l_lowpass : leg->d_theta_l_filter;
+}
+
+static void chassis_update_leg_angle_signals(leg_control *leg, const fp32 *f_theta)
+{
+    memcpy(leg->chassis_vaestimatekf_theta.F_data, f_theta, 4 * sizeof(fp32));
+
+    leg->theta_l = leg->wbr_control.theta_l;
+    leg->d_theta_l = leg->wbr_control.d_theta_l;
+
+    first_order_filter_cali(&leg->theta_l_lowpass_filter, leg->theta_l);
+    first_order_filter_cali(&leg->d_theta_l_lowpass_filter, leg->d_theta_l);
+    leg->theta_l_lowpass = leg->theta_l_lowpass_filter.out;
+    leg->d_theta_l_lowpass = leg->d_theta_l_lowpass_filter.out;
+
+    leg->chassis_vaestimatekf_theta.MeasuredVector[0] = leg->theta_l;
+    leg->chassis_vaestimatekf_theta.MeasuredVector[1] = leg->d_theta_l;
+
+    Kalman_Filter_Update(&leg->chassis_vaestimatekf_theta);
+    leg->theta_l_filter = leg->chassis_vaestimatekf_theta.FilteredValue[0];
+    leg->d_theta_l_filter = leg->chassis_vaestimatekf_theta.FilteredValue[1];
+}
 /**
   * @brief          初始化"chassis_move"变量，包括pid初始化， 遥控器指针初始化，3508底盘电机指针初始化，云台电机初始化，陀螺仪角度指针初始化
   * @param[out]     chassis_move_init:"chassis_move"变量指针.
@@ -226,9 +258,6 @@ static void chassis_lqr_power_control(Chassis_Move *chassis_move_control_loop);
 
 void Chassis_Task(void *pvParameters)
 {
-    /* 底盘运动类 */
-    static Chassis_Move chassis_move;
-
     /* 空闲以待初始化 */
     vTaskDelay(CHASSIS_TASK_INIT_TIME);
 
@@ -307,8 +336,6 @@ void Chassis_Task(void *pvParameters)
 #endif
     }
 }
-
-
 
 /**
   * @brief          初始化"chassis_move"变量，包括pid初始化，一阶低通滤波初始化，遥控器指针初始化，3508底盘电机指针初始化，云台电机指针初始化，陀螺仪角度指针初始化
@@ -486,12 +513,18 @@ static void chassis_init(Chassis_Move *chassis_move_init)
     const static float chassis_DT7_y_order_filter[1] = {CHASSIS_ACCEL_Y_NUM};
     const static fp32 chassis_leg_order_filter[1] = {CHASSIS_ACCEL_LEG_NUM};
     const static fp32 chassis_leg_up_filter[1] = {CHASSIS_ACCEL_UP_NUM};
+    const static fp32 chassis_theta_l_lowpass_filter[1] = {CHASSIS_THETA_L_LOWPASS_NUM};
+    const static fp32 chassis_d_theta_l_lowpass_filter[1] = {CHASSIS_D_THETA_L_LOWPASS_NUM};
 
     /* 滤波初始化：DT7发送设定值的低通滤波 */
     first_order_filter_init(&chassis_move_init->chassis_cmd_slow_set_vx, CHASSIS_CONTROL_TIME, chassis_DT7_x_order_filter);
     first_order_filter_init(&chassis_move_init->chassis_cmd_slow_set_vy, CHASSIS_CONTROL_TIME, chassis_DT7_y_order_filter);
     first_order_filter_init(&chassis_move_init->chassis_leg_filter_set, CHASSIS_CONTROL_TIME, chassis_leg_order_filter);
     first_order_filter_init(&chassis_move_init->chassis_UP_filter_set, CHASSIS_CONTROL_TIME, chassis_leg_up_filter);
+    first_order_filter_init(&chassis_move_init->chassis_left_control.theta_l_lowpass_filter, CHASSIS_CONTROL_TIME, chassis_theta_l_lowpass_filter);
+    first_order_filter_init(&chassis_move_init->chassis_right_control.theta_l_lowpass_filter, CHASSIS_CONTROL_TIME, chassis_theta_l_lowpass_filter);
+    first_order_filter_init(&chassis_move_init->chassis_left_control.d_theta_l_lowpass_filter, CHASSIS_CONTROL_TIME, chassis_d_theta_l_lowpass_filter);
+    first_order_filter_init(&chassis_move_init->chassis_right_control.d_theta_l_lowpass_filter, CHASSIS_CONTROL_TIME, chassis_d_theta_l_lowpass_filter);
     chassis_move_init->chassis_leg_filter_set.out = 0.35;
 
     // 初始化斜坡函数，时间周期为 CHASSIS_CONTROL_TIME(0.002s)
@@ -1067,20 +1100,8 @@ static void chassis_feedback_update(Chassis_Move *chassis_move_update)
     chassis_move_update->vaEstimateKF_F_theta[1] = chassis_move_update->dt;
     chassis_move_update->vaEstimateKF_F_theta[2] = 0.0f;
     chassis_move_update->vaEstimateKF_F_theta[3] = 1.0f;
-    memcpy(chassis_move_update->chassis_left_control.chassis_vaestimatekf_theta.F_data, chassis_move_update->vaEstimateKF_F_theta, sizeof(chassis_move_update->vaEstimateKF_F_theta));
-    memcpy(chassis_move_update->chassis_right_control.chassis_vaestimatekf_theta.F_data, chassis_move_update->vaEstimateKF_F_theta, sizeof(chassis_move_update->vaEstimateKF_F_theta));
-    chassis_move_update->chassis_left_control.chassis_vaestimatekf_theta.MeasuredVector[0] = chassis_move_update->chassis_left_control.wbr_control.theta_l;
-    chassis_move_update->chassis_right_control.chassis_vaestimatekf_theta.MeasuredVector[0] = chassis_move_update->chassis_right_control.wbr_control.theta_l;
-    chassis_move_update->chassis_left_control.chassis_vaestimatekf_theta.MeasuredVector[1] = chassis_move_update->chassis_left_control.wbr_control.d_theta_l;
-    chassis_move_update->chassis_right_control.chassis_vaestimatekf_theta.MeasuredVector[1] = chassis_move_update->chassis_right_control.wbr_control.d_theta_l;
-    //卡尔曼滤波器更新函数
-     Kalman_Filter_Update(&chassis_move_update->chassis_left_control.chassis_vaestimatekf_theta);
-     Kalman_Filter_Update(&chassis_move_update->chassis_right_control.chassis_vaestimatekf_theta);
-    // 获得滤波后的角度和速度
-    chassis_move_update->chassis_left_control.theta_l = chassis_move_update->chassis_left_control.chassis_vaestimatekf_theta.FilteredValue[0];
-    chassis_move_update->chassis_right_control.theta_l = chassis_move_update->chassis_right_control.chassis_vaestimatekf_theta.FilteredValue[0];
-    chassis_move_update->chassis_left_control.d_theta_l = chassis_move_update->chassis_left_control.chassis_vaestimatekf_theta.FilteredValue[1];
-    chassis_move_update->chassis_right_control.d_theta_l = chassis_move_update->chassis_right_control.chassis_vaestimatekf_theta.FilteredValue[1];
+    chassis_update_leg_angle_signals(&chassis_move_update->chassis_left_control, chassis_move_update->vaEstimateKF_F_theta);
+    chassis_update_leg_angle_signals(&chassis_move_update->chassis_right_control, chassis_move_update->vaEstimateKF_F_theta);
 
      // 实际左腿转矩
     chassis_move_update->chassis_left_control.wbr_control.Tbl_r = (chassis_move_update->chassis_left_control.wbr_control.J[0][0] * chassis_move_update->chassis_joint[1].chassis_joint_measure->tor
@@ -1277,19 +1298,24 @@ static void chassis_lqr_power_control(Chassis_Move *chassis_move_control_loop)
     // 旋转分量 (以左轮为正，右轮系数天然反号，因为 LQR_K[1][2] == -LQR_K[0][2])
     fp32 U_yaw = -LQR_K[0][2] * yaw_err - LQR_K[0][3] * dyaw_err;
 
+    const fp32 left_theta_ctrl = chassis_select_theta_signal(&chassis_move_control_loop->chassis_left_control, CHASSIS_LEFT_THETA_FILTER_SOURCE);
+    const fp32 left_d_theta_ctrl = chassis_select_d_theta_signal(&chassis_move_control_loop->chassis_left_control, CHASSIS_LEFT_D_THETA_FILTER_SOURCE);
+    const fp32 right_theta_ctrl = chassis_select_theta_signal(&chassis_move_control_loop->chassis_right_control, CHASSIS_RIGHT_THETA_FILTER_SOURCE);
+    const fp32 right_d_theta_ctrl = chassis_select_d_theta_signal(&chassis_move_control_loop->chassis_right_control, CHASSIS_RIGHT_D_THETA_FILTER_SOURCE);
+
     // 3. 提取维持姿态平衡的扭矩分量
-    fp32 U_else_L = LQR_K[0][4] * chassis_move_control_loop->chassis_left_control.theta_l
-                  + LQR_K[0][5] * chassis_move_control_loop->chassis_left_control.d_theta_l
-                  + LQR_K[0][6] * chassis_move_control_loop->chassis_right_control.theta_l
-                  + LQR_K[0][7] * chassis_move_control_loop->chassis_right_control.d_theta_l
+    fp32 U_else_L = LQR_K[0][4] * left_theta_ctrl
+                  + LQR_K[0][5] * left_d_theta_ctrl
+                  + LQR_K[0][6] * right_theta_ctrl
+                  + LQR_K[0][7] * right_d_theta_ctrl
                   - LQR_K[0][8] * (chassis_move_control_loop->chassis_pitch)
                   - LQR_K[0][9] * chassis_move_control_loop->chassis_d_pitch
                   + chassis_move_control_loop->chassis_left_control.Tw_adapt;
 
-    fp32 U_else_R = LQR_K[1][4] * chassis_move_control_loop->chassis_left_control.theta_l
-                  + LQR_K[1][5] * chassis_move_control_loop->chassis_left_control.d_theta_l
-                  + LQR_K[1][6] * chassis_move_control_loop->chassis_right_control.theta_l
-                  + LQR_K[1][7] * chassis_move_control_loop->chassis_right_control.d_theta_l
+    fp32 U_else_R = LQR_K[1][4] * left_theta_ctrl
+                  + LQR_K[1][5] * left_d_theta_ctrl
+                  + LQR_K[1][6] * right_theta_ctrl
+                  + LQR_K[1][7] * right_d_theta_ctrl
                   - LQR_K[1][8] * (chassis_move_control_loop->chassis_pitch)
                   - LQR_K[1][9] * chassis_move_control_loop->chassis_d_pitch
                   + chassis_move_control_loop->chassis_right_control.Tw_adapt;
@@ -1310,19 +1336,19 @@ static void chassis_lqr_power_control(Chassis_Move *chassis_move_control_loop)
     // 6. 左右腿Tbl_t同样应用功率限制后的平动/yaw衰减系数
     fp32 U_speed_leg_L = LQR_K[2][0] * x_err + LQR_K[2][1] * v_err;
     fp32 U_yaw_leg_L   = LQR_K[2][2] * yaw_err + LQR_K[2][3] * dyaw_err;
-    fp32 U_else_leg_L  = LQR_K[2][4] * chassis_move_control_loop->chassis_left_control.theta_l
-                       + LQR_K[2][5] * chassis_move_control_loop->chassis_left_control.d_theta_l
-                       + LQR_K[2][6] * chassis_move_control_loop->chassis_right_control.theta_l
-                       + LQR_K[2][7] * chassis_move_control_loop->chassis_right_control.d_theta_l
+    fp32 U_else_leg_L  = LQR_K[2][4] * left_theta_ctrl
+                       + LQR_K[2][5] * left_d_theta_ctrl
+                       + LQR_K[2][6] * right_theta_ctrl
+                       + LQR_K[2][7] * right_d_theta_ctrl
                        - LQR_K[2][8] * (chassis_move_control_loop->chassis_pitch)
                        - LQR_K[2][9] * chassis_move_control_loop->chassis_d_pitch;
 
     fp32 U_speed_leg_R = LQR_K[3][0] * x_err + LQR_K[3][1] * v_err;
     fp32 U_yaw_leg_R   = LQR_K[3][2] * yaw_err + LQR_K[3][3] * dyaw_err;
-    fp32 U_else_leg_R  = LQR_K[3][4] * chassis_move_control_loop->chassis_left_control.theta_l
-                       + LQR_K[3][5] * chassis_move_control_loop->chassis_left_control.d_theta_l
-                       + LQR_K[3][6] * chassis_move_control_loop->chassis_right_control.theta_l
-                       + LQR_K[3][7] * chassis_move_control_loop->chassis_right_control.d_theta_l
+    fp32 U_else_leg_R  = LQR_K[3][4] * left_theta_ctrl
+                       + LQR_K[3][5] * left_d_theta_ctrl
+                       + LQR_K[3][6] * right_theta_ctrl
+                       + LQR_K[3][7] * right_d_theta_ctrl
                        - LQR_K[3][8] * (chassis_move_control_loop->chassis_pitch)
                        - LQR_K[3][9] * chassis_move_control_loop->chassis_d_pitch;
 
@@ -1480,6 +1506,8 @@ static void chassis_init_level_control(Chassis_Move *chassis_move_control_loop)
     fp32 right_theta_raw = chassis_move_control_loop->chassis_right_control.theta_l;
     fp32 left_theta_360 = left_theta_raw < 0.0f ? left_theta_raw + 2.0f * PI : left_theta_raw;
     fp32 right_theta_360 = right_theta_raw < 0.0f ? right_theta_raw + 2.0f * PI : right_theta_raw;
+    const fp32 left_d_theta_ctrl = chassis_select_d_theta_signal(&chassis_move_control_loop->chassis_left_control, CHASSIS_LEFT_D_THETA_FILTER_SOURCE);
+    const fp32 right_d_theta_ctrl = chassis_select_d_theta_signal(&chassis_move_control_loop->chassis_right_control, CHASSIS_RIGHT_D_THETA_FILTER_SOURCE);
 
     fp32 left_target = chassis_move_control_loop->chassis_left_control.init_angle_ramp.out +
                        direction * CHASSIS_INIT_LEVEL_ANGLE_STEP;
@@ -1524,14 +1552,14 @@ static void chassis_init_level_control(Chassis_Move *chassis_move_control_loop)
         right_torque *= lead_torque_ratio;
     }
 
-    if (fabs(chassis_move_control_loop->chassis_left_control.d_theta_l) > CHASSIS_INIT_LEVEL_SPEED_LIMIT &&
-        left_torque * chassis_move_control_loop->chassis_left_control.d_theta_l > 0.0f)
+    if (fabs(left_d_theta_ctrl) > CHASSIS_INIT_LEVEL_SPEED_LIMIT &&
+        left_torque * left_d_theta_ctrl > 0.0f)
     {
         left_torque = 0.0f;
     }
 
-    if (fabs(chassis_move_control_loop->chassis_right_control.d_theta_l) > CHASSIS_INIT_LEVEL_SPEED_LIMIT &&
-        right_torque * chassis_move_control_loop->chassis_right_control.d_theta_l > 0.0f)
+    if (fabs(right_d_theta_ctrl) > CHASSIS_INIT_LEVEL_SPEED_LIMIT &&
+        right_torque * right_d_theta_ctrl > 0.0f)
     {
         right_torque = 0.0f;
     }
@@ -1850,8 +1878,10 @@ static void chassis_init_standup(Chassis_Move *chassis_init_standup)
 
         // 2. 腿是否已经停转 (角速度接近 0，说明被地面顶住了)
         // 设置 0.2 rad/s 的极小速度阈值
-        bool_t left_stopped = (fabs(chassis_init_standup->chassis_left_control.d_theta_l) < 0.2f);
-        bool_t right_stopped = (fabs(chassis_init_standup->chassis_right_control.d_theta_l) < 0.2f);
+        const fp32 left_d_theta_ctrl = chassis_select_d_theta_signal(&chassis_init_standup->chassis_left_control, CHASSIS_LEFT_D_THETA_FILTER_SOURCE);
+        const fp32 right_d_theta_ctrl = chassis_select_d_theta_signal(&chassis_init_standup->chassis_right_control, CHASSIS_RIGHT_D_THETA_FILTER_SOURCE);
+        bool_t left_stopped = (fabs(left_d_theta_ctrl) < 0.2f);
+        bool_t right_stopped = (fabs(right_d_theta_ctrl) < 0.2f);
 
         // 3. 角度是否在安全的“触地区间” (防止在半空中或者刚起步时卡住就误判)
         bool_t left_in_zone = (left_theta_360 > 4.8f);
@@ -1903,4 +1933,9 @@ static void chassis_init_standup(Chassis_Move *chassis_init_standup)
 #ifdef __cplusplus
 }
 #endif
+
+Chassis_Move *Get_Chassis_Move_Point(void)
+{
+    return &chassis_move;
+}
 

@@ -84,61 +84,20 @@ void _ui_remove_normal_ChangeTextGroup_1() {
     ui_proc_string_frame(&ui_normal_ChangeTextGroup_1);
     SEND_MESSAGE((uint8_t *) &ui_normal_ChangeTextGroup_1, sizeof(ui_normal_ChangeTextGroup_1));
 }
-ui_string_frame_t ui_normal_ChangeTextGroup_2;
-ui_interface_string_t* ui_normal_ChangeTextGroup_Jont1Err = &(ui_normal_ChangeTextGroup_2.option);
-
-void _ui_init_normal_ChangeTextGroup_2() {
-    ui_normal_ChangeTextGroup_2.option.figure_name[0] = 1;
-    ui_normal_ChangeTextGroup_2.option.figure_name[1] = 0;
-    ui_normal_ChangeTextGroup_2.option.figure_name[2] = 2;
-    ui_normal_ChangeTextGroup_2.option.operate_type = 1;
-
-    ui_normal_ChangeTextGroup_Jont1Err->figure_type = 7;
-    ui_normal_ChangeTextGroup_Jont1Err->operate_type = 1;
-    ui_normal_ChangeTextGroup_Jont1Err->layer = 0;
-    ui_normal_ChangeTextGroup_Jont1Err->color = 4;
-    ui_normal_ChangeTextGroup_Jont1Err->start_x = 1500;
-    ui_normal_ChangeTextGroup_Jont1Err->start_y = 412;
-    ui_normal_ChangeTextGroup_Jont1Err->width = 5;
-    ui_normal_ChangeTextGroup_Jont1Err->font_size = 50;
-    ui_normal_ChangeTextGroup_Jont1Err->str_length = 7;
-    strcpy(ui_normal_ChangeTextGroup_Jont1Err->string, "JOINT 1");
-
-
-    ui_proc_string_frame(&ui_normal_ChangeTextGroup_2);
-    SEND_MESSAGE((uint8_t *) &ui_normal_ChangeTextGroup_2, sizeof(ui_normal_ChangeTextGroup_2));
-}
-
-void _ui_update_normal_ChangeTextGroup_2() {
-    ui_normal_ChangeTextGroup_2.option.operate_type = 2;
-
-    ui_proc_string_frame(&ui_normal_ChangeTextGroup_2);
-    SEND_MESSAGE((uint8_t *) &ui_normal_ChangeTextGroup_2, sizeof(ui_normal_ChangeTextGroup_2));
-}
-
-void _ui_remove_normal_ChangeTextGroup_2() {
-    ui_normal_ChangeTextGroup_2.option.operate_type = 3;
-
-    ui_proc_string_frame(&ui_normal_ChangeTextGroup_2);
-    SEND_MESSAGE((uint8_t *) &ui_normal_ChangeTextGroup_2, sizeof(ui_normal_ChangeTextGroup_2));
-}
 
 void ui_init_normal_ChangeTextGroup() {
     _ui_init_normal_ChangeTextGroup_0();
     _ui_init_normal_ChangeTextGroup_1();
-    _ui_init_normal_ChangeTextGroup_2();
 }
 
 void ui_update_normal_ChangeTextGroup() {
     _ui_update_normal_ChangeTextGroup_0();
     _ui_update_normal_ChangeTextGroup_1();
-    _ui_update_normal_ChangeTextGroup_2();
 }
 
 void ui_remove_normal_ChangeTextGroup() {
     _ui_remove_normal_ChangeTextGroup_0();
     _ui_remove_normal_ChangeTextGroup_1();
-    _ui_remove_normal_ChangeTextGroup_2();
 }
 
 ui_5_frame_t ui_normal_DynamicGroup1_0;
@@ -302,10 +261,10 @@ void ui_remove_normal_DynamicTextGroup1() {
 
 ui_5_frame_t ui_normal_LegDynamicGroup_0;
 
-ui_interface_line_t *ui_normal_LegDynamicGroup_Leg1 = (ui_interface_line_t*)&(ui_normal_LegDynamicGroup_0.data[0]);
-ui_interface_line_t *ui_normal_LegDynamicGroup_Leg2 = (ui_interface_line_t*)&(ui_normal_LegDynamicGroup_0.data[1]);
-ui_interface_line_t *ui_normal_LegDynamicGroup_Leg3 = (ui_interface_line_t*)&(ui_normal_LegDynamicGroup_0.data[2]);
-ui_interface_line_t *ui_normal_LegDynamicGroup_Leg4 = (ui_interface_line_t*)&(ui_normal_LegDynamicGroup_0.data[3]);
+ui_interface_line_t *ui_normal_LegDynamicGroup_L1U_left = (ui_interface_line_t*)&(ui_normal_LegDynamicGroup_0.data[0]);
+ui_interface_line_t *ui_normal_LegDynamicGroup_L1D_left = (ui_interface_line_t*)&(ui_normal_LegDynamicGroup_0.data[1]);
+ui_interface_line_t *ui_normal_LegDynamicGroup_L2U_right = (ui_interface_line_t*)&(ui_normal_LegDynamicGroup_0.data[2]);
+ui_interface_line_t *ui_normal_LegDynamicGroup_L2D_right = (ui_interface_line_t*)&(ui_normal_LegDynamicGroup_0.data[3]);
 ui_interface_line_t *ui_normal_LegDynamicGroup_Leg5 = (ui_interface_line_t*)&(ui_normal_LegDynamicGroup_0.data[4]);
 
 void _ui_init_normal_LegDynamicGroup_0() {
@@ -319,45 +278,45 @@ void _ui_init_normal_LegDynamicGroup_0() {
         ui_normal_LegDynamicGroup_0.data[i].operate_type = 0;
     }
 
-    ui_normal_LegDynamicGroup_Leg1->figure_type = 0;
-    ui_normal_LegDynamicGroup_Leg1->operate_type = 1;
-    ui_normal_LegDynamicGroup_Leg1->layer = 0;
-    ui_normal_LegDynamicGroup_Leg1->color = 0;
-    ui_normal_LegDynamicGroup_Leg1->start_x = 159;
-    ui_normal_LegDynamicGroup_Leg1->start_y = 783;
-    ui_normal_LegDynamicGroup_Leg1->width = 5;
-    ui_normal_LegDynamicGroup_Leg1->end_x = 236;
-    ui_normal_LegDynamicGroup_Leg1->end_y = 711;
+    ui_normal_LegDynamicGroup_L1U_left->figure_type = 0;
+    ui_normal_LegDynamicGroup_L1U_left->operate_type = 1;
+    ui_normal_LegDynamicGroup_L1U_left->layer = 0;
+    ui_normal_LegDynamicGroup_L1U_left->color = 0;
+    ui_normal_LegDynamicGroup_L1U_left->start_x = 159;
+    ui_normal_LegDynamicGroup_L1U_left->start_y = 783;
+    ui_normal_LegDynamicGroup_L1U_left->width = 5;
+    ui_normal_LegDynamicGroup_L1U_left->end_x = 236;
+    ui_normal_LegDynamicGroup_L1U_left->end_y = 711;
 
-    ui_normal_LegDynamicGroup_Leg2->figure_type = 0;
-    ui_normal_LegDynamicGroup_Leg2->operate_type = 1;
-    ui_normal_LegDynamicGroup_Leg2->layer = 0;
-    ui_normal_LegDynamicGroup_Leg2->color = 0;
-    ui_normal_LegDynamicGroup_Leg2->start_x = 237;
-    ui_normal_LegDynamicGroup_Leg2->start_y = 716;
-    ui_normal_LegDynamicGroup_Leg2->width = 5;
-    ui_normal_LegDynamicGroup_Leg2->end_x = 146;
-    ui_normal_LegDynamicGroup_Leg2->end_y = 617;
+    ui_normal_LegDynamicGroup_L1D_left->figure_type = 0;
+    ui_normal_LegDynamicGroup_L1D_left->operate_type = 1;
+    ui_normal_LegDynamicGroup_L1D_left->layer = 0;
+    ui_normal_LegDynamicGroup_L1D_left->color = 0;
+    ui_normal_LegDynamicGroup_L1D_left->start_x = 237;
+    ui_normal_LegDynamicGroup_L1D_left->start_y = 716;
+    ui_normal_LegDynamicGroup_L1D_left->width = 5;
+    ui_normal_LegDynamicGroup_L1D_left->end_x = 146;
+    ui_normal_LegDynamicGroup_L1D_left->end_y = 617;
 
-    ui_normal_LegDynamicGroup_Leg3->figure_type = 0;
-    ui_normal_LegDynamicGroup_Leg3->operate_type = 1;
-    ui_normal_LegDynamicGroup_Leg3->layer = 0;
-    ui_normal_LegDynamicGroup_Leg3->color = 0;
-    ui_normal_LegDynamicGroup_Leg3->start_x = 332;
-    ui_normal_LegDynamicGroup_Leg3->start_y = 776;
-    ui_normal_LegDynamicGroup_Leg3->width = 5;
-    ui_normal_LegDynamicGroup_Leg3->end_x = 409;
-    ui_normal_LegDynamicGroup_Leg3->end_y = 704;
+    ui_normal_LegDynamicGroup_L2U_right->figure_type = 0;
+    ui_normal_LegDynamicGroup_L2U_right->operate_type = 1;
+    ui_normal_LegDynamicGroup_L2U_right->layer = 0;
+    ui_normal_LegDynamicGroup_L2U_right->color = 0;
+    ui_normal_LegDynamicGroup_L2U_right->start_x = 332;
+    ui_normal_LegDynamicGroup_L2U_right->start_y = 776;
+    ui_normal_LegDynamicGroup_L2U_right->width = 5;
+    ui_normal_LegDynamicGroup_L2U_right->end_x = 409;
+    ui_normal_LegDynamicGroup_L2U_right->end_y = 704;
 
-    ui_normal_LegDynamicGroup_Leg4->figure_type = 0;
-    ui_normal_LegDynamicGroup_Leg4->operate_type = 1;
-    ui_normal_LegDynamicGroup_Leg4->layer = 0;
-    ui_normal_LegDynamicGroup_Leg4->color = 0;
-    ui_normal_LegDynamicGroup_Leg4->start_x = 410;
-    ui_normal_LegDynamicGroup_Leg4->start_y = 709;
-    ui_normal_LegDynamicGroup_Leg4->width = 5;
-    ui_normal_LegDynamicGroup_Leg4->end_x = 319;
-    ui_normal_LegDynamicGroup_Leg4->end_y = 610;
+    ui_normal_LegDynamicGroup_L2D_right->figure_type = 0;
+    ui_normal_LegDynamicGroup_L2D_right->operate_type = 1;
+    ui_normal_LegDynamicGroup_L2D_right->layer = 0;
+    ui_normal_LegDynamicGroup_L2D_right->color = 0;
+    ui_normal_LegDynamicGroup_L2D_right->start_x = 410;
+    ui_normal_LegDynamicGroup_L2D_right->start_y = 709;
+    ui_normal_LegDynamicGroup_L2D_right->width = 5;
+    ui_normal_LegDynamicGroup_L2D_right->end_x = 319;
+    ui_normal_LegDynamicGroup_L2D_right->end_y = 610;
 
     ui_normal_LegDynamicGroup_Leg5->figure_type = 0;
     ui_normal_LegDynamicGroup_Leg5->operate_type = 1;

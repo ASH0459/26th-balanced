@@ -87,8 +87,6 @@ add_executable(${CMAKE_PROJECT_NAME}
         Users/Bsp/Bsp_Device/Dev_BMI088_Driver/BMI088reg.h
         Users/Bsp/Bsp_Device/Dev_Can_Receive/Dev_Can_Receive.cpp
         Users/Bsp/Bsp_Device/Dev_Can_Receive/Dev_Can_Receive.h
-        Users/Bsp/Bsp_Device/Dev_Custom/Dev_Custom.c
-        Users/Bsp/Bsp_Device/Dev_Custom/Dev_Custom.h
         Users/Upper_Communication/UC_Referee/UC_Protocol.c
         Users/Upper_Communication/UC_Referee/UC_Protocol.h
         Users/Upper_Communication/UC_Referee/UC_Referee.c
