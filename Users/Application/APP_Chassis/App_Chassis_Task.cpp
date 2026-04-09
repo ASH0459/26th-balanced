@@ -1662,14 +1662,12 @@ static void chassis_calc_support_force(Chassis_Move *chassis_move_control_loop)
             // 重力补偿 + 侧向惯性力矩补偿 + 左腿腿长PID
             chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t = - chassis_move_control_loop->chassis_left_control.fd_leg
                                                                                 + chassis_move_control_loop->chassis_left_control.Fbl_spring
-                                                                                - chassis_move_control_loop->chassis_left_control.Fbl_gravity
-                                                                                + chassis_move_control_loop->chassis_left_control.Fbl_inertial;
+                                                                                - chassis_move_control_loop->chassis_left_control.Fbl_gravity;
 
             // 重力补偿 + 侧向惯性力矩补偿 + 右腿腿长PID
             chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t = - chassis_move_control_loop->chassis_right_control.fd_leg
                                                                                  + chassis_move_control_loop->chassis_right_control.Fbl_spring
-                                                                                 - chassis_move_control_loop->chassis_right_control.Fbl_gravity
-                                                                                 - chassis_move_control_loop->chassis_right_control.Fbl_inertial;
+                                                                                 - chassis_move_control_loop->chassis_right_control.Fbl_gravity;
         }
     }
 }
@@ -1746,6 +1744,22 @@ static void chassis_apply_joint_output(Chassis_Move *chassis_move_control_loop, 
     }
     else if (chassis_move_control_loop->chassis_mode != CHASSIS_INIT)
     {
+        if (chassis_move_control_loop->chassis_left_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND
+            && chassis_move_control_loop->chassis_right_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND)
+        {
+            // 轮子彻底断动力
+            chassis_move_control_loop->chassis_wheel[0].wheel_T = 0.0f;
+            chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t =
+                LQR_K[2][4] * chassis_move_control_loop->chassis_left_control.theta_l +
+                LQR_K[2][5] * chassis_move_control_loop->chassis_left_control.d_theta_l;
+
+            // 轮子彻底断动力
+            chassis_move_control_loop->chassis_wheel[1].wheel_T = 0.0f;
+            chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t =
+                LQR_K[3][6] * chassis_move_control_loop->chassis_right_control.theta_l +
+                LQR_K[3][7] * chassis_move_control_loop->chassis_right_control.d_theta_l;
+        }
+
         chassis_move_control_loop->chassis_wheel[0].wheel_T *= soft_lqr_ratio;
         chassis_move_control_loop->chassis_wheel[1].wheel_T *= soft_lqr_ratio;
 
