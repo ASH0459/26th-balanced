@@ -1608,7 +1608,7 @@ static void chassis_calc_support_force(Chassis_Move *chassis_move_control_loop)
                                                                              + chassis_move_control_loop->chassis_right_control.Fbl_spring
                                                                              + 80;
     }
-    else if (chassis_move_control_loop->chassis_mode == CHASSIS_JUMP) //对于跳跃伸腿过程以及收腿过程力的处理
+    else if (chassis_move_control_loop->chassis_mode == CHASSIS_JUMP) //对于跳跃伸腿过程以及收腿过程力的处理11
     {
         if(chassis_move_control_loop->jump_state == 1)  //对于伸腿过程.不需要弹簧补偿，但是需要重力补偿和腿长PD，加上跳跃补偿
         {
