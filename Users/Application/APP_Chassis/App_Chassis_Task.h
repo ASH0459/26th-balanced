@@ -128,7 +128,7 @@
 #define ROLL_PID_MAX_OUT				400.0f
 #define ROLL_PID_MAX_IOUT				0.0f
 
-#define  CHASSIS_X_BACK                  0.45f
+#define  CHASSIS_X_BACK                  2.5f
 // 左右腿长度PID
 #define LEG_PID_KP                        2000.0f
 #define LEG_PID_KI                        2.4f
@@ -159,7 +159,7 @@
 #define MASS_OF_BODY					20.0f
 
 // 驱动轮补偿系数
-#define K_APAPT							0.25f
+#define K_APAPT							0.35f
 
 //前后的遥控器通道号码
 #define CHASSIS_X_CHANNEL 1
@@ -248,7 +248,7 @@
 #define CHASSIS_RIGHT_KEY   KEY_PRESSED_OFFSET_D
 
 // 键盘控制最大速度 (m/s)
-#define CHASSIS_KEY_MAX_SPEED   2.0f
+#define CHASSIS_KEY_MAX_SPEED   2.5f
 #define CHASSIS_KEY_MAX_SPEED_UP   1.0f
 
 #define CHASSIS_KEY_ACCEL 1.8f
@@ -277,7 +277,7 @@
 #define CHASSIS_SPIN_LOW_SPEED 1.5f
 
 //底盘小陀螺基本速度
-#define CHASSIS_SPIN_MAIN_SPEED 10.0f
+#define CHASSIS_SPIN_MAIN_SPEED 12.0f
 
 //底盘小陀螺减去x,y方向的速度比例系数
 #define CHASSIS_SPIN_LOW_SEN 0.6
