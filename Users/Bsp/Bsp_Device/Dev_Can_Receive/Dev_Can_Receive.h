@@ -451,7 +451,31 @@ extern Wheel_Motor_Measure chassis_wheel[2];
 
 extern Gimbal_Data gimbal_data;
 
-extern void CAN_cmd_gimbal_receive(uint8_t* received_data);
+/**
+  * @brief          接收云台数据并解包
+  * @param[in]      received_data: 云台发送的8字节CAN数据
+  * @retval         none
+  * @note           预留接口，当前未接入CAN接收回调
+  */
+inline void CAN_cmd_gimbal_receive(uint8_t* received_data)
+{
+    if (received_data == nullptr)
+    {
+        return;
+    }
+
+    const int16_t v_set_tmp = static_cast<int16_t>((received_data[0] << 8) | received_data[1]);
+    const uint8_t yaw_set_tmp = received_data[2];
+    const uint8_t chassis_behaviour = received_data[4];
+    const uint8_t fric_state = received_data[5];
+    const int16_t relative_angle_tmp = static_cast<int16_t>((received_data[6] << 8) | received_data[7]);
+
+    gimbal_data.v_tmp = static_cast<fp32>(v_set_tmp) / 1000.0f;
+    gimbal_data.chassis_yaw_err = -static_cast<fp32>(yaw_set_tmp) / 1000.0f;
+    gimbal_data.chassis_relative_angle = static_cast<fp32>(relative_angle_tmp) / 1000.0f;
+    gimbal_data.fric_state = fric_state;
+    gimbal_data.chassis_behaviour_mode = chassis_behaviour;
+}
 
 extern void CAN_cmd_wheel(const fp32 motor1, const fp32 motor2);
 
