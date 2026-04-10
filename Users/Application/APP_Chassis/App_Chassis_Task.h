@@ -88,15 +88,6 @@
 #define INIT_LEG_ANGLE_PID_MAX_OUT      20.0f
 #define INIT_LEG_ANGLE_PID_MAX_IOUT     0.0f
 
-// 上台阶收腿目标角度 (0~2π坐标系, rad)
-#define CHASSIS_UP_LEG_ANGLE_TARGET_360   5.2f
-// 上台阶收腿角度到位阈值 (rad)
-#define CHASSIS_UP_LEG_ANGLE_THRESHOLD    (0.1f)
-// 上台阶收腿完成腿长阈值
-#define CHASSIS_UP_LEG_LENGTH_THRESHOLD   0.18f
-#define CHASSIS_STEP1_LEG_LENGTH          0.26f
-#define CHASSIS_STEP2_LEG_LENGTH          0.35f
-
 // 机体pitch角度正常水平阈值 (rad)
 #define CHASSIS_PITCH_LEVEL_THRESHOLD     0.7f
 
@@ -107,13 +98,6 @@
 #define CHASSIS_INIT_LEVEL_SPEED_LIMIT    1.5f  // 机体未水平时腿部旋转速度限制 (rad/s)
 #define CHASSIS_INIT_LEVEL_SYNC_ANGLE     0.5f // 机体未水平时两条腿的同步旋转角度差阈值 (rad)
 #define CHASSIS_INIT_LEVEL_SYNC_MIN_RATIO 0.0f // 机体未水平时两条腿的同步旋转最小速度比例
-
-// 上台阶收腿PID参数
-#define UP_LEG_ANGLE_PID_KP              5.0f
-#define UP_LEG_ANGLE_PID_KI              0.0f
-#define UP_LEG_ANGLE_PID_KD              10.0f
-#define UP_LEG_ANGLE_PID_MAX_OUT         20.0f
-#define UP_LEG_ANGLE_PID_MAX_IOUT        0.0f
 
 //yaw轴跟随PID
 #define YAW_PID_KP						6.0f
@@ -309,12 +293,8 @@
 typedef enum
 {
     CHASSIS_FOLLOW_GIMBAL_YAW,   // 底盘跟随云台
-    CHASSIS_FOLLOW_CHASSIS_YAW,  // 底盘有底盘角度控制闭环
     CHASSIS_ZERO,                // 底盘无力模式
-    CHASSIS_GYROSCOPE,           // 底盘小陀螺模式
     CHASSIS_INIT,                // 初始化（仅限于底盘状态正常）
-    CHASSIS_JUMP,                 // 底盘跳跃模式
-    CHASSIS_UP,                   // 上台阶模式
     CHASSIS_SAVE                  //底盘翻倒自救
 }Chassis_Mode_e;
 
@@ -337,14 +317,6 @@ typedef enum
     INIT_LEG_REACH = 1,
     INIT_LEG_STANDUP = 2,
 } init_leg_reach_e;
-
-typedef enum
-{
-    CHASSIS_UP_STATE_IDLE = 0,
-    CHASSIS_UP_STATE_CHARGE = 1,
-    CHASSIS_UP_STATE_CLIMB = 2,
-    CHASSIS_UP_STATE_RECOVER = 3,
-} chassis_up_state_e;
 
 #ifdef __cplusplus
 
@@ -375,16 +347,13 @@ public:
     chassis_off_ground_detection_e chassis_off_ground_detection;		// 离地检测枚举
 
     ramp_function_source_t init_angle_ramp;                             // 用于倒地自启的斜坡函数
-    ramp_function_source_t up_angle_ramp;
     PidTypeDef_t roll_control;											// roll轴PID
     fp32 fd_roll;														// roll轴PID输出值
     PidTypeDef_t leg_pid_control;									    // 腿长PID
     fp32 fd_leg;														// 腿长PID输出值
     PidTypeDef_t init_leg_angle_pid;									// 初始化收腿角度PID
-    PidTypeDef_t up_leg_angle_pid;										// 上台阶收腿角度PID
     fp32 Fbl_gravity;													// 重力补偿前馈
     fp32 Fbl_inertial;													// 侧向惯性力矩补偿前馈
-    fp32 Tbl_jump;                                                      // 跳跃补偿前馈
     fp32 Fbl_spring;
     wbr_leg_t wbr_control;												// wbr连杆解算
     fp32 eta;															// 腿部质心位置系数
@@ -409,10 +378,6 @@ public:
 class Chassis_Move
 {
     public:
-
-    uint8_t jump_state = 0;
-    chassis_up_state_e up_state = CHASSIS_UP_STATE_IDLE;
-    uint8_t up_leg_reached = 0;  // 上台阶腿角度是否到位标志 0:未到位 1:已到位
     init_leg_reach_e init_leg_reach_state = INIT_LEG_UNREACH;  // 初始化收腿状态
 
     const fp32 *chassis_INS_gyro;				  //机体角速度指针
@@ -476,7 +441,6 @@ class Chassis_Move
     fp32 chassis_yaw_set;
     fp32 chassis_leg_set;												// 腿部目标长度
     first_order_filter_type_t chassis_leg_filter_set;                                        // 低通滤波后的腿部长度
-    first_order_filter_type_t chassis_UP_filter_set;
     fp32 chassis_roll_set;												// 底盘roll轴设定值
 
     fp32 K = K_APAPT;														// 驱动轮补偿系数

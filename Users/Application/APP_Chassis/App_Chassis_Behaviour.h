@@ -56,12 +56,8 @@
 typedef enum
 {
     CHASSIS_BEHAVIOUR_FOLLOW_GIMBAL_YAW,  // 底盘跟随云台
-    CHASSIS_BEHAVIOUR_FOLLOW_CHASSIS_YAW, // 底盘有底盘角度控制闭环
     CHASSIS_BEHAVIOUR_ZERO_FORCE,         // 底盘无力模式
-    CHASSIS_BEHAVIOUR_GYROSCOPE,          // 底盘小陀螺模式
     CHASSIS_BEHAVIOUR_INIT,               // 初始化，翻倒自救
-    CHASSIS_BEHAVIOUR_JUMP,               // 底盘跳跃模式
-    CHASSIS_BEHAVIOUR_UP
 } Chassis_Behaviour_e;
 
 #ifdef __cplusplus
