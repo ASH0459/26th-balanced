@@ -80,28 +80,21 @@ extern "C" {
     fp32 fitted_matrix_A[15][6];
     fp32 fitted_matrix_B[20][6];
 
-    //
-//     fp32 LQR_K[4][10] = {
-//         {-3.1034, -3.4756, -4.8629, -0.99033, -6.696, -0.99177, -5.6914, -0.79448, -11.003, -1.1729},
-// {-3.1034, -3.4756, 4.8629, 0.99033, -5.6914, -0.79448, -6.696, -0.99177, -11.003, -1.1729},
-// {10.519, 13.766, -20.138, -4.1627, 80.596, 12.6, -16.652, -1.9162, -162.76, -19.32},
-// {10.519, 13.766, 20.138, 4.1627, -16.652, -1.9162, 80.596, 12.6, -162.76, -19.32},
-//     };
-
-    // 起身用LQR
-    fp32 LQR_RISE_K[4][10] = {
-        {-3.118, -3.4967, -4.7518, -0.97079, -6.942, -1.0289, -5.5276, -0.77219, -10.785, -1.1468},
-{-3.118, -3.4967, 4.7518, 0.97079, -5.5276, -0.77219, -6.942, -1.0289, -10.785, -1.1468},
-{6.4584, 8.6367, -19.056, -4.1736, 61.444, 8.7301, -15.932, -1.6493, -121.17, -14.254},
-{6.4584, 8.6367, 19.056, 4.1736, -15.932, -1.6493, 61.444, 8.7301, -121.17, -14.254},
-    };
-//11
+    //调试用参数
     fp32 LQR_K[4][10] = {
-        {-2.1886, -3.0378, -4.8629, -0.99033, -6.5059, -0.94899, -5.5013, -0.7517, -10.876, -1.1616},
-{-2.1886, -3.0378, 4.8629, 0.99033, -5.5013, -0.7517, -6.5059, -0.94899, -10.876, -1.1616},
-{7.9367, 12.317, -20.138, -4.1627, 80.51, 12.568, -16.738, -1.9475, -162.37, -19.27},
-{7.9367, 12.317, 20.138, 4.1627, -16.738, -1.9475, 80.51, 12.568, -162.37, -19.27},
+        {-1.3289, -1.9926, -2.7454, -0.72938, -5.2834, -0.64723, -4.5595, -0.54252, -8.8959, -0.8584},
+{-1.3289, -1.9926, 2.7454, 0.72938, -4.5595, -0.54252, -5.2834, -0.64723, -8.8959, -0.8584},
+{5.3928, 8.6084, -12.517, -3.5133, 55.276, 6.1737, -11.534, -0.58564, -108.94, -8.4657},
+{5.3928, 8.6084, 12.517, 3.5133, -11.534, -0.58564, 55.276, 6.1737, -108.94, -8.4657},
     };
+
+//最好的参数
+//     fp32 LQR_K[4][10] = {
+//         {-2.1886, -3.0378, -4.8629, -0.99033, -6.5059, -0.94899, -5.5013, -0.7517, -10.876, -1.1616},
+// {-2.1886, -3.0378, 4.8629, 0.99033, -5.5013, -0.7517, -6.5059, -0.94899, -10.876, -1.1616},
+// {7.9367, 12.317, -20.138, -4.1627, 80.51, 12.568, -16.738, -1.9475, -162.37, -19.27},
+// {7.9367, 12.317, 20.138, 4.1627, -16.738, -1.9475, 80.51, 12.568, -162.37, -19.27},
+//     };
 
 
     fp32 LQR_A[10][10] = {
@@ -1607,11 +1600,13 @@ static void chassis_calc_support_force(Chassis_Move *chassis_move_control_loop)
 
         //左腿腿长PID（收腿，弹簧补偿）
         chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t = - chassis_move_control_loop->chassis_left_control.fd_leg
-                                                                            +chassis_move_control_loop->chassis_left_control.Fbl_spring;
+                                                                            +chassis_move_control_loop->chassis_left_control.Fbl_spring
+                                                                            + 40;
 
         //右腿腿长PID
         chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t = - chassis_move_control_loop->chassis_right_control.fd_leg
-                                                                             +chassis_move_control_loop->chassis_right_control.Fbl_spring;
+                                                                             +chassis_move_control_loop->chassis_right_control.Fbl_spring
+                                                                             + 40;
     }
     else if (chassis_move_control_loop->chassis_mode == CHASSIS_JUMP) //对于跳跃伸腿过程以及收腿过程力的处理
     {
@@ -1662,14 +1657,12 @@ static void chassis_calc_support_force(Chassis_Move *chassis_move_control_loop)
             // 重力补偿 + 侧向惯性力矩补偿 + 左腿腿长PID
             chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t = - chassis_move_control_loop->chassis_left_control.fd_leg
                                                                                 + chassis_move_control_loop->chassis_left_control.Fbl_spring
-                                                                                - chassis_move_control_loop->chassis_left_control.Fbl_gravity
-                                                                                + chassis_move_control_loop->chassis_left_control.Fbl_inertial;
+                                                                                - chassis_move_control_loop->chassis_left_control.Fbl_gravity;
 
             // 重力补偿 + 侧向惯性力矩补偿 + 右腿腿长PID
             chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t = - chassis_move_control_loop->chassis_right_control.fd_leg
                                                                                  + chassis_move_control_loop->chassis_right_control.Fbl_spring
-                                                                                 - chassis_move_control_loop->chassis_right_control.Fbl_gravity
-                                                                                 - chassis_move_control_loop->chassis_right_control.Fbl_inertial;
+                                                                                 - chassis_move_control_loop->chassis_right_control.Fbl_gravity;
         }
     }
 }
@@ -1746,6 +1739,22 @@ static void chassis_apply_joint_output(Chassis_Move *chassis_move_control_loop, 
     }
     else if (chassis_move_control_loop->chassis_mode != CHASSIS_INIT)
     {
+        if (chassis_move_control_loop->chassis_left_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND
+            && chassis_move_control_loop->chassis_right_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND)
+        {
+            // 轮子彻底断动力
+            chassis_move_control_loop->chassis_wheel[0].wheel_T = 0.0f;
+            chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t =
+                LQR_K[2][4] * chassis_move_control_loop->chassis_left_control.theta_l +
+                LQR_K[2][5] * chassis_move_control_loop->chassis_left_control.d_theta_l;
+
+            // 轮子彻底断动力
+            chassis_move_control_loop->chassis_wheel[1].wheel_T = 0.0f;
+            chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t =
+                LQR_K[3][6] * chassis_move_control_loop->chassis_right_control.theta_l +
+                LQR_K[3][7] * chassis_move_control_loop->chassis_right_control.d_theta_l;
+        }
+
         chassis_move_control_loop->chassis_wheel[0].wheel_T *= soft_lqr_ratio;
         chassis_move_control_loop->chassis_wheel[1].wheel_T *= soft_lqr_ratio;
 

@@ -93,7 +93,7 @@ fp32 Zn[3] = {0.0f, 0.0f, 0.0f};
 void INS_task(void *pvParameters)
 {
 	// 四元数EKF初始化
-	IMU_QuaternionEKF_Init(10, 0.001, 10000000, 1, 0);
+	IMU_QuaternionEKF_Init(10, 0.001, 10000000, 1, 0.3);
 	// PID初始化
 	PID_init(&imu_temp_pid, PID_POSITION, imu_temp_PID, TEMPERATURE_PID_MAX_OUT, TEMPERATURE_PID_MAX_IOUT);
 	const fp32 gravity[3] = {0, 0, 9.81f};
