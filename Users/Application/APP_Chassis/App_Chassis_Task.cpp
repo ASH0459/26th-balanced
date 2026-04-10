@@ -82,10 +82,10 @@ extern "C" {
 
     //调试用参数
     fp32 LQR_K[4][10] = {
-        {-0.69427, -2.2387, -3.7475, -0.83554, -5.948, -0.86055, -5.0591, -0.66276, -9.5708, -1.1221},
-{-0.69427, -2.2387, 3.7475, 0.83554, -5.0591, -0.66276, -5.948, -0.86055, -9.5708, -1.1221},
-{2.121, 7.1838, -15.461, -3.6163, 63.556, 10.488, -14.781, -2.0856, -122.64, -19.559},
-{2.121, 7.1838, 15.461, 3.6163, -14.781, -2.0856, 63.556, 10.488, -122.64, -19.559},
+        {-0.69427, -2.2387, -3.3515, -0.79001, -5.9487, -0.86012, -5.0585, -0.66319, -9.5708, -1.1221},
+{-0.69427, -2.2387, 3.3515, 0.79001, -5.0585, -0.66319, -5.9487, -0.86012, -9.5708, -1.1221},
+{2.121, 7.1838, -13.849, -3.4348, 63.553, 10.49, -14.778, -2.0873, -122.64, -19.559},
+{2.121, 7.1838, 13.849, 3.4348, -14.778, -2.0873, 63.553, 10.49, -122.64, -19.559},
     };
 
 //最好的参数
@@ -1757,16 +1757,16 @@ static void chassis_apply_joint_output(Chassis_Move *chassis_move_control_loop, 
 
         // 左前关节电机力矩
         chassis_move_control_loop->chassis_joint[0].joint_T = -chassis_move_control_loop->chassis_left_control.wbr_control.J[0][0] * chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t
-                                                            - chassis_move_control_loop->chassis_left_control.wbr_control.J[0][1] * chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t* soft_lqr_ratio;
+                                                            - chassis_move_control_loop->chassis_left_control.wbr_control.J[0][1] * chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t;//* soft_lqr_ratio;
         // 左后关节电机力矩
         chassis_move_control_loop->chassis_joint[1].joint_T = chassis_move_control_loop->chassis_left_control.wbr_control.J[1][0] * chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t
-                                                            + chassis_move_control_loop->chassis_left_control.wbr_control.J[1][1] * chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t* soft_lqr_ratio;
+                                                            + chassis_move_control_loop->chassis_left_control.wbr_control.J[1][1] * chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t;//* soft_lqr_ratio;
         // 右前关节电机力矩
         chassis_move_control_loop->chassis_joint[2].joint_T = chassis_move_control_loop->chassis_right_control.wbr_control.J[0][0] * chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t
-                                                            + chassis_move_control_loop->chassis_right_control.wbr_control.J[0][1] * chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t* soft_lqr_ratio;
+                                                            + chassis_move_control_loop->chassis_right_control.wbr_control.J[0][1] * chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t;//* soft_lqr_ratio;
         // 右后关节电机力矩
         chassis_move_control_loop->chassis_joint[3].joint_T = -chassis_move_control_loop->chassis_right_control.wbr_control.J[1][0] * chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t
-                                                            - chassis_move_control_loop->chassis_right_control.wbr_control.J[1][1] * chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t* soft_lqr_ratio;
+                                                            - chassis_move_control_loop->chassis_right_control.wbr_control.J[1][1] * chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t;//* soft_lqr_ratio;
     }
 }
 
