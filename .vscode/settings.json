@@ -21,6 +21,7 @@
         "limits": "c",
         "arm_math.h": "c",
         "wbr.h": "c",
-        "ins_task.h": "c"
+        "ins_task.h": "c",
+        "complex": "cpp"
     }
 }
