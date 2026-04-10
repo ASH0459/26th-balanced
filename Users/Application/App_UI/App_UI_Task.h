@@ -5,9 +5,7 @@
 extern "C" {
 #endif
 
-#define UI_SUPERCAP_BAR_START_X 710U
-#define UI_SUPERCAP_BAR_END_X 1210U
-#define UI_SUPERCAP_BAR_Y 95U
+#include "ui_normal.h"
 
 #define RED_BLUE_COLOR 0
 #define YELLOW_COLOR 1
@@ -21,6 +19,29 @@ extern "C" {
 
 #define CAP_ENERGY_LOW_THRESHOLD 20.0f
 #define CAP_ENERGY_MEDIUM_THRESHOLD 60.0f
+
+#ifdef __cplusplus
+}
+#endif
+
+static inline uint32_t UI_SuperCap_Bar_Start_X(void)
+{
+    return ui_normal_DynamicGroup1_SuperCapPercentage->start_x;
+}
+
+static inline uint32_t UI_SuperCap_Bar_Start_Y(void)
+{
+    return ui_normal_DynamicGroup1_SuperCapPercentage->start_y;
+}
+
+static inline uint32_t UI_SuperCap_Bar_End_X(void)
+{
+    return ui_normal_StaticGroup1_SuperCapRect->end_x;
+}
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void UI_Task(void *argument);
 
