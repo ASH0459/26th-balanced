@@ -1,22 +1,22 @@
-/** ****************************(C) COPYRIGHT 2025 Robot_Z **************************** 
+/** ****************************(C) COPYRIGHT 2025 Robot_Z ****************************
 * @file  Dev_Can_Receive.h
-* @brief 
-* @note 
-* @history 
-* Version  Date                    Author   Modification 
-* V1.0.0   10-01-2025 无垠    1. done 
-* 
-@verbatim 
-============================================================================== 
+* @brief
+* @note
+* @history
+* Version  Date                    Author   Modification
+* V1.0.0   10-01-2025 无垠    1. done
+*
+@verbatim
+==============================================================================
 
 
-============================================================================== 
-@endverbatim 
-****************************(C) COPYRIGHT 2025 Robot_Z **************************** 
-*/ 
-#pragma once 
-/** * @brief 头文件 */ 
-#include "main.h" 
+==============================================================================
+@endverbatim
+****************************(C) COPYRIGHT 2025 Robot_Z ****************************
+*/
+#pragma once
+/** * @brief 头文件 */
+#include "main.h"
 #include "cmsis_os.h"
 #include "fdcan.h"
 #include <math.h>
@@ -29,20 +29,20 @@
 #define CHASSIS_WHEEL_CAN hfdcan3
 
 // 转矩系数
-#define CONSTANT_OF_TORQUE			3057 // 3291.065087
+#define CONSTANT_OF_TORQUE 3057 // 3291.065087
 
-#define P_MIN 						-12.5f
-#define P_MAX 						12.5f
-#define V_MIN 						-45.0f
-#define V_MAX 						45.0f
-#define KP_MIN 						0.0f
-#define KP_MAX 						5000.0f
-#define KD_MIN 						0.0f
-#define KD_MAX 						100.0f
-#define T_MIN 						-40.0f
-#define T_MAX 						40.0f
+#define P_MIN -12.5f
+#define P_MAX 12.5f
+#define V_MIN -45.0f
+#define V_MAX 45.0f
+#define KP_MIN 0.0f
+#define KP_MAX 5000.0f
+#define KD_MIN 0.0f
+#define KD_MAX 100.0f
+#define T_MIN -40.0f
+#define T_MAX 40.0f
 
-#define YAW_MECHANICAL_ZERO  0.32f
+#define YAW_MECHANICAL_ZERO 0.32f
 
 /** * @brief 结构体 */
 typedef enum
@@ -56,17 +56,28 @@ typedef enum
     CAN_CHASSIS_WHEEL_LEFT_ID = 0x201,
     CAN_CHASSIS_WHEEL_RIGHT_ID = 0x202,
 
-    CAN_SBUS_ID       = 0x302,
-    CAN_VT_ID         = 0x303,
-    CAN_ATOM_ID         = 0X2BC,
+    GIMBAL_ID = 0x302,
+    CAN_VT_ID = 0x303,
+    CAN_ATOM_ID = 0X2BC,
 } can_msg_id_e;
+
+typedef enum
+{
+    CHASSIS_MODE_NO_FORCE = 0,
+    CHASSIS_MODE_RESERVED = 1,
+    CHASSIS_MODE_NORMAL = 2,
+    CHASSIS_MODE_JUMP = 3,
+    CHASSIS_MODE_STEP_1 = 4,
+    CHASSIS_MODE_STEP_2 = 5,
+} chassis_mode_e;
 
 /** * @brief 变量外部声明 */
 
-/** * @brief CPP部分 */ 
+/** * @brief CPP部分 */
 #ifdef __cplusplus
 
-static uint16_t float_to_uint(fp32 x_float, fp32 x_min, fp32 x_max, uint16_t bits) {
+static uint16_t float_to_uint(fp32 x_float, fp32 x_min, fp32 x_max, uint16_t bits)
+{
     fp32 span = x_max - x_min;
     fp32 offset = x_min;
     if (x_float < x_min)
@@ -74,38 +85,48 @@ static uint16_t float_to_uint(fp32 x_float, fp32 x_min, fp32 x_max, uint16_t bit
     else if (x_float > x_max)
         x_float = x_max;
 
-    return (int32_t) ((x_float - offset) * (fp32)((1 << bits) - 1) / span);
+    return (int32_t)((x_float - offset) * (fp32)((1 << bits) - 1) / span);
 }
 
-class Wheel_Motor_Measure {
+static fp32 uint_to_float(fp32 x_int, fp32 x_min, fp32 x_max, uint16_t bits)
+{
+    const fp32 span = x_max - x_min;
+    return x_int * span / (fp32)((1U << bits) - 1U) + x_min;
+}
+
+class Wheel_Motor_Measure
+{
 public:
-    uint8_t id;//电机id
-    FDCAN_HandleTypeDef* hfdcan; //电机对应的fdcan
+    uint8_t id;                  // 电机id
+    FDCAN_HandleTypeDef *hfdcan; // 电机对应的fdcan
     Wheel_Motor_Measure(const uint8_t id, FDCAN_HandleTypeDef *hfdcan)
     {
         this->id = id;
         this->hfdcan = hfdcan;
     };
 
-    uint16_t ecd;//编码值
-    int16_t speed_rpm;// 原始速度数据 换算后为Rpm
-    int16_t given_current;//电流值
-    uint8_t temperate;//温度值
-    int16_t last_ecd;//上一次编码值
-    int32_t total_ecd;//总编码值
+    uint16_t ecd;          // 编码值
+    int16_t speed_rpm;     // 原始速度数据 换算后为Rpm
+    int16_t given_current; // 电流值
+    uint8_t temperate;     // 温度值
+    int16_t last_ecd;      // 上一次编码值
+    int32_t total_ecd;     // 总编码值
     int32_t count;
 
     /**
-    * @brief 获取该对象电机测量数据
-    * @param data 接收到的CAN数据
-    */
+     * @brief 获取该对象电机测量数据
+     * @param data 接收到的CAN数据
+     */
     void get_motor_measure(uint8_t data[8])
     {
         this->last_ecd = this->ecd;
         this->ecd = (uint16_t)((data)[0] << 8 | (data)[1]);
-        if (this->ecd - this->last_ecd > 4096) {
+        if (this->ecd - this->last_ecd > 4096)
+        {
             this->count--;
-        } else if (this->ecd - this->last_ecd < -4096){
+        }
+        else if (this->ecd - this->last_ecd < -4096)
+        {
             this->count++;
         }
         this->total_ecd = (int32_t)(8192 * this->count + this->ecd);
@@ -115,44 +136,46 @@ public:
     }
 
     /**
-  * @brief          获取电机对象指针
-  * @param[in]      none
-  * @return			返回对应电机对象的指针
-  * @retval         none
-  */
-    const Wheel_Motor_Measure* get_chassis_motor_measure_point() const
+     * @brief          获取电机对象指针
+     * @param[in]      none
+     * @return			返回对应电机对象的指针
+     * @retval         none
+     */
+    const Wheel_Motor_Measure *get_chassis_motor_measure_point() const
     {
         return this;
     }
+
 private:
 };
 
-class Joint_Motor_Measure {
+class Joint_Motor_Measure
+{
 public:
-    uint8_t id;//电机id
-    FDCAN_HandleTypeDef* hfdcan; //电机对应的fdcan
+    uint8_t id;                  // 电机id
+    FDCAN_HandleTypeDef *hfdcan; // 电机对应的fdcan
     Joint_Motor_Measure(const uint8_t id, FDCAN_HandleTypeDef *hfdcan)
     {
         this->id = id;
         this->hfdcan = hfdcan;
     };
 
-    uint16_t p_int;//位置控制值
-    uint16_t v_int;//速度控制值
-    uint16_t t_int;//力矩控制值
-    int32_t count;//计数
-    fp32 total_pos;//总位置
-    fp32 pos;//当前位置
-    fp32 last_pos;//上一次位置
-    fp32 vel;//速度
-    fp32 tor;//扭矩
+    uint16_t p_int; // 位置控制值
+    uint16_t v_int; // 速度控制值
+    uint16_t t_int; // 力矩控制值
+    int32_t count;  // 计数
+    fp32 total_pos; // 总位置
+    fp32 pos;       // 当前位置
+    fp32 last_pos;  // 上一次位置
+    fp32 vel;       // 速度
+    fp32 tor;       // 扭矩
 
     void Enable_Joint_Motor() const
     {
         static FDCAN_TxHeaderTypeDef joint_tx_message;
         static uint8_t joint_fdcan_send_data[8];
 
-        joint_tx_message.Identifier =  this->id;
+        joint_tx_message.Identifier = this->id;
         joint_tx_message.IdType = FDCAN_STANDARD_ID;
         joint_tx_message.TxFrameType = FDCAN_DATA_FRAME;
         joint_tx_message.DataLength = FDCAN_DLC_BYTES_8;
@@ -230,22 +253,25 @@ public:
 
         HAL_FDCAN_AddMessageToTxFifoQ(this->hfdcan, &joint_tx_message, joint_fdcan_send_data);
     }
-    
+
     /**
-    * @brief 获取该对象电机测量数据
-    * @param data 接收到的CAN数据
-    */
-    void get_joint_motor_measure(uint8_t data[8]) {
+     * @brief 获取该对象电机测量数据
+     * @param data 接收到的CAN数据
+     */
+    void get_joint_motor_measure(uint8_t data[8])
+    {
         this->last_pos = this->pos;
         this->p_int = (uint16_t)((data)[1] << 8 | (data)[2]);
         this->v_int = (uint16_t)((data[3] << 4) | (data[4] >> 4));
         this->t_int = (uint16_t)(((data[4] & 0x0F) << 8) | data[5]);
         this->pos = (fp32)(this->p_int / 65535.0f) * 2 * P_MAX - P_MAX;
-        if (this->pos - this->last_pos >= P_MAX){
-            this->count--;																			
+        if (this->pos - this->last_pos >= P_MAX)
+        {
+            this->count--;
         }
-        else if (this->pos - this->last_pos <= P_MIN) {
-            this->count++;																			
+        else if (this->pos - this->last_pos <= P_MIN)
+        {
+            this->count++;
         }
         this->total_pos = 2 * P_MAX * this->count + this->pos;
         this->vel = (fp32)(this->v_int / 4095.0f) * 2 * V_MAX - V_MAX;
@@ -253,178 +279,34 @@ public:
     }
 
     /**
-  * @brief          获取电机对象指针
-  * @param[in]      none
-  * @return			返回对应电机对象的指针
-  * @retval         none
-  */
-    const Joint_Motor_Measure* get_chassis_motor_measure_point() const
+     * @brief          获取电机对象指针
+     * @param[in]      none
+     * @return			返回对应电机对象的指针
+     * @retval         none
+     */
+    const Joint_Motor_Measure *get_chassis_motor_measure_point() const
     {
         return this;
     }
+
 private:
 };
 
-class Gimbal_Data {
-    public:
-    int16_t chassis_vx;
-    int16_t chassis_leg_set;
-    uint8_t chassis_mode;
-    uint8_t super_cap_state;
-    uint8_t jump;           // trigger标志位
-    uint8_t key;            // 键盘高字节
-
-    uint16_t d_yaw_set;
-    //int yaw_relative_angle;
-    int16_t yaw_relative_angle;
-    float yaw_relative_pos;
-    float total_pos, final_pos;
-
+class Gimbal_Data
+{
+public:
     fp32 v_tmp;
-    fp32 chassis_yaw_err;
+    fp32 chassis_yaw_set;
     fp32 chassis_relative_angle;
     uint8_t fric_state;
-    uint8_t chassis_behaviour_mode;
-
-    float init_yaw_angle;
-
-    // 全局或静态变量：记录电机圈数和上一次的单圈角度
-    int32_t motor_rounds = 0;       // 累计转动圈数
-    float prev_single_pos = 0.0f;   // 上一次的单圈角度（用于检测跨圈）
-
-    float uint_to_float(int x_int, float x_min, float x_max, int bits)
-    {
-        /* converts unsigned int to float, given range and number of bits */
-        float span = x_max - x_min;
-        float offset = x_min;
-        return ((float)x_int)*span/((float)((1<<bits)-1)) + offset;
-    }
+    chassis_mode_e chassis_behaviour_mode;
 
     /**
- * @brief 角度归一化函数：将任意角度折叠到 [-180°, 180°] 范围内
- * @param angle 输入的任意角度（单位：度）
- * @return 归一化后的角度，范围 [-180°, 180°]
- */
-    float wrap_to_180(float angle) {
-        // 第一步：对 360 取模，得到 (-360°, 360°) 之间的角度
-        angle = fmod(angle, 2.0f*PI);
-
-        // 第二步：调整到 [-180°, 180°] 范围内
-        if (angle > PI) {
-            angle -= 2.0f*PI;
-        } else if (angle < -PI) {
-            angle += 2.0f*PI;
-        }
-
-        return angle;
-    }
-
-
-    /**
-    * @brief 获取云台对象数据
-    * @param data 接收到的CAN数据
-    */
-    void get_Gimbal_Data(uint8_t data[8])
-    {
-        static uint8_t init_flag = 0;
-
-        this->chassis_vx = (uint16_t)((data)[2] << 8 | (data)[3]);
-        this->chassis_leg_set = -(uint16_t)((data)[0] << 8 | (data)[1]);
-        this->yaw_relative_angle = (uint16_t)((data)[6] << 8 | (data)[7]);
-        this->chassis_mode = (data)[4];
-        this->super_cap_state = (data)[5];
-
-        this->yaw_relative_pos = uint_to_float(this->yaw_relative_angle, -4.0f*PI,  4.0f*PI, 16); // (-12.5,12.5)
-
-        // 2. 检测跨圈（判断是否从单圈的一端跳到另一端）.
-        float delta = this->yaw_relative_pos - this->prev_single_pos;
-        if (delta > 4.0f*PI) {
-            // 逆时针跨圈（例如从 12.5° 跳到 -12.5°），圈数减 1
-            this->motor_rounds--;
-        } else if (delta < -4.0f*PI) {
-            // 顺时针跨圈（例如从 -12.5° 跳到 12.5°），圈数加 1
-            this->motor_rounds++;
-        }
-
-        // 3. 计算累计总角度（单圈角度 + 圈数 × 单圈跨度）
-        this->total_pos = this->yaw_relative_pos + motor_rounds * 8.0f*PI;
-
-        // 4. 核心步骤：将总角度归一化到 ±180° 范围内
-        this->final_pos = wrap_to_180(total_pos);
-
-        // 5. 更新上一次的单圈角度，用于下一次跨圈检测
-        this->prev_single_pos = this->yaw_relative_pos;
-
-        if(init_flag == 0 && this->final_pos != 0.0f) {
-            this->init_yaw_angle = this->final_pos;
-            init_flag = 1;
-        }
-    }
-
-    /**
-    * @brief 获取图传链路数据
-    * @param data 接收到的CAN数据
-    */
-    void get_vt_Data(uint8_t data[8])
-    {
-        static uint8_t init_flag = 0;
-        // [0][1] = ch_2 → leg_set
-        this->chassis_vx = (int16_t)((data)[0] << 8 | (data)[1]);
-        // [2][3] = ch_3 → vx
-        this->chassis_leg_set = -(int16_t)((data)[2] << 8 | (data)[3]);
-        // [4] bit2-bit3 = mode_sw → chassis_mode
-        this->chassis_mode = ((data)[4] >> 2) & 0x03;
-
-        // if (this->chassis_mode == 0) {
-        //     this->chassis_mode = 2;
-        // }
-        // else if (this->chassis_mode == 1) {
-        //     this->chassis_mode = 3;
-        // }
-        // else if (this->chassis_mode == 2) {
-        //     this->chassis_mode = 1;
-        // }
-        // [4] bit0 = fn_1 → super_cap_state
-        this->super_cap_state = (data)[4] & 0x01;
-        // [4] bit1 = trigger → jump
-        this->jump = ((data)[4] >> 1) & 0x01;
-        // [5] = key低8位字节
-        this->key = (data)[5];
-        // [6][7] = pos_1 + pos_2 → yaw_relative_angle
-        this->yaw_relative_angle = (int16_t)((data)[6] << 8 | (data)[7]);
-
-        this->yaw_relative_pos = uint_to_float(this->yaw_relative_angle, -PI,  PI, 16); // (-12.5,12.5)
-
-        // 2. 检测跨圈（判断是否从单圈的一端跳到另一端）.
-        float delta = this->yaw_relative_pos - this->prev_single_pos;
-        if (delta > 4.0f*PI) {
-            // 逆时针跨圈（例如从 12.5° 跳到 -12.5°），圈数减 1
-            this->motor_rounds--;
-        } else if (delta < -4.0f*PI) {
-            // 顺时针跨圈（例如从 -12.5° 跳到 12.5°），圈数加 1
-            this->motor_rounds++;
-        }
-
-        // 3. 计算累计总角度（单圈角度 + 圈数 × 单圈跨度）
-        this->total_pos = this->yaw_relative_pos + motor_rounds * 8.0f*PI;
-
-        // 4. 核心步骤：将总角度归一化到 ±180° 范围内
-        this->final_pos = wrap_to_180(total_pos);
-
-        // 5. 更新上一次的单圈角度，用于下一次跨圈检测
-        this->prev_single_pos = this->yaw_relative_pos;
-        if(init_flag == 0 && this->final_pos != 0.0f) {
-            this->init_yaw_angle = this->final_pos;
-            init_flag = 1;
-        }
-    }
-
-    /**
-    * @brief          获取云台对象指针
-    * @param[in]      none
-    * @return			返回对应云台对象的指针
-    * @retval         none
-    */
+     * @brief          获取云台对象指针
+     * @param[in]      none
+     * @return			返回对应云台对象的指针
+     * @retval         none
+     */
     const Gimbal_Data *get_gimbal_point() const
     {
         return this;
@@ -433,31 +315,33 @@ class Gimbal_Data {
 private:
 };
 
-
-class Chassis_Data {
-    public:
+class Chassis_Data
+{
+public:
     int16_t heat;
     int16_t shoot_num;
     int16_t money;
     uint8_t live_state;
     uint8_t id;
+
 private:
 };
 
 extern Joint_Motor_Measure chassis_joint[4];
-
 
 extern Wheel_Motor_Measure chassis_wheel[2];
 
 extern Gimbal_Data gimbal_data;
 
 /**
-  * @brief          接收云台数据并解包
-  * @param[in]      received_data: 云台发送的8字节CAN数据
-  * @retval         none
-  * @note           预留接口，当前未接入CAN接收回调
-  */
-inline void CAN_cmd_gimbal_receive(uint8_t* received_data)
+ * @brief          接收云台数据并解包
+ * @param[in]      received_data: 云台发送的8字节CAN数据
+ * @retval         none
+ * @note           已在FDCAN中断中接入，打包协议:
+ *                 [0..1] v_set, [2..3] turn_set, [4] mode_byte,
+ *                 [5] fric_state, [6..7] relative_angle
+ */
+inline void CAN_cmd_gimbal_receive(const uint8_t *received_data)
 {
     if (received_data == nullptr)
     {
@@ -465,14 +349,14 @@ inline void CAN_cmd_gimbal_receive(uint8_t* received_data)
     }
 
     const int16_t v_set_tmp = static_cast<int16_t>((received_data[0] << 8) | received_data[1]);
-    const uint8_t yaw_set_tmp = received_data[2];
-    const uint8_t chassis_behaviour = received_data[4];
+    const int16_t yaw_set_tmp = static_cast<int16_t>((received_data[2] << 8) | received_data[3]);
+    const chassis_mode_e chassis_behaviour = static_cast<chassis_mode_e>(received_data[4]);
     const uint8_t fric_state = received_data[5];
-    const int16_t relative_angle_tmp = static_cast<int16_t>((received_data[6] << 8) | received_data[7]);
+    const uint16_t relative_angle_tmp = static_cast<uint16_t>((received_data[6] << 8) | received_data[7]);
 
     gimbal_data.v_tmp = static_cast<fp32>(v_set_tmp) / 1000.0f;
-    gimbal_data.chassis_yaw_err = -static_cast<fp32>(yaw_set_tmp) / 1000.0f;
-    gimbal_data.chassis_relative_angle = static_cast<fp32>(relative_angle_tmp) / 1000.0f;
+    gimbal_data.chassis_yaw_set = -static_cast<fp32>(yaw_set_tmp) / 1000.0f;
+    gimbal_data.chassis_relative_angle = uint_to_float(static_cast<fp32>(relative_angle_tmp), -PI, PI, 16);
     gimbal_data.fric_state = fric_state;
     gimbal_data.chassis_behaviour_mode = chassis_behaviour;
 }
@@ -481,13 +365,14 @@ extern void CAN_cmd_wheel(const fp32 motor1, const fp32 motor2);
 
 extern void CAN_cmd_steering(const int16_t motor1, const int16_t motor2);
 
-#endif 
+#endif
 
-/** * @brief 函数外部声明 */ 
-#ifdef __cplusplus 
-extern "C" { 
-#endif 
+/** * @brief 函数外部声明 */
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
-#ifdef __cplusplus 
+#ifdef __cplusplus
 }
 #endif

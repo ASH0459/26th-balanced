@@ -94,6 +94,8 @@
 #define CHASSIS_UP_LEG_ANGLE_THRESHOLD    (0.1f)
 // 上台阶收腿完成腿长阈值
 #define CHASSIS_UP_LEG_LENGTH_THRESHOLD   0.18f
+#define CHASSIS_STEP1_LEG_LENGTH          0.26f
+#define CHASSIS_STEP2_LEG_LENGTH          0.35f
 
 // 机体pitch角度正常水平阈值 (rad)
 #define CHASSIS_PITCH_LEVEL_THRESHOLD     0.7f
@@ -336,6 +338,14 @@ typedef enum
     INIT_LEG_STANDUP = 2,
 } init_leg_reach_e;
 
+typedef enum
+{
+    CHASSIS_UP_STATE_IDLE = 0,
+    CHASSIS_UP_STATE_CHARGE = 1,
+    CHASSIS_UP_STATE_CLIMB = 2,
+    CHASSIS_UP_STATE_RECOVER = 3,
+} chassis_up_state_e;
+
 #ifdef __cplusplus
 
 
@@ -401,19 +411,15 @@ class Chassis_Move
     public:
 
     uint8_t jump_state = 0;
-    uint8_t up_state = 0;
+    chassis_up_state_e up_state = CHASSIS_UP_STATE_IDLE;
     uint8_t up_leg_reached = 0;  // 上台阶腿角度是否到位标志 0:未到位 1:已到位
     init_leg_reach_e init_leg_reach_state = INIT_LEG_UNREACH;  // 初始化收腿状态
-    bool is_up_mode = false;
 
     const fp32 *chassis_INS_gyro;				  //机体角速度指针
     const fp32 *chassis_INS_angle;                //获取陀螺仪解算出的欧拉角指针
     const fp32 *chassis_motion_accel_n;			  //绝对坐标系加速度指针
 
     const Gimbal_Data *chassis_gimbal_data;      //获取云台数据
-    uint32_t chassis_relative_angle_set;
-
-    float chassis_yaw_target_base;
     Chassis_Mode_e chassis_mode;                  //底盘控制状态机
     Chassis_Mode_e last_chassis_mode;             //底盘上次控制状态机
 
