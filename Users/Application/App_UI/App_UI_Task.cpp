@@ -37,7 +37,6 @@ void UI_Task(void *argument)
   {
     UI_data_update();
     UI_updata();
-    osDelay(50);
   }
 }
 

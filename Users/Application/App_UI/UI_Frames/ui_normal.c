@@ -30,11 +30,11 @@ void _ui_init_normal_DynamicGroup1_0() {
     ui_normal_DynamicGroup1_FricOrNot->operate_type = 1;
     ui_normal_DynamicGroup1_FricOrNot->layer = 0;
     ui_normal_DynamicGroup1_FricOrNot->color = 8;
-    ui_normal_DynamicGroup1_FricOrNot->start_x = 576;
-    ui_normal_DynamicGroup1_FricOrNot->start_y = 242;
+    ui_normal_DynamicGroup1_FricOrNot->start_x = 617;
+    ui_normal_DynamicGroup1_FricOrNot->start_y = 246;
     ui_normal_DynamicGroup1_FricOrNot->width = 1;
-    ui_normal_DynamicGroup1_FricOrNot->end_x = 1322;
-    ui_normal_DynamicGroup1_FricOrNot->end_y = 875;
+    ui_normal_DynamicGroup1_FricOrNot->end_x = 1307;
+    ui_normal_DynamicGroup1_FricOrNot->end_y = 831;
 
     ui_normal_DynamicGroup1_FricStateRect->figure_type = 1;
     ui_normal_DynamicGroup1_FricStateRect->operate_type = 1;
@@ -62,11 +62,11 @@ void _ui_init_normal_DynamicGroup1_0() {
     ui_normal_DynamicGroup1_SuperCapPercentage->operate_type = 1;
     ui_normal_DynamicGroup1_SuperCapPercentage->layer = 0;
     ui_normal_DynamicGroup1_SuperCapPercentage->color = 2;
-    ui_normal_DynamicGroup1_SuperCapPercentage->start_x = 187;
-    ui_normal_DynamicGroup1_SuperCapPercentage->start_y = 164;
-    ui_normal_DynamicGroup1_SuperCapPercentage->width = 5;
-    ui_normal_DynamicGroup1_SuperCapPercentage->end_x = 587;
-    ui_normal_DynamicGroup1_SuperCapPercentage->end_y = 164;
+    ui_normal_DynamicGroup1_SuperCapPercentage->start_x = 734;
+    ui_normal_DynamicGroup1_SuperCapPercentage->start_y = 79;
+    ui_normal_DynamicGroup1_SuperCapPercentage->width = 10;
+    ui_normal_DynamicGroup1_SuperCapPercentage->end_x = 1134;
+    ui_normal_DynamicGroup1_SuperCapPercentage->end_y = 79;
 
     ui_normal_DynamicGroup1_ChassisStateRect->figure_type = 1;
     ui_normal_DynamicGroup1_ChassisStateRect->operate_type = 1;
@@ -337,21 +337,21 @@ void _ui_init_normal_StaticGroup1_0() {
     ui_normal_StaticGroup1_SuperCapRect->operate_type = 1;
     ui_normal_StaticGroup1_SuperCapRect->layer = 0;
     ui_normal_StaticGroup1_SuperCapRect->color = 8;
-    ui_normal_StaticGroup1_SuperCapRect->start_x = 180;
-    ui_normal_StaticGroup1_SuperCapRect->start_y = 157;
+    ui_normal_StaticGroup1_SuperCapRect->start_x = 727;
+    ui_normal_StaticGroup1_SuperCapRect->start_y = 72;
     ui_normal_StaticGroup1_SuperCapRect->width = 3;
-    ui_normal_StaticGroup1_SuperCapRect->end_x = 590;
-    ui_normal_StaticGroup1_SuperCapRect->end_y = 177;
+    ui_normal_StaticGroup1_SuperCapRect->end_x = 1137;
+    ui_normal_StaticGroup1_SuperCapRect->end_y = 92;
 
     ui_normal_StaticGroup1_SuperCapMidLine->figure_type = 0;
     ui_normal_StaticGroup1_SuperCapMidLine->operate_type = 1;
     ui_normal_StaticGroup1_SuperCapMidLine->layer = 0;
     ui_normal_StaticGroup1_SuperCapMidLine->color = 8;
-    ui_normal_StaticGroup1_SuperCapMidLine->start_x = 389;
-    ui_normal_StaticGroup1_SuperCapMidLine->start_y = 152;
+    ui_normal_StaticGroup1_SuperCapMidLine->start_x = 936;
+    ui_normal_StaticGroup1_SuperCapMidLine->start_y = 67;
     ui_normal_StaticGroup1_SuperCapMidLine->width = 3;
-    ui_normal_StaticGroup1_SuperCapMidLine->end_x = 389;
-    ui_normal_StaticGroup1_SuperCapMidLine->end_y = 212;
+    ui_normal_StaticGroup1_SuperCapMidLine->end_x = 936;
+    ui_normal_StaticGroup1_SuperCapMidLine->end_y = 127;
 
     ui_normal_StaticGroup1_5mLine->figure_type = 0;
     ui_normal_StaticGroup1_5mLine->operate_type = 1;
