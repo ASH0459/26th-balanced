@@ -74,7 +74,7 @@
 
 // 腿的最大最小长度
 #define CHASSIS_LEG_MAX					0.35f
-#define CHASSIS_LEG_MIN					0.201f
+#define CHASSIS_LEG_MIN					0.17f
 
 // 初始化收腿目标角度 (rad)，原始坐标系下为-1.26rad，换算到0~2π下为2π-1.26
 #define CHASSIS_INIT_LEG_ANGLE_TARGET_RAW   (-1.26f)
@@ -95,12 +95,13 @@
 #define CHASSIS_NORMAL_LEG_TARGET         CHASSIS_LEG_MIN
 #define CHASSIS_LEG_1_TARGET              0.26f
 #define CHASSIS_LEG_2_TARGET              0.30f
-#define CHASSIS_JUMP_PRELOAD_TARGET       0.185f
+#define CHASSIS_LEG_STEP_RAMP_SPEED       0.20f
+#define CHASSIS_INIT_RETRACT_LEG_TARGET   CHASSIS_NORMAL_LEG_TARGET
 #define CHASSIS_JUMP_TAKEOFF_TARGET       0.35f
-#define CHASSIS_JUMP_TUCK_TARGET          0.185f
-#define CHASSIS_JUMP_LAND_TARGET          CHASSIS_LEG_MIN
+#define CHASSIS_JUMP_AIRBORNE_TARGET      0.20f
+#define CHASSIS_JUMP_LAND_TARGET          CHASSIS_JUMP_AIRBORNE_TARGET
+#define CHASSIS_JUMP_AIRBORNE_LEG_RAMP_SPEED 0.80f
 #define CHASSIS_JUMP_TAKEOFF_FORCE_BONUS  120.0f
-#define CHASSIS_JUMP_PRELOAD_TICKS        120U
 #define CHASSIS_JUMP_LAND_TICKS           150U
 #define CHASSIS_POSTURE_STABLE_TICKS      50U
 
@@ -205,6 +206,7 @@
 #define CHASSIS_ACCEL_X_NUM 0.1666666667f
 #define CHASSIS_ACCEL_Y_NUM 0.3333333333f
 #define CHASSIS_ACCEL_LEG_NUM 0.3333333333f
+#define CHASSIS_INIT_RETRACT_LEG_NUM 0.6f
 #define CHASSIS_ACCEL_UP_NUM 0.5f
 #define CHASSIS_THETA_L_LOWPASS_NUM 0.01f
 #define CHASSIS_D_THETA_L_LOWPASS_NUM 0.005f
@@ -470,7 +472,7 @@ class Chassis_Move
     fp32 chassis_d_yaw_set;												// 目标角速度
     fp32 chassis_yaw_set;
     fp32 chassis_leg_set;												// 腿部目标长度
-    first_order_filter_type_t chassis_leg_filter_set;                                        // 低通滤波后的腿部长度
+    first_order_filter_type_t chassis_leg_filter_set;                                        // 低通/斜坡后的腿部目标长度
     fp32 chassis_roll_set;												// 底盘roll轴设定值
 
     fp32 K = K_APAPT;														// 驱动轮补偿系数

@@ -29,6 +29,30 @@ static fp32 clamp_leg_length(fp32 leg_set)
     return leg_set;
 }
 
+static fp32 chassis_ramp_leg_target(Chassis_Move *chassis_move, fp32 target_leg_length, fp32 ramp_speed)
+{
+    const fp32 target = clamp_leg_length(target_leg_length);
+    fp32 current = clamp_leg_length(chassis_move->chassis_leg_filter_set.out);
+    const fp32 max_step = fabsf(ramp_speed) * CHASSIS_CONTROL_TIME;
+    const fp32 error = target - current;
+
+    if (max_step <= 1e-6f || fabsf(error) <= max_step)
+    {
+        current = target;
+    }
+    else if (error > 0.0f)
+    {
+        current += max_step;
+    }
+    else
+    {
+        current -= max_step;
+    }
+
+    chassis_move->chassis_leg_filter_set.out = current;
+    return current;
+}
+
 static bool_t chassis_is_request_rising_edge(const Chassis_Move *chassis_move_mode, chassis_mode_e target_mode)
 {
     return chassis_move_mode->chassis_gimbal_data->chassis_behaviour_mode == target_mode &&
@@ -82,7 +106,7 @@ static void chassis_follow_control(fp32 *vx_set, fp32 *d_yaw_set, fp32 *leg_set,
 
     *vx_set = vx_ramp.out;
     *d_yaw_set = target_d_yaw;
-    *leg_set = clamp_leg_length(target_leg_length);
+    *leg_set = chassis_ramp_leg_target(chassis_move_rc_to_vector, target_leg_length, CHASSIS_LEG_STEP_RAMP_SPEED);
     *yaw_set = angle_error;
 }
 
@@ -93,11 +117,13 @@ static void chassis_init_control(fp32 *vx_set, fp32 *d_yaw_set, fp32 *leg_set, C
 
     if (chassis_move_rc_to_vector->init_phase == CHASSIS_INIT_RETRACT)
     {
-        first_order_filter_cali(&chassis_move_rc_to_vector->chassis_leg_filter_set, CHASSIS_JUMP_PRELOAD_TARGET);
+        chassis_move_rc_to_vector->chassis_leg_filter_set.num[0] = CHASSIS_INIT_RETRACT_LEG_NUM;
+        first_order_filter_cali(&chassis_move_rc_to_vector->chassis_leg_filter_set, CHASSIS_INIT_RETRACT_LEG_TARGET);
         *leg_set = chassis_move_rc_to_vector->chassis_leg_filter_set.out;
     }
     else if (chassis_move_rc_to_vector->init_phase == CHASSIS_INIT_STAND)
     {
+        chassis_move_rc_to_vector->chassis_leg_filter_set.num[0] = CHASSIS_ACCEL_LEG_NUM;
         first_order_filter_cali(&chassis_move_rc_to_vector->chassis_leg_filter_set, CHASSIS_NORMAL_LEG_TARGET);
         *leg_set = chassis_move_rc_to_vector->chassis_leg_filter_set.out;
     }
@@ -117,18 +143,23 @@ static void chassis_jump_control(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set, f
     switch (chassis_move_rc_to_vector->jump_phase)
     {
     case CHASSIS_JUMP_PRELOAD:
-        *leg_set = CHASSIS_JUMP_PRELOAD_TARGET;
+        *leg_set = CHASSIS_NORMAL_LEG_TARGET;
         break;
     case CHASSIS_JUMP_TAKEOFF:
+        chassis_move_rc_to_vector->chassis_leg_filter_set.out = CHASSIS_JUMP_TAKEOFF_TARGET;
         *leg_set = CHASSIS_JUMP_TAKEOFF_TARGET;
         break;
     case CHASSIS_JUMP_AIRBORNE:
-        *leg_set = CHASSIS_JUMP_TUCK_TARGET;
-        break;
     case CHASSIS_JUMP_LAND:
+        *leg_set = chassis_ramp_leg_target(chassis_move_rc_to_vector,
+                                           CHASSIS_JUMP_AIRBORNE_TARGET,
+                                           CHASSIS_JUMP_AIRBORNE_LEG_RAMP_SPEED);
+        break;
     case CHASSIS_JUMP_DONE:
     default:
-        *leg_set = CHASSIS_JUMP_LAND_TARGET;
+        *leg_set = chassis_ramp_leg_target(chassis_move_rc_to_vector,
+                                           CHASSIS_NORMAL_LEG_TARGET,
+                                           CHASSIS_LEG_STEP_RAMP_SPEED);
         break;
     }
 }

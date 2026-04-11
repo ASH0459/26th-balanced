@@ -322,12 +322,12 @@ INIT_FOLD
   -> 到位后进入 INIT_RETRACT
 
 INIT_RETRACT
-  -> 把腿长收缩到较短目标
+  -> 通过单独的一阶低通参数柔和收腿到最短目标
   -> 左右腿长度都到位后进入 INIT_STAND
 
 INIT_STAND
   -> LQR 接管
-  -> 腿长平滑恢复到 NORMAL 腿长
+  -> 保持 NORMAL 最短腿长
   -> 姿态稳定一段时间后进入 INIT_DONE
 
 INIT_DONE
@@ -337,14 +337,15 @@ INIT_DONE
 当前相关常量：
 
 - `CHASSIS_INIT_LEG_ANGLE_TARGET_360`
-- `CHASSIS_JUMP_PRELOAD_TARGET`
+- `CHASSIS_INIT_RETRACT_LEG_TARGET`
+- `CHASSIS_INIT_RETRACT_LEG_NUM`
 - `CHASSIS_NORMAL_LEG_TARGET`
 - `CHASSIS_POSTURE_STABLE_TICKS`
 
 
 ## 8. JUMP 子阶段流程
 
-当前 `CHASSIS_JUMP` 内部分为 5 段：
+当前 `CHASSIS_JUMP` 内部保留 5 个枚举阶段，其中 `PRELOAD` 只作为兼容兜底阶段，正常进入跳跃时会直接从 `TAKEOFF` 开始：
 
 - `CHASSIS_JUMP_PRELOAD`
 - `CHASSIS_JUMP_TAKEOFF`
@@ -356,25 +357,26 @@ INIT_DONE
 
 ```text
 JUMP_PRELOAD
-  -> 压腿到 preload 腿长
-  -> 保持一段时间且腿长到位后进入 TAKEOFF
+  -> 兼容兜底，下一拍直接进入 TAKEOFF
+  -> 正常流程不会主动进入这个阶段
 
 JUMP_TAKEOFF
   -> 目标腿长切到最大
   -> 支持力附加 takeoff bonus
-  -> 双腿伸到最长阈值后进入 AIRBORNE
+  -> 双腿离地或双腿伸到最长阈值后进入 AIRBORNE
 
 JUMP_AIRBORNE
-  -> 空中再次缩腿
-  -> 双腿收回到缩腿阈值后进入 LAND
+  -> 目标腿长切到 0.20m
+  -> 空中保留 0.03m 压缩缓冲量
+  -> 双腿确认触地后进入 LAND
 
 JUMP_LAND
-  -> 腿长恢复到 normal
-  -> 维持 normal 腿长等待落地
-  -> 触地且恢复完成后进入 DONE
+  -> 继续维持 0.20m 缓冲腿长
+  -> 触地稳定一段时间且腿长接近 0.20m 后进入 DONE
 
 JUMP_DONE
   -> 主状态自动退回 NORMAL
+  -> NORMAL 重新接管后恢复 0.17m 正常最短腿长
 ```
 
 离地/落地判据复用了原有：
@@ -385,10 +387,10 @@ JUMP_DONE
 
 当前跳跃关键取舍：
 
-- `PRELOAD -> TAKEOFF` 看收腿阈值
-- `TAKEOFF -> AIRBORNE` 看是否伸到最大腿长阈值
-- `AIRBORNE -> LAND` 看是否再次缩回到缩腿阈值
-- `LAND -> DONE` 看是否已经恢复正常腿长并且确认落地
+- `PRELOAD -> TAKEOFF` 是兼容兜底，下一拍直接切换
+- `TAKEOFF -> AIRBORNE` 优先看是否双腿离地，同时保留“伸到最大腿长阈值”的失败兜底
+- `AIRBORNE -> LAND` 看是否双腿重新触地
+- `LAND -> DONE` 看是否触地稳定且腿长接近 0.20m
 
 
 ## 9. 每个状态的控制输出特征
@@ -418,17 +420,21 @@ JUMP_DONE
 
 - 和 `NORMAL` 相同
 - 仅腿长目标改为 `CHASSIS_LEG_1_TARGET`
+- 腿长目标通过 `CHASSIS_LEG_STEP_RAMP_SPEED` 斜坡限速
 
 ### `LEG_2`
 
 - 和 `NORMAL` 相同
 - 仅腿长目标改为 `CHASSIS_LEG_2_TARGET`
+- 腿长目标通过 `CHASSIS_LEG_STEP_RAMP_SPEED` 斜坡限速
 
 ### `JUMP`
 
 - 平移与 yaw 目标清零
 - 腿长由 `jump_phase` 控制
 - 起跳阶段额外增加支持力偏置
+- `TAKEOFF` 直接给最大腿长，不加斜坡
+- `AIRBORNE/LAND` 通过 `CHASSIS_JUMP_AIRBORNE_LEG_RAMP_SPEED` 快速收向 0.20m 缓冲腿长
 
 
 ## 10. 我如何修改现有状态机
@@ -446,10 +452,11 @@ JUMP_DONE
 - `CHASSIS_NORMAL_LEG_TARGET`
 - `CHASSIS_LEG_1_TARGET`
 - `CHASSIS_LEG_2_TARGET`
-- `CHASSIS_JUMP_PRELOAD_TARGET`
+- `CHASSIS_LEG_STEP_RAMP_SPEED`
 - `CHASSIS_JUMP_TAKEOFF_TARGET`
-- `CHASSIS_JUMP_TUCK_TARGET`
+- `CHASSIS_JUMP_AIRBORNE_TARGET`
 - `CHASSIS_JUMP_LAND_TARGET`
+- `CHASSIS_JUMP_AIRBORNE_LEG_RAMP_SPEED`
 
 适用场景：
 
@@ -673,10 +680,9 @@ CHASSIS_CROUCH,
 - `JUMP` 当前是最小可运行版：
   通过腿长目标切换 + 起跳支持力偏置 + 现有离地判据闭环完成
 - `JUMP` 是否“更像弹射”还是“更像跃起”，主要靠这几个参数调：
-  `CHASSIS_JUMP_PRELOAD_TARGET`
   `CHASSIS_JUMP_TAKEOFF_TARGET`
+  `CHASSIS_JUMP_AIRBORNE_TARGET`
   `CHASSIS_JUMP_TAKEOFF_FORCE_BONUS`
-  `CHASSIS_JUMP_PRELOAD_TICKS`
   `CHASSIS_JUMP_LAND_TICKS`
 
 

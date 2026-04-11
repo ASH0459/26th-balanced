@@ -612,9 +612,9 @@ static void chassis_mode_change_control_transit(Chassis_Move *chassis_move_trans
         chassis_move_transit->chassis_v_set = 0.0f;
         chassis_move_transit->chassis_x_set = chassis_move_transit->x_filter;
         chassis_move_transit->chassis_d_yaw_set = 0.0f;
-        chassis_move_transit->chassis_leg_set = CHASSIS_JUMP_PRELOAD_TARGET;
-        chassis_move_transit->chassis_leg_filter_set.out = CHASSIS_JUMP_PRELOAD_TARGET;
-        chassis_move_transit->jump_phase = CHASSIS_JUMP_PRELOAD;
+        chassis_move_transit->chassis_leg_set = CHASSIS_JUMP_TAKEOFF_TARGET;
+        chassis_move_transit->chassis_leg_filter_set.out = CHASSIS_JUMP_TAKEOFF_TARGET;
+        chassis_move_transit->jump_phase = CHASSIS_JUMP_TAKEOFF;
         chassis_move_transit->jump_phase_ticks = 0;
     }
     else if (chassis_move_transit->state == CHASSIS_INIT || chassis_move_transit->state == CHASSIS_FLIP)
@@ -1244,23 +1244,20 @@ static void chassis_update_jump_phase(Chassis_Move *chassis_move_control_loop)
     chassis_move_control_loop->jump_phase_ticks++;
     const bool_t left_off_ground = chassis_move_control_loop->chassis_left_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND;
     const bool_t right_off_ground = chassis_move_control_loop->chassis_right_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND;
+    const bool_t both_off_ground = left_off_ground && right_off_ground;
     const bool_t both_touch_ground = !left_off_ground && !right_off_ground;
 
     switch (chassis_move_control_loop->jump_phase)
     {
     case CHASSIS_JUMP_PRELOAD:
-        if (chassis_move_control_loop->jump_phase_ticks >= CHASSIS_JUMP_PRELOAD_TICKS &&
-            chassis_move_control_loop->chassis_left_control.wbr_control.L <= CHASSIS_JUMP_PRELOAD_TARGET + 0.01f &&
-            chassis_move_control_loop->chassis_right_control.wbr_control.L <= CHASSIS_JUMP_PRELOAD_TARGET + 0.01f)
-        {
-            chassis_move_control_loop->jump_phase = CHASSIS_JUMP_TAKEOFF;
-            chassis_move_control_loop->jump_phase_ticks = 0;
-        }
+        chassis_move_control_loop->jump_phase = CHASSIS_JUMP_TAKEOFF;
+        chassis_move_control_loop->jump_phase_ticks = 0;
         break;
 
     case CHASSIS_JUMP_TAKEOFF:
-        if (chassis_move_control_loop->chassis_left_control.wbr_control.L >= CHASSIS_JUMP_TAKEOFF_TARGET - 0.01f &&
-            chassis_move_control_loop->chassis_right_control.wbr_control.L >= CHASSIS_JUMP_TAKEOFF_TARGET - 0.01f)
+        if (both_off_ground ||
+            (chassis_move_control_loop->chassis_left_control.wbr_control.L >= CHASSIS_JUMP_TAKEOFF_TARGET - 0.01f &&
+             chassis_move_control_loop->chassis_right_control.wbr_control.L >= CHASSIS_JUMP_TAKEOFF_TARGET - 0.01f))
         {
             chassis_move_control_loop->jump_phase = CHASSIS_JUMP_AIRBORNE;
             chassis_move_control_loop->jump_phase_ticks = 0;
@@ -1268,8 +1265,7 @@ static void chassis_update_jump_phase(Chassis_Move *chassis_move_control_loop)
         break;
 
     case CHASSIS_JUMP_AIRBORNE:
-        if (chassis_move_control_loop->chassis_left_control.wbr_control.L <= CHASSIS_JUMP_TUCK_TARGET + 0.01f &&
-            chassis_move_control_loop->chassis_right_control.wbr_control.L <= CHASSIS_JUMP_TUCK_TARGET + 0.01f)
+        if (both_touch_ground)
         {
             chassis_move_control_loop->jump_phase = CHASSIS_JUMP_LAND;
             chassis_move_control_loop->jump_phase_ticks = 0;
@@ -1279,8 +1275,8 @@ static void chassis_update_jump_phase(Chassis_Move *chassis_move_control_loop)
     case CHASSIS_JUMP_LAND:
         if (both_touch_ground &&
             chassis_move_control_loop->jump_phase_ticks >= CHASSIS_JUMP_LAND_TICKS &&
-            fabsf(chassis_move_control_loop->chassis_left_control.wbr_control.L - CHASSIS_NORMAL_LEG_TARGET) < 0.02f &&
-            fabsf(chassis_move_control_loop->chassis_right_control.wbr_control.L - CHASSIS_NORMAL_LEG_TARGET) < 0.02f)
+            fabsf(chassis_move_control_loop->chassis_left_control.wbr_control.L - CHASSIS_JUMP_LAND_TARGET) < 0.03f &&
+            fabsf(chassis_move_control_loop->chassis_right_control.wbr_control.L - CHASSIS_JUMP_LAND_TARGET) < 0.03f)
         {
             chassis_move_control_loop->jump_phase = CHASSIS_JUMP_DONE;
             chassis_move_control_loop->jump_phase_ticks = 0;
@@ -1599,11 +1595,11 @@ static void chassis_init_standup(Chassis_Move *chassis_init_standup)
 
     if (chassis_init_standup->init_phase == CHASSIS_INIT_RETRACT)
     {
-        if (chassis_init_standup->chassis_left_control.wbr_control.L <= CHASSIS_JUMP_PRELOAD_TARGET + 0.005f &&
-            chassis_init_standup->chassis_right_control.wbr_control.L <= CHASSIS_JUMP_PRELOAD_TARGET + 0.005f)
+        if (chassis_init_standup->chassis_left_control.wbr_control.L <= CHASSIS_INIT_RETRACT_LEG_TARGET + 0.005f &&
+            chassis_init_standup->chassis_right_control.wbr_control.L <= CHASSIS_INIT_RETRACT_LEG_TARGET + 0.005f)
         {
             chassis_init_standup->init_phase = CHASSIS_INIT_STAND;
-            chassis_init_standup->chassis_leg_filter_set.out = CHASSIS_JUMP_PRELOAD_TARGET;
+            chassis_init_standup->chassis_leg_filter_set.out = CHASSIS_INIT_RETRACT_LEG_TARGET;
             chassis_init_standup->posture_stable_ticks = 0;
         }
     }
