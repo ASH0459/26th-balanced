@@ -90,6 +90,19 @@
 
 // 机体pitch角度正常水平阈值 (rad)
 #define CHASSIS_PITCH_LEVEL_THRESHOLD     0.7f
+#define CHASSIS_ROLL_LEVEL_THRESHOLD      0.7f
+
+#define CHASSIS_NORMAL_LEG_TARGET         CHASSIS_LEG_MIN
+#define CHASSIS_LEG_1_TARGET              0.26f
+#define CHASSIS_LEG_2_TARGET              0.30f
+#define CHASSIS_JUMP_PRELOAD_TARGET       0.185f
+#define CHASSIS_JUMP_TAKEOFF_TARGET       0.35f
+#define CHASSIS_JUMP_TUCK_TARGET          0.185f
+#define CHASSIS_JUMP_LAND_TARGET          CHASSIS_LEG_MIN
+#define CHASSIS_JUMP_TAKEOFF_FORCE_BONUS  120.0f
+#define CHASSIS_JUMP_PRELOAD_TICKS        120U
+#define CHASSIS_JUMP_LAND_TICKS           150U
+#define CHASSIS_POSTURE_STABLE_TICKS      50U
 
 // 初始化时机体未水平的自扶正腿部旋转参数
 #define CHASSIS_INIT_LEVEL_ANGLE_STEP     0.8f // 机体未水平时腿部旋转角度 (rad/s)
@@ -289,21 +302,24 @@
 #define CHASSIS_DT7_Y_PID_MAX_OUT 10.0f
 #define CHASSIS_DT7_Y_PID_MAX_IOUT 2.0f
 
-/* 底盘模式 */
+/* 底盘状态机 */
 typedef enum
 {
-    CHASSIS_FOLLOW_GIMBAL_YAW,   // 底盘跟随云台
-    CHASSIS_ZERO,                // 底盘无力模式
-    CHASSIS_INIT,                // 初始化（仅限于底盘状态正常）
-    CHASSIS_SAVE                  //底盘翻倒自救
-}Chassis_Mode_e;
+    CHASSIS_STOP = 0,
+    CHASSIS_FLIP,
+    CHASSIS_INIT,
+    CHASSIS_NORMAL,
+    CHASSIS_LEG_1,
+    CHASSIS_LEG_2,
+    CHASSIS_JUMP,
+} Chassis_State_e;
 
-/*底盘状态*/
+/* 机体姿态 */
 typedef enum
 {
-    CHASSIS_NORMAL,					//正常状态
-    CHASSIS_DOWN,						//翻倒状态
-}Chassis_state_e;
+    CHASSIS_POSTURE_UP = 0,
+    CHASSIS_POSTURE_DOWN,
+} Chassis_Posture_e;
 
 typedef enum
 {
@@ -313,10 +329,20 @@ typedef enum
 
 typedef enum
 {
-    INIT_LEG_UNREACH = 0,
-    INIT_LEG_REACH = 1,
-    INIT_LEG_STANDUP = 2,
-} init_leg_reach_e;
+    CHASSIS_INIT_FOLD = 0,
+    CHASSIS_INIT_RETRACT,
+    CHASSIS_INIT_STAND,
+    CHASSIS_INIT_DONE,
+} Chassis_Init_Phase_e;
+
+typedef enum
+{
+    CHASSIS_JUMP_PRELOAD = 0,
+    CHASSIS_JUMP_TAKEOFF,
+    CHASSIS_JUMP_AIRBORNE,
+    CHASSIS_JUMP_LAND,
+    CHASSIS_JUMP_DONE,
+} Chassis_Jump_Phase_e;
 
 #ifdef __cplusplus
 
@@ -378,18 +404,22 @@ public:
 class Chassis_Move
 {
     public:
-    init_leg_reach_e init_leg_reach_state = INIT_LEG_UNREACH;  // 初始化收腿状态
+    Chassis_State_e state = CHASSIS_STOP;
+    Chassis_State_e last_state = CHASSIS_STOP;
+    Chassis_State_e pending_state = CHASSIS_NORMAL;
+    Chassis_Posture_e posture = CHASSIS_POSTURE_DOWN;
+    Chassis_Posture_e last_posture = CHASSIS_POSTURE_DOWN;
+    Chassis_Init_Phase_e init_phase = CHASSIS_INIT_FOLD;
+    Chassis_Jump_Phase_e jump_phase = CHASSIS_JUMP_DONE;
+    chassis_mode_e last_request_mode = CHASSIS_MODE_RESERVED;
+    uint16_t jump_phase_ticks = 0;
+    uint16_t posture_stable_ticks = 0;
 
     const fp32 *chassis_INS_gyro;				  //机体角速度指针
     const fp32 *chassis_INS_angle;                //获取陀螺仪解算出的欧拉角指针
     const fp32 *chassis_motion_accel_n;			  //绝对坐标系加速度指针
 
     const Gimbal_Data *chassis_gimbal_data;      //获取云台数据
-    Chassis_Mode_e chassis_mode;                  //底盘控制状态机
-    Chassis_Mode_e last_chassis_mode;             //底盘上次控制状态机
-
-    Chassis_state_e chassis_state;                //底盘状态
-    Chassis_state_e last_chassis_state;           //底盘上次状态
 
     Chassis_Joint_Motor chassis_joint[4]; //底盘关节电机数据
     Chassis_Wheel_Motor chassis_wheel[2]; //底盘轮电机数据
