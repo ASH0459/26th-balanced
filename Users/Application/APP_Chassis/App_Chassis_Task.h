@@ -95,7 +95,7 @@
 #define CHASSIS_NORMAL_LEG_TARGET         CHASSIS_LEG_MIN
 #define CHASSIS_LEG_1_TARGET              0.26f
 #define CHASSIS_LEG_2_TARGET              0.30f
-#define CHASSIS_LEG_STEP_RAMP_SPEED       0.20f
+#define CHASSIS_LEG_STEP_RAMP_SPEED       0.10f
 #define CHASSIS_INIT_RETRACT_LEG_TARGET   CHASSIS_NORMAL_LEG_TARGET
 #define CHASSIS_JUMP_TAKEOFF_TARGET       0.35f
 #define CHASSIS_JUMP_AIRBORNE_TARGET      0.20f
@@ -218,6 +218,11 @@
 #define CHASSIS_LEFT_D_THETA_FILTER_SOURCE CHASSIS_FILTER_LOWPASS
 #define CHASSIS_RIGHT_THETA_FILTER_SOURCE CHASSIS_FILTER_LOWPASS
 #define CHASSIS_RIGHT_D_THETA_FILTER_SOURCE CHASSIS_FILTER_LOWPASS
+
+#define CHASSIS_D_YAW_SOURCE_KINEMATIC 0
+#define CHASSIS_D_YAW_SOURCE_IMU 1
+#define CHASSIS_D_YAW_SOURCE CHASSIS_D_YAW_SOURCE_KINEMATIC
+#define CHASSIS_D_YAW_IMU_SIGN 1.0f
 
 //摇杆死区
 #define CHASSIS_RC_DEADLINE 10
@@ -440,10 +445,14 @@ class Chassis_Move
     fp32 x_filter_last;													// 上一时刻期望滤波位移
 
     fp32 chassis_yaw;													// 底盘yaw轴角度
+    fp32 chassis_yaw_err;												// yaw跟随误差
     fp32 chassis_pitch;													// 底盘pitch轴角度
     fp32 chassis_roll;													// 底盘roll轴角度
 
     fp32 chassis_d_yaw;													// 底盘yaw轴角速度
+    fp32 chassis_d_yaw_kinematic;										// 由轮速和腿角速度反推的yaw轴角速度
+    fp32 chassis_d_yaw_imu;												// IMU测得的yaw轴角速度
+    fp32 chassis_d_yaw_diff;											// IMU yaw角速度 - 运动学yaw角速度
     fp32 chassis_d_pitch;												// 底盘pitch轴角速度
     fp32 chassis_d_roll;												// 底盘roll轴角速度
 

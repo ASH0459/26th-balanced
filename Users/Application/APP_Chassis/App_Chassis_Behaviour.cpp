@@ -66,14 +66,21 @@ static void chassis_zero_force_control(fp32 *v_set, fp32 *d_yaw_set, fp32 *leg_s
     *leg_set = CHASSIS_LEG_MAX;
 }
 
-static void chassis_follow_control(fp32 *vx_set, fp32 *d_yaw_set, fp32 *leg_set, fp32 *yaw_set,
+static void chassis_follow_yaw_control(fp32 *body_yaw_err_set, fp32 *d_yaw_set,
+                                       Chassis_Move *chassis_move_rc_to_vector)
+{
+    const fp32 target_relative_yaw = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_yaw_set;
+    const fp32 current_relative_yaw = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_relative_angle;
+    const fp32 body_yaw_err = shortest_angle_error(target_relative_yaw, current_relative_yaw);
+
+    *body_yaw_err_set = body_yaw_err;
+    *d_yaw_set = PID_Calc(&chassis_move_rc_to_vector->chassis_angle_pid, 0.0f, -body_yaw_err);
+}
+
+static void chassis_follow_control(fp32 *vx_set, fp32 *d_yaw_set, fp32 *leg_set, fp32 *body_yaw_err_set,
                                    Chassis_Move *chassis_move_rc_to_vector, fp32 target_leg_length)
 {
     const fp32 target_vx = clamp_abs_fp32(chassis_move_rc_to_vector->chassis_gimbal_data->v_tmp, CHASSIS_KEY_MAX_SPEED);
-    const fp32 target_yaw_angle = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_yaw_set;
-    const fp32 current_yaw_angle = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_relative_angle;
-    const fp32 angle_error = shortest_angle_error(target_yaw_angle, current_yaw_angle);
-    const fp32 target_d_yaw = PID_Calc(&chassis_move_rc_to_vector->chassis_angle_pid, 0.0f, -angle_error);
 
     static ramp_function_source_t vx_ramp;
     static uint8_t ramp_init_flag = 0;
@@ -105,9 +112,8 @@ static void chassis_follow_control(fp32 *vx_set, fp32 *d_yaw_set, fp32 *leg_set,
     }
 
     *vx_set = vx_ramp.out;
-    *d_yaw_set = target_d_yaw;
+    chassis_follow_yaw_control(body_yaw_err_set, d_yaw_set, chassis_move_rc_to_vector);
     *leg_set = chassis_ramp_leg_target(chassis_move_rc_to_vector, target_leg_length, CHASSIS_LEG_STEP_RAMP_SPEED);
-    *yaw_set = angle_error;
 }
 
 static void chassis_init_control(fp32 *vx_set, fp32 *d_yaw_set, fp32 *leg_set, Chassis_Move *chassis_move_rc_to_vector)
@@ -133,12 +139,11 @@ static void chassis_init_control(fp32 *vx_set, fp32 *d_yaw_set, fp32 *leg_set, C
     }
 }
 
-static void chassis_jump_control(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set, fp32 *leg_set,
+static void chassis_jump_control(fp32 *vx_set, fp32 *body_yaw_err_set, fp32 *d_yaw_set, fp32 *leg_set,
                                  Chassis_Move *chassis_move_rc_to_vector)
 {
     *vx_set = 0.0f;
-    *yaw_set = 0.0f;
-    *d_yaw_set = 0.0f;
+    chassis_follow_yaw_control(body_yaw_err_set, d_yaw_set, chassis_move_rc_to_vector);
 
     switch (chassis_move_rc_to_vector->jump_phase)
     {
@@ -176,7 +181,7 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
     const bool_t step2_edge = chassis_is_request_rising_edge(chassis_move_mode, CHASSIS_MODE_STEP_2);
     const bool_t jump_edge = chassis_is_request_rising_edge(chassis_move_mode, CHASSIS_MODE_JUMP);
 
-    if (requested_mode == CHASSIS_MODE_NO_FORCE)
+    if (requested_mode == CHASSIS_MODE_NO_FORCE || requested_mode == CHASSIS_MODE_RESERVED)
     {
         chassis_move_mode->pending_state = CHASSIS_NORMAL;
         chassis_move_mode->state = CHASSIS_STOP;
@@ -273,16 +278,16 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
     chassis_move_mode->last_request_mode = requested_mode;
 }
 
-void chassis_behaviour_control_set(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set, fp32 *leg_set,
+void chassis_behaviour_control_set(fp32 *vx_set, fp32 *body_yaw_err_set, fp32 *d_yaw_set, fp32 *leg_set,
                                    Chassis_Move *chassis_move_rc_to_vector)
 {
-    if (vx_set == NULL || yaw_set == NULL || d_yaw_set == NULL || leg_set == NULL || chassis_move_rc_to_vector == NULL)
+    if (vx_set == NULL || body_yaw_err_set == NULL || d_yaw_set == NULL || leg_set == NULL || chassis_move_rc_to_vector == NULL)
     {
         return;
     }
 
     *vx_set = 0.0f;
-    *yaw_set = 0.0f;
+    *body_yaw_err_set = 0.0f;
     *d_yaw_set = 0.0f;
     *leg_set = CHASSIS_NORMAL_LEG_TARGET;
 
@@ -298,19 +303,19 @@ void chassis_behaviour_control_set(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set,
         break;
 
     case CHASSIS_NORMAL:
-        chassis_follow_control(vx_set, d_yaw_set, leg_set, yaw_set, chassis_move_rc_to_vector, CHASSIS_NORMAL_LEG_TARGET);
+        chassis_follow_control(vx_set, d_yaw_set, leg_set, body_yaw_err_set, chassis_move_rc_to_vector, CHASSIS_NORMAL_LEG_TARGET);
         break;
 
     case CHASSIS_LEG_1:
-        chassis_follow_control(vx_set, d_yaw_set, leg_set, yaw_set, chassis_move_rc_to_vector, CHASSIS_LEG_1_TARGET);
+        chassis_follow_control(vx_set, d_yaw_set, leg_set, body_yaw_err_set, chassis_move_rc_to_vector, CHASSIS_LEG_1_TARGET);
         break;
 
     case CHASSIS_LEG_2:
-        chassis_follow_control(vx_set, d_yaw_set, leg_set, yaw_set, chassis_move_rc_to_vector, CHASSIS_LEG_2_TARGET);
+        chassis_follow_control(vx_set, d_yaw_set, leg_set, body_yaw_err_set, chassis_move_rc_to_vector, CHASSIS_LEG_2_TARGET);
         break;
 
     case CHASSIS_JUMP:
-        chassis_jump_control(vx_set, yaw_set, d_yaw_set, leg_set, chassis_move_rc_to_vector);
+        chassis_jump_control(vx_set, body_yaw_err_set, d_yaw_set, leg_set, chassis_move_rc_to_vector);
         break;
 
     default:

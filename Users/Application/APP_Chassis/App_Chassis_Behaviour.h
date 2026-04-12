@@ -9,7 +9,7 @@ extern "C"
 #endif
 
 void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode);
-void chassis_behaviour_control_set(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set, fp32 *leg_set,
+void chassis_behaviour_control_set(fp32 *vx_set, fp32 *body_yaw_err_set, fp32 *d_yaw_set, fp32 *leg_set,
                                    Chassis_Move *chassis_move_rc_to_vector);
 
 #ifdef __cplusplus

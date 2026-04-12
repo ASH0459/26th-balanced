@@ -152,6 +152,28 @@ static inline fp32 chassis_select_d_theta_signal(const leg_control *leg, uint8_t
     return (filter_source == CHASSIS_FILTER_LOWPASS) ? leg->d_theta_l_lowpass : leg->d_theta_l_filter;
 }
 
+static inline fp32 chassis_calc_kinematic_d_yaw(const Chassis_Move *chassis_move_calc)
+{
+    return (WHEEL_RADIUS * (-chassis_move_calc->chassis_wheel[0].vel + chassis_move_calc->chassis_wheel[1].vel)
+          - chassis_move_calc->chassis_left_control.wbr_control.L * arm_cos_f32(chassis_move_calc->chassis_left_control.wbr_control.theta_l) * chassis_move_calc->chassis_left_control.wbr_control.d_theta_l
+          + chassis_move_calc->chassis_right_control.wbr_control.L * arm_cos_f32(chassis_move_calc->chassis_right_control.wbr_control.theta_l) * chassis_move_calc->chassis_right_control.wbr_control.d_theta_l)
+          / (2 * DRIVE_WHEEL_DIS);
+}
+
+static inline fp32 chassis_get_imu_d_yaw(const Chassis_Move *chassis_move_calc)
+{
+    return CHASSIS_D_YAW_IMU_SIGN * (*(chassis_move_calc->chassis_INS_gyro + INS_GYRO_Z_ADDRESS_OFFSET));
+}
+
+static inline fp32 chassis_select_d_yaw_feedback(const Chassis_Move *chassis_move_calc)
+{
+#if CHASSIS_D_YAW_SOURCE == CHASSIS_D_YAW_SOURCE_IMU
+    return chassis_move_calc->chassis_d_yaw_imu;
+#else
+    return chassis_move_calc->chassis_d_yaw_kinematic;
+#endif
+}
+
 static void chassis_update_leg_angle_signals(leg_control *leg, const fp32 *f_theta)
 {
     memcpy(leg->chassis_vaestimatekf_theta.F_data, f_theta, 4 * sizeof(fp32));
@@ -175,6 +197,11 @@ static void chassis_update_leg_angle_signals(leg_control *leg, const fp32 *f_the
 static bool_t chassis_is_balancing_state(Chassis_State_e state)
 {
     return state == CHASSIS_NORMAL || state == CHASSIS_LEG_1 || state == CHASSIS_LEG_2;
+}
+
+static bool_t chassis_is_yaw_lqr_state(Chassis_State_e state)
+{
+    return chassis_is_balancing_state(state) || state == CHASSIS_JUMP;
 }
 
 static bool_t chassis_is_init_like_state(Chassis_State_e state)
@@ -252,6 +279,7 @@ static void chassis_save_last_feedback(Chassis_Move *chassis_move_control_loop);
 static void chassis_update_jump_phase(Chassis_Move *chassis_move_control_loop);
 static void chassis_reset_jump_state(Chassis_Move *chassis_move_control_loop);
 static bool_t chassis_is_balancing_state(Chassis_State_e state);
+static bool_t chassis_is_yaw_lqr_state(Chassis_State_e state);
 static bool_t chassis_is_init_like_state(Chassis_State_e state);
 
 /**
@@ -605,6 +633,7 @@ static void chassis_mode_change_control_transit(Chassis_Move *chassis_move_trans
         chassis_move_transit->chassis_v_set = 0.0f;
         chassis_move_transit->chassis_d_yaw_set = 0.0f;
         chassis_move_transit->chassis_yaw_set = chassis_move_transit->chassis_yaw;
+        chassis_move_transit->chassis_yaw_err = 0.0f;
         chassis_move_transit->chassis_x_set += CHASSIS_X_BACK;
     }
     else if (chassis_move_transit->state == CHASSIS_JUMP)
@@ -612,6 +641,7 @@ static void chassis_mode_change_control_transit(Chassis_Move *chassis_move_trans
         chassis_move_transit->chassis_v_set = 0.0f;
         chassis_move_transit->chassis_x_set = chassis_move_transit->x_filter;
         chassis_move_transit->chassis_d_yaw_set = 0.0f;
+        chassis_move_transit->chassis_yaw_err = 0.0f;
         chassis_move_transit->chassis_leg_set = CHASSIS_JUMP_TAKEOFF_TARGET;
         chassis_move_transit->chassis_leg_filter_set.out = CHASSIS_JUMP_TAKEOFF_TARGET;
         chassis_move_transit->jump_phase = CHASSIS_JUMP_TAKEOFF;
@@ -646,6 +676,7 @@ static void chassis_mode_change_control_transit(Chassis_Move *chassis_move_trans
         chassis_move_transit->chassis_v_set = 0.0f;
         chassis_move_transit->chassis_d_yaw_set = 0.0f;
         chassis_move_transit->chassis_yaw_set = chassis_move_transit->chassis_yaw;
+        chassis_move_transit->chassis_yaw_err = 0.0f;
         chassis_move_transit->chassis_leg_set = CHASSIS_LEG_MAX;
         chassis_move_transit->chassis_leg_filter_set.out = CHASSIS_LEG_MAX;
         chassis_move_transit->posture_stable_ticks = 0;
@@ -680,34 +711,33 @@ static void chassis_set_contorl(Chassis_Move *chassis_move_control)
       * PART1.  本部分代码获取控制设定值，并根据当前行为状态计算机器人速度/角速度/腿长目标
       */
 
-    static fp32 chassis_v_set = 0.0f, chassis_yaw_set = 0.0f, chassis_leg_set = 0.0f, chassis_d_yaw_set = 0.0f;
+    static fp32 chassis_v_set = 0.0f, chassis_body_yaw_err = 0.0f, chassis_leg_set = 0.0f, chassis_d_yaw_set = 0.0f;
 
 
 
     /* 获取三个控制设置值 */
-    chassis_behaviour_control_set(&chassis_v_set, &chassis_yaw_set, &chassis_d_yaw_set, &chassis_leg_set, chassis_move_control);
+    chassis_behaviour_control_set(&chassis_v_set, &chassis_body_yaw_err, &chassis_d_yaw_set, &chassis_leg_set, chassis_move_control);
 
-    if (chassis_is_balancing_state(chassis_move_control->state))
+    chassis_move_control->chassis_d_yaw_kinematic = chassis_calc_kinematic_d_yaw(chassis_move_control);
+    chassis_move_control->chassis_d_yaw_imu = chassis_get_imu_d_yaw(chassis_move_control);
+    chassis_move_control->chassis_d_yaw_diff = chassis_move_control->chassis_d_yaw_imu - chassis_move_control->chassis_d_yaw_kinematic;
+
+    if (chassis_is_yaw_lqr_state(chassis_move_control->state))
     {
-        chassis_move_control->chassis_d_yaw = (WHEEL_RADIUS * (-chassis_move_control->chassis_wheel[0].vel + chassis_move_control->chassis_wheel[1].vel)
-                                            - chassis_move_control->chassis_left_control.wbr_control.L * arm_cos_f32(chassis_move_control->chassis_left_control.wbr_control.theta_l) * chassis_move_control->chassis_left_control.wbr_control.d_theta_l
-                                            + chassis_move_control->chassis_right_control.wbr_control.L * arm_cos_f32(chassis_move_control->chassis_right_control.wbr_control.theta_l) * chassis_move_control->chassis_right_control.wbr_control.d_theta_l)
-                                            / (2 * DRIVE_WHEEL_DIS);
+        chassis_move_control->chassis_d_yaw = chassis_select_d_yaw_feedback(chassis_move_control);
 
-        chassis_move_control->chassis_yaw = chassis_yaw_set;
+        chassis_move_control->chassis_yaw = chassis_move_control->chassis_gimbal_data->chassis_relative_angle;
         chassis_move_control->chassis_v_set = chassis_v_set;
         chassis_move_control->chassis_x_set += chassis_move_control->chassis_v_set * chassis_move_control->dt;
-        chassis_move_control->chassis_yaw_set = 0.0f;
+        chassis_move_control->chassis_yaw_set = chassis_move_control->chassis_gimbal_data->chassis_yaw_set;
+        chassis_move_control->chassis_yaw_err = chassis_body_yaw_err;
         chassis_move_control->chassis_d_yaw_set = chassis_d_yaw_set;
         chassis_move_control->chassis_leg_set = chassis_leg_set;
     }
-    else if (chassis_is_init_like_state(chassis_move_control->state) || chassis_move_control->state == CHASSIS_JUMP)
+    else if (chassis_is_init_like_state(chassis_move_control->state))
     {
 
-        chassis_move_control->chassis_d_yaw = (WHEEL_RADIUS * (-chassis_move_control->chassis_wheel[0].vel + chassis_move_control->chassis_wheel[1].vel)
-                                            - chassis_move_control->chassis_left_control.wbr_control.L * arm_cos_f32(chassis_move_control->chassis_left_control.wbr_control.theta_l) * chassis_move_control->chassis_left_control.wbr_control.d_theta_l
-                                            + chassis_move_control->chassis_right_control.wbr_control.L * arm_cos_f32(chassis_move_control->chassis_right_control.wbr_control.theta_l) * chassis_move_control->chassis_right_control.wbr_control.d_theta_l)
-                                            / (2 * DRIVE_WHEEL_DIS);
+        chassis_move_control->chassis_d_yaw = chassis_select_d_yaw_feedback(chassis_move_control);
         chassis_move_control->chassis_yaw = (WHEEL_RADIUS * (-chassis_move_control->chassis_wheel[0].total_pos + chassis_move_control->chassis_wheel[1].total_pos)
                                       - chassis_move_control->chassis_left_control.wbr_control.L * arm_sin_f32(chassis_move_control->chassis_left_control.wbr_control.theta_l)
                                       + chassis_move_control->chassis_right_control.wbr_control.L * arm_sin_f32(chassis_move_control->chassis_right_control.wbr_control.theta_l))
@@ -721,10 +751,7 @@ static void chassis_set_contorl(Chassis_Move *chassis_move_control)
     }
     else if (chassis_move_control->state == CHASSIS_STOP)
     {
-        chassis_move_control->chassis_d_yaw = (WHEEL_RADIUS * (-chassis_move_control->chassis_wheel[0].vel + chassis_move_control->chassis_wheel[1].vel)
-                                            - chassis_move_control->chassis_left_control.wbr_control.L * arm_cos_f32(chassis_move_control->chassis_left_control.wbr_control.theta_l) * chassis_move_control->chassis_left_control.wbr_control.d_theta_l
-                                            + chassis_move_control->chassis_right_control.wbr_control.L * arm_cos_f32(chassis_move_control->chassis_right_control.wbr_control.theta_l) * chassis_move_control->chassis_right_control.wbr_control.d_theta_l)
-                                            / (2 * DRIVE_WHEEL_DIS);
+        chassis_move_control->chassis_d_yaw = chassis_select_d_yaw_feedback(chassis_move_control);
         chassis_move_control->chassis_yaw = (WHEEL_RADIUS * (-chassis_move_control->chassis_wheel[0].total_pos + chassis_move_control->chassis_wheel[1].total_pos)
                                       - chassis_move_control->chassis_left_control.wbr_control.L * arm_sin_f32(chassis_move_control->chassis_left_control.wbr_control.theta_l)
                                       + chassis_move_control->chassis_right_control.wbr_control.L * arm_sin_f32(chassis_move_control->chassis_right_control.wbr_control.theta_l))
@@ -1020,8 +1047,10 @@ static void chassis_lqr_power_control(Chassis_Move *chassis_move_control_loop)
     // 1. 计算状态误差
     fp32 x_err    = -chassis_move_control_loop->x_filter + chassis_move_control_loop->chassis_x_set;
     fp32 v_err    = -chassis_move_control_loop->v_filter + chassis_move_control_loop->chassis_v_set;
-    fp32 yaw_err  = chassis_move_control_loop->chassis_yaw - chassis_move_control_loop->chassis_yaw_set;
-    fp32 dyaw_err = chassis_move_control_loop->chassis_d_yaw - chassis_move_control_loop->chassis_d_yaw_set;
+    fp32 yaw_err  = chassis_is_yaw_lqr_state(chassis_move_control_loop->state) ?
+                    chassis_move_control_loop->chassis_yaw_err : 0.0f;
+    fp32 dyaw_err = chassis_is_yaw_lqr_state(chassis_move_control_loop->state) ?
+                    chassis_move_control_loop->chassis_d_yaw - chassis_move_control_loop->chassis_d_yaw_set : 0.0f;
 
     // 2. 提取平动和旋转的控制分量
     fp32 U_speed = LQR_K[0][0] * x_err + LQR_K[0][1] * v_err;
