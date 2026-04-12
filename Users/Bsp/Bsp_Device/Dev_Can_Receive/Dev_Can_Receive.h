@@ -88,12 +88,6 @@ static uint16_t float_to_uint(fp32 x_float, fp32 x_min, fp32 x_max, uint16_t bit
     return (int32_t)((x_float - offset) * (fp32)((1 << bits) - 1) / span);
 }
 
-static fp32 uint_to_float(fp32 x_int, fp32 x_min, fp32 x_max, uint16_t bits)
-{
-    const fp32 span = x_max - x_min;
-    return x_int * span / (fp32)((1U << bits) - 1U) + x_min;
-}
-
 class Wheel_Motor_Measure
 {
 public:
@@ -339,7 +333,9 @@ extern Gimbal_Data gimbal_data;
  * @retval         none
  * @note           已在FDCAN中断中接入，打包协议:
  *                 [0..1] v_set, [2..3] turn_set, [4] mode_byte,
- *                 [5] fric_state, [6..7] relative_angle
+ *                 [5] fric_state, [6..7] yaw_err_mrad.
+ *                 yaw_err_mrad = forward_middle_yaw - current_yaw,
+ *                 unit: 0.001 rad, range: [-PI, PI].
  */
 inline void CAN_cmd_gimbal_receive(const uint8_t *received_data)
 {
@@ -352,11 +348,19 @@ inline void CAN_cmd_gimbal_receive(const uint8_t *received_data)
     const int16_t yaw_set_tmp = static_cast<int16_t>((received_data[2] << 8) | received_data[3]);
     const chassis_mode_e chassis_behaviour = static_cast<chassis_mode_e>(received_data[4]);
     const uint8_t fric_state = received_data[5];
-    const uint16_t relative_angle_tmp = static_cast<uint16_t>((received_data[6] << 8) | received_data[7]);
+    const int16_t relative_angle_tmp = static_cast<int16_t>((received_data[6] << 8) | received_data[7]);
 
     gimbal_data.v_tmp = static_cast<fp32>(v_set_tmp) / 1000.0f;
     gimbal_data.chassis_yaw_set = -static_cast<fp32>(yaw_set_tmp) / 1000.0f;
-    gimbal_data.chassis_relative_angle = uint_to_float(static_cast<fp32>(relative_angle_tmp), -PI, PI, 16);
+    gimbal_data.chassis_relative_angle = static_cast<fp32>(relative_angle_tmp) / 1000.0f;
+    if (gimbal_data.chassis_relative_angle > PI)
+    {
+        gimbal_data.chassis_relative_angle = PI;
+    }
+    else if (gimbal_data.chassis_relative_angle < -PI)
+    {
+        gimbal_data.chassis_relative_angle = -PI;
+    }
     gimbal_data.fric_state = fric_state;
     gimbal_data.chassis_behaviour_mode = chassis_behaviour;
 }
