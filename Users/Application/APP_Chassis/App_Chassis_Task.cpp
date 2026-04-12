@@ -82,10 +82,10 @@ extern "C" {
 
     //调试用参数
     fp32 LQR_K[4][10] = {
-        {-2.21, -3.114, -4.9905, -0.52274, -6.3645, -0.97054, -6.0837, -0.89267, -10.663, -1.2736},
-{-2.21, -3.114, 4.9905, 0.52274, -6.0837, -0.89267, -6.3645, -0.97054, -10.663, -1.2736},
-{4.1734, 6.7691, -3.7826, -0.22441, 61.458, 10.153, -18.576, -2.7331, -127.77, -20.178},
-{4.1734, 6.7691, 3.7826, 0.22441, -18.576, -2.7331, 61.458, 10.153, -127.77, -20.178},
+        {-1.7015, -2.4894, -3.8637, -0.44552, -5.6625, -0.80472, -5.4193, -0.73546, -9.6512, -1.0981},
+{-1.7015, -2.4894, 3.8637, 0.44552, -5.4193, -0.73546, -5.6625, -0.80472, -9.6512, -1.0981},
+{5.1226, 8.3723, -4.2308, -0.26454, 64.027, 10.561, -15.98, -2.3189, -127.48, -18.694},
+{5.1226, 8.3723, 4.2308, 0.26454, -15.98, -2.3189, 64.027, 10.561, -127.48, -18.694},
     };
 
 //最好的参数
@@ -1165,8 +1165,8 @@ static void chassis_control_loop(Chassis_Move *chassis_move_control_loop) {
     chassis_init_standup(chassis_move_control_loop);
     chassis_calc_support_force(chassis_move_control_loop);
 
-    fp32 soft_lqr_ratio = chassis_update_soft_lqr_ratio(chassis_move_control_loop);
-    //fp32 soft_lqr_ratio = 1.0f;
+    //fp32 soft_lqr_ratio = chassis_update_soft_lqr_ratio(chassis_move_control_loop);
+    fp32 soft_lqr_ratio = 1.0f;
     chassis_apply_joint_output(chassis_move_control_loop, soft_lqr_ratio);
     chassis_limit_output(chassis_move_control_loop);
     chassis_save_last_feedback(chassis_move_control_loop);
@@ -1480,12 +1480,12 @@ static fp32 chassis_update_soft_lqr_ratio(Chassis_Move *chassis_move_control_loo
         soft_lqr_ratio = 0.0f;
     }
 
-    if (soft_lqr_ratio < 1.0f)
+    if (soft_lqr_ratio < 0.6f)
     {
         soft_lqr_ratio += 0.004f;
-        if (soft_lqr_ratio > 1.0f)
+        if (soft_lqr_ratio > 0.6f)
         {
-            soft_lqr_ratio = 1.0f;
+            soft_lqr_ratio = 0.6f;
         }
     }
 
@@ -1497,21 +1497,30 @@ static void chassis_apply_joint_output(Chassis_Move *chassis_move_control_loop, 
     if (chassis_move_control_loop->state == CHASSIS_INIT &&
         chassis_move_control_loop->init_phase == CHASSIS_INIT_STAND)
     {
-        // chassis_move_control_loop->chassis_wheel[0].wheel_T *= soft_lqr_ratio;
-        // chassis_move_control_loop->chassis_wheel[1].wheel_T *= soft_lqr_ratio;
+        chassis_move_control_loop->chassis_wheel[0].wheel_T *= 0.0f;
+        chassis_move_control_loop->chassis_wheel[1].wheel_T *= 0.0f;
 
+        chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t = LQR_K[2][4] * chassis_move_control_loop->chassis_left_control.theta_l
+                                                                            + LQR_K[2][5] * chassis_move_control_loop->chassis_left_control.d_theta_l
+                                                                            + LQR_K[2][6] * chassis_move_control_loop->chassis_right_control.theta_l
+                                                                            + LQR_K[2][7] * chassis_move_control_loop->chassis_right_control.d_theta_l;
+
+        chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t = LQR_K[3][4] * chassis_move_control_loop->chassis_left_control.theta_l
+                                                                             + LQR_K[3][5] * chassis_move_control_loop->chassis_left_control.d_theta_l
+                                                                             + LQR_K[3][6] * chassis_move_control_loop->chassis_right_control.theta_l
+                                                                             + LQR_K[3][7] * chassis_move_control_loop->chassis_right_control.d_theta_l;
         // 左前关节电机力矩
         chassis_move_control_loop->chassis_joint[0].joint_T = -chassis_move_control_loop->chassis_left_control.wbr_control.J[0][0] * chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t
-                                                            - chassis_move_control_loop->chassis_left_control.wbr_control.J[0][1] * chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t;// * soft_lqr_ratio;
+                                                            - chassis_move_control_loop->chassis_left_control.wbr_control.J[0][1] * chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t * 0.7;
         // 左后关节电机力矩
         chassis_move_control_loop->chassis_joint[1].joint_T = chassis_move_control_loop->chassis_left_control.wbr_control.J[1][0] * chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t
-                                                            + chassis_move_control_loop->chassis_left_control.wbr_control.J[1][1] * chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t;// * soft_lqr_ratio;
+                                                            + chassis_move_control_loop->chassis_left_control.wbr_control.J[1][1] * chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t * 0.7;
         // 右前关节电机力矩
         chassis_move_control_loop->chassis_joint[2].joint_T = chassis_move_control_loop->chassis_right_control.wbr_control.J[0][0] * chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t
-                                                            + chassis_move_control_loop->chassis_right_control.wbr_control.J[0][1] * chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t;// * soft_lqr_ratio;
+                                                            + chassis_move_control_loop->chassis_right_control.wbr_control.J[0][1] * chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t * 0.7;
         // 右后关节电机力矩
         chassis_move_control_loop->chassis_joint[3].joint_T = -chassis_move_control_loop->chassis_right_control.wbr_control.J[1][0] * chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t
-                                                            - chassis_move_control_loop->chassis_right_control.wbr_control.J[1][1] * chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t;// * soft_lqr_ratio;
+                                                            - chassis_move_control_loop->chassis_right_control.wbr_control.J[1][1] * chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t * 0.7;
     }
     else if (chassis_move_control_loop->state == CHASSIS_INIT &&
              chassis_move_control_loop->init_phase == CHASSIS_INIT_RETRACT)
@@ -1536,9 +1545,6 @@ static void chassis_apply_joint_output(Chassis_Move *chassis_move_control_loop, 
                 LQR_K[3][6] * chassis_move_control_loop->chassis_right_control.theta_l +
                 LQR_K[3][7] * chassis_move_control_loop->chassis_right_control.d_theta_l;
         }
-
-        chassis_move_control_loop->chassis_wheel[0].wheel_T *= soft_lqr_ratio;
-        chassis_move_control_loop->chassis_wheel[1].wheel_T *= soft_lqr_ratio;
 
         // 左前关节电机力矩
         chassis_move_control_loop->chassis_joint[0].joint_T = -chassis_move_control_loop->chassis_left_control.wbr_control.J[0][0] * chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t
@@ -1705,22 +1711,25 @@ static void chassis_init_standup(Chassis_Move *chassis_init_standup)
     }
     else if (chassis_init_standup->init_phase == CHASSIS_INIT_STAND)
     {
-        if (fabsf(chassis_init_standup->chassis_left_control.wbr_control.L - CHASSIS_NORMAL_LEG_TARGET) < 0.02f &&
-            fabsf(chassis_init_standup->chassis_right_control.wbr_control.L - CHASSIS_NORMAL_LEG_TARGET) < 0.02f &&
-            chassis_init_standup->posture == CHASSIS_POSTURE_UP)
+        if (chassis_init_standup->posture == CHASSIS_POSTURE_UP)
         {
-            if (chassis_init_standup->posture_stable_ticks < CHASSIS_POSTURE_STABLE_TICKS)
-            {
-                chassis_init_standup->posture_stable_ticks++;
-            }
-            else
-            {
+            if((fabs(chassis_init_standup->chassis_left_control.theta_l) < 0.1) ||
+                (fabs(chassis_init_standup->chassis_right_control.theta_l) < 0.1)) {
                 chassis_init_standup->init_phase = CHASSIS_INIT_DONE;
             }
+            // if (chassis_init_standup->posture_stable_ticks < CHASSIS_POSTURE_STABLE_TICKS)
+            // {
+            //     chassis_init_standup->posture_stable_ticks++;
+            // }
+            // else
+            // {
+            //     chassis_init_standup->init_phase = CHASSIS_INIT_DONE;
+            // }
         }
         else
         {
-            chassis_init_standup->posture_stable_ticks = 0;
+            // chassis_init_standup->posture_stable_ticks = 0;
+            chassis_init_standup->init_phase = CHASSIS_INIT_DONE;
         }
     }
 }
