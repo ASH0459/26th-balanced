@@ -80,7 +80,7 @@
 #define CHASSIS_INIT_LEG_ANGLE_TARGET_RAW   (-1.26f)
 #define CHASSIS_INIT_LEG_ANGLE_TARGET_360   5.1f
 // 初始化收腿角度到位阈值 (rad)
-#define CHASSIS_INIT_LEG_ANGLE_THRESHOLD (0.1f)
+#define CHASSIS_INIT_LEG_ANGLE_THRESHOLD (0.15f)
 // 初始化收腿PID参数
 #define INIT_LEG_ANGLE_PID_KP           5.0f
 #define INIT_LEG_ANGLE_PID_KI           0.0f
@@ -114,21 +114,20 @@
 #define CHASSIS_INIT_LEVEL_SYNC_MIN_RATIO 0.0f // 机体未水平时两条腿的同步旋转最小速度比例
 
 //yaw轴跟随PID
-#define YAW_PID_KP						6.0f
+#define YAW_PID_KP						30.0f
 #define YAW_PID_KI						0.0f
-#define YAW_PID_KD						3.0f
-
-#define YAW_PID_MAX_OUT				    6.0f
+#define YAW_PID_KD						10.0f
+#define YAW_PID_MAX_OUT				    30.0f
 #define YAW_PID_MAX_IOUT				0.0f
 
 // 左右腿roll轴PID
-#define ROLL_PID_KP						1000.0f
-#define ROLL_PID_KI						0.0f
+#define ROLL_PID_KP						2000.0f
 #define ROLL_PID_KD						300.0f
-#define ROLL_PID_MAX_OUT				400.0f
+#define ROLL_PID_KI						0.0f
+#define ROLL_PID_MAX_OUT				200.0f
 #define ROLL_PID_MAX_IOUT				0.0f
 
-#define  CHASSIS_X_BACK                  2.5f
+#define  CHASSIS_X_BACK                  0.7f
 // 左右腿长度PID
 #define LEG_PID_KP                        2000.0f
 #define LEG_PID_KI                        2.4f
@@ -221,8 +220,8 @@
 
 #define CHASSIS_D_YAW_SOURCE_KINEMATIC 0
 #define CHASSIS_D_YAW_SOURCE_IMU 1
-#define CHASSIS_D_YAW_SOURCE CHASSIS_D_YAW_SOURCE_KINEMATIC
-#define CHASSIS_D_YAW_IMU_SIGN 1.0f
+#define CHASSIS_D_YAW_SOURCE CHASSIS_D_YAW_SOURCE_IMU
+#define CHASSIS_D_YAW_IMU_SIGN -1.0f
 
 //摇杆死区
 #define CHASSIS_RC_DEADLINE 10
@@ -254,7 +253,7 @@
 #define CHASSIS_RIGHT_KEY   KEY_PRESSED_OFFSET_D
 
 // 键盘控制最大速度 (m/s)
-#define CHASSIS_KEY_MAX_SPEED   2.5f
+#define CHASSIS_KEY_MAX_SPEED   2.0f
 #define CHASSIS_KEY_MAX_SPEED_UP   1.0f
 
 #define CHASSIS_KEY_ACCEL 1.8f
@@ -308,6 +307,11 @@
 #define CHASSIS_DT7_Y_PID_KD 0.0f
 #define CHASSIS_DT7_Y_PID_MAX_OUT 10.0f
 #define CHASSIS_DT7_Y_PID_MAX_IOUT 2.0f
+
+
+#define LEG_NORMAL_SUPPORT_FORCE  105.0f   // 正常站立时单腿的平均支持力 (N)
+#define ADMITTANCE_EXTEND_KP      0.00003f // 导纳积分系数：控制空中伸腿和触地退让的快慢
+#define RAMP_RECOVERY_STEP        0.0002f  // 落地恢复斜坡步长：控制落地后恢复正常腿长的速度
 
 /* 底盘状态机 */
 typedef enum
