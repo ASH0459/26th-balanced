@@ -71,6 +71,15 @@ typedef enum
     CHASSIS_MODE_STEP_2 = 5,
 } chassis_mode_e;
 
+typedef enum
+{
+    FRIC_OFF = 0,
+    FRIC_ON = 1,
+    FRIC_ERROR = 2,
+    FRIC_AUTO_AIM_TARGET_NO_MANUAL_FIRE = 4,
+    FRIC_AUTO_AIM_TARGET_MANUAL_FIRE = 5,
+} Fric_State_e;
+
 /** * @brief 变量外部声明 */
 
 /** * @brief CPP部分 */
@@ -292,7 +301,7 @@ public:
     fp32 v_tmp;
     fp32 chassis_yaw_set;
     fp32 chassis_relative_angle;
-    uint8_t fric_state;
+    Fric_State_e fric_state;
     chassis_mode_e chassis_behaviour_mode;
 
     /**
@@ -347,7 +356,13 @@ inline void CAN_cmd_gimbal_receive(const uint8_t *received_data)
     const int16_t v_set_tmp = static_cast<int16_t>((received_data[0] << 8) | received_data[1]);
     const int16_t yaw_set_tmp = static_cast<int16_t>((received_data[2] << 8) | received_data[3]);
     const chassis_mode_e chassis_behaviour = static_cast<chassis_mode_e>(received_data[4]);
-    const uint8_t fric_state = received_data[5];
+    const Fric_State_e fric_state =
+        (received_data[5] == FRIC_OFF || received_data[5] == FRIC_ON ||
+         received_data[5] == FRIC_ERROR ||
+         received_data[5] == FRIC_AUTO_AIM_TARGET_NO_MANUAL_FIRE ||
+         received_data[5] == FRIC_AUTO_AIM_TARGET_MANUAL_FIRE)
+            ? static_cast<Fric_State_e>(received_data[5])
+            : FRIC_ERROR;
     const int16_t relative_angle_tmp = static_cast<int16_t>((received_data[6] << 8) | received_data[7]);
 
     gimbal_data.v_tmp = static_cast<fp32>(v_set_tmp) / 1000.0f;

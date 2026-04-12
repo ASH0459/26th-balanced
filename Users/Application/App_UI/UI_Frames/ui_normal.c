@@ -5,6 +5,7 @@
 
 #include <string.h>
 
+#include "cmsis_os.h"
 #include "ui_interface.h"
 
 ui_5_frame_t ui_normal_DynamicGroup1_0;
@@ -191,20 +192,266 @@ void _ui_remove_normal_DynamicTextGroup1_1() {
     ui_proc_string_frame(&ui_normal_DynamicTextGroup1_1);
     SEND_MESSAGE((uint8_t *) &ui_normal_DynamicTextGroup1_1, sizeof(ui_normal_DynamicTextGroup1_1));
 }
+ui_string_frame_t ui_normal_DynamicTextGroup1_2;
+ui_interface_string_t* ui_normal_DynamicTextGroup1_Joint1Err = &(ui_normal_DynamicTextGroup1_2.option);
+
+void _ui_init_normal_DynamicTextGroup1_2() {
+    ui_normal_DynamicTextGroup1_2.option.figure_name[0] = 1;
+    ui_normal_DynamicTextGroup1_2.option.figure_name[1] = 1;
+    ui_normal_DynamicTextGroup1_2.option.figure_name[2] = 2;
+    ui_normal_DynamicTextGroup1_2.option.operate_type = 1;
+
+    ui_normal_DynamicTextGroup1_Joint1Err->figure_type = 7;
+    ui_normal_DynamicTextGroup1_Joint1Err->operate_type = 1;
+    ui_normal_DynamicTextGroup1_Joint1Err->layer = 0;
+    ui_normal_DynamicTextGroup1_Joint1Err->color = 4;
+    ui_normal_DynamicTextGroup1_Joint1Err->start_x = 1608;
+    ui_normal_DynamicTextGroup1_Joint1Err->start_y = 583;
+    ui_normal_DynamicTextGroup1_Joint1Err->width = 5;
+    ui_normal_DynamicTextGroup1_Joint1Err->font_size = 50;
+    ui_normal_DynamicTextGroup1_Joint1Err->str_length = 6;
+    strcpy(ui_normal_DynamicTextGroup1_Joint1Err->string, "JOINT1");
+
+
+    ui_proc_string_frame(&ui_normal_DynamicTextGroup1_2);
+    SEND_MESSAGE((uint8_t *) &ui_normal_DynamicTextGroup1_2, sizeof(ui_normal_DynamicTextGroup1_2));
+}
+
+void _ui_update_normal_DynamicTextGroup1_2() {
+    ui_normal_DynamicTextGroup1_2.option.operate_type = 2;
+
+    ui_proc_string_frame(&ui_normal_DynamicTextGroup1_2);
+    SEND_MESSAGE((uint8_t *) &ui_normal_DynamicTextGroup1_2, sizeof(ui_normal_DynamicTextGroup1_2));
+}
+
+void _ui_remove_normal_DynamicTextGroup1_2() {
+    ui_normal_DynamicTextGroup1_2.option.operate_type = 3;
+
+    ui_proc_string_frame(&ui_normal_DynamicTextGroup1_2);
+    SEND_MESSAGE((uint8_t *) &ui_normal_DynamicTextGroup1_2, sizeof(ui_normal_DynamicTextGroup1_2));
+}
+ui_string_frame_t ui_normal_DynamicTextGroup1_3;
+ui_interface_string_t* ui_normal_DynamicTextGroup1_Joint2Err = &(ui_normal_DynamicTextGroup1_3.option);
+
+void _ui_init_normal_DynamicTextGroup1_3() {
+    ui_normal_DynamicTextGroup1_3.option.figure_name[0] = 1;
+    ui_normal_DynamicTextGroup1_3.option.figure_name[1] = 1;
+    ui_normal_DynamicTextGroup1_3.option.figure_name[2] = 3;
+    ui_normal_DynamicTextGroup1_3.option.operate_type = 1;
+
+    ui_normal_DynamicTextGroup1_Joint2Err->figure_type = 7;
+    ui_normal_DynamicTextGroup1_Joint2Err->operate_type = 1;
+    ui_normal_DynamicTextGroup1_Joint2Err->layer = 0;
+    ui_normal_DynamicTextGroup1_Joint2Err->color = 4;
+    ui_normal_DynamicTextGroup1_Joint2Err->start_x = 1608;
+    ui_normal_DynamicTextGroup1_Joint2Err->start_y = 583;
+    ui_normal_DynamicTextGroup1_Joint2Err->width = 5;
+    ui_normal_DynamicTextGroup1_Joint2Err->font_size = 50;
+    ui_normal_DynamicTextGroup1_Joint2Err->str_length = 6;
+    strcpy(ui_normal_DynamicTextGroup1_Joint2Err->string, "JOINT2");
+
+
+    ui_proc_string_frame(&ui_normal_DynamicTextGroup1_3);
+    SEND_MESSAGE((uint8_t *) &ui_normal_DynamicTextGroup1_3, sizeof(ui_normal_DynamicTextGroup1_3));
+}
+
+void _ui_update_normal_DynamicTextGroup1_3() {
+    ui_normal_DynamicTextGroup1_3.option.operate_type = 2;
+
+    ui_proc_string_frame(&ui_normal_DynamicTextGroup1_3);
+    SEND_MESSAGE((uint8_t *) &ui_normal_DynamicTextGroup1_3, sizeof(ui_normal_DynamicTextGroup1_3));
+}
+
+void _ui_remove_normal_DynamicTextGroup1_3() {
+    ui_normal_DynamicTextGroup1_3.option.operate_type = 3;
+
+    ui_proc_string_frame(&ui_normal_DynamicTextGroup1_3);
+    SEND_MESSAGE((uint8_t *) &ui_normal_DynamicTextGroup1_3, sizeof(ui_normal_DynamicTextGroup1_3));
+}
+ui_string_frame_t ui_normal_DynamicTextGroup1_4;
+ui_interface_string_t* ui_normal_DynamicTextGroup1_Joint3Err = &(ui_normal_DynamicTextGroup1_4.option);
+
+void _ui_init_normal_DynamicTextGroup1_4() {
+    ui_normal_DynamicTextGroup1_4.option.figure_name[0] = 1;
+    ui_normal_DynamicTextGroup1_4.option.figure_name[1] = 1;
+    ui_normal_DynamicTextGroup1_4.option.figure_name[2] = 4;
+    ui_normal_DynamicTextGroup1_4.option.operate_type = 1;
+
+    ui_normal_DynamicTextGroup1_Joint3Err->figure_type = 7;
+    ui_normal_DynamicTextGroup1_Joint3Err->operate_type = 1;
+    ui_normal_DynamicTextGroup1_Joint3Err->layer = 0;
+    ui_normal_DynamicTextGroup1_Joint3Err->color = 4;
+    ui_normal_DynamicTextGroup1_Joint3Err->start_x = 1608;
+    ui_normal_DynamicTextGroup1_Joint3Err->start_y = 583;
+    ui_normal_DynamicTextGroup1_Joint3Err->width = 5;
+    ui_normal_DynamicTextGroup1_Joint3Err->font_size = 50;
+    ui_normal_DynamicTextGroup1_Joint3Err->str_length = 6;
+    strcpy(ui_normal_DynamicTextGroup1_Joint3Err->string, "JOINT3");
+
+
+    ui_proc_string_frame(&ui_normal_DynamicTextGroup1_4);
+    SEND_MESSAGE((uint8_t *) &ui_normal_DynamicTextGroup1_4, sizeof(ui_normal_DynamicTextGroup1_4));
+}
+
+void _ui_update_normal_DynamicTextGroup1_4() {
+    ui_normal_DynamicTextGroup1_4.option.operate_type = 2;
+
+    ui_proc_string_frame(&ui_normal_DynamicTextGroup1_4);
+    SEND_MESSAGE((uint8_t *) &ui_normal_DynamicTextGroup1_4, sizeof(ui_normal_DynamicTextGroup1_4));
+}
+
+void _ui_remove_normal_DynamicTextGroup1_4() {
+    ui_normal_DynamicTextGroup1_4.option.operate_type = 3;
+
+    ui_proc_string_frame(&ui_normal_DynamicTextGroup1_4);
+    SEND_MESSAGE((uint8_t *) &ui_normal_DynamicTextGroup1_4, sizeof(ui_normal_DynamicTextGroup1_4));
+}
+ui_string_frame_t ui_normal_DynamicTextGroup1_5;
+ui_interface_string_t* ui_normal_DynamicTextGroup1_Joint4Err = &(ui_normal_DynamicTextGroup1_5.option);
+
+void _ui_init_normal_DynamicTextGroup1_5() {
+    ui_normal_DynamicTextGroup1_5.option.figure_name[0] = 1;
+    ui_normal_DynamicTextGroup1_5.option.figure_name[1] = 1;
+    ui_normal_DynamicTextGroup1_5.option.figure_name[2] = 5;
+    ui_normal_DynamicTextGroup1_5.option.operate_type = 1;
+
+    ui_normal_DynamicTextGroup1_Joint4Err->figure_type = 7;
+    ui_normal_DynamicTextGroup1_Joint4Err->operate_type = 1;
+    ui_normal_DynamicTextGroup1_Joint4Err->layer = 0;
+    ui_normal_DynamicTextGroup1_Joint4Err->color = 4;
+    ui_normal_DynamicTextGroup1_Joint4Err->start_x = 1608;
+    ui_normal_DynamicTextGroup1_Joint4Err->start_y = 583;
+    ui_normal_DynamicTextGroup1_Joint4Err->width = 5;
+    ui_normal_DynamicTextGroup1_Joint4Err->font_size = 50;
+    ui_normal_DynamicTextGroup1_Joint4Err->str_length = 6;
+    strcpy(ui_normal_DynamicTextGroup1_Joint4Err->string, "JOINT4");
+
+
+    ui_proc_string_frame(&ui_normal_DynamicTextGroup1_5);
+    SEND_MESSAGE((uint8_t *) &ui_normal_DynamicTextGroup1_5, sizeof(ui_normal_DynamicTextGroup1_5));
+}
+
+void _ui_update_normal_DynamicTextGroup1_5() {
+    ui_normal_DynamicTextGroup1_5.option.operate_type = 2;
+
+    ui_proc_string_frame(&ui_normal_DynamicTextGroup1_5);
+    SEND_MESSAGE((uint8_t *) &ui_normal_DynamicTextGroup1_5, sizeof(ui_normal_DynamicTextGroup1_5));
+}
+
+void _ui_remove_normal_DynamicTextGroup1_5() {
+    ui_normal_DynamicTextGroup1_5.option.operate_type = 3;
+
+    ui_proc_string_frame(&ui_normal_DynamicTextGroup1_5);
+    SEND_MESSAGE((uint8_t *) &ui_normal_DynamicTextGroup1_5, sizeof(ui_normal_DynamicTextGroup1_5));
+}
+ui_string_frame_t ui_normal_DynamicTextGroup1_6;
+ui_interface_string_t* ui_normal_DynamicTextGroup1_Wheel1 = &(ui_normal_DynamicTextGroup1_6.option);
+
+void _ui_init_normal_DynamicTextGroup1_6() {
+    ui_normal_DynamicTextGroup1_6.option.figure_name[0] = 1;
+    ui_normal_DynamicTextGroup1_6.option.figure_name[1] = 1;
+    ui_normal_DynamicTextGroup1_6.option.figure_name[2] = 6;
+    ui_normal_DynamicTextGroup1_6.option.operate_type = 1;
+
+    ui_normal_DynamicTextGroup1_Wheel1->figure_type = 7;
+    ui_normal_DynamicTextGroup1_Wheel1->operate_type = 1;
+    ui_normal_DynamicTextGroup1_Wheel1->layer = 0;
+    ui_normal_DynamicTextGroup1_Wheel1->color = 4;
+    ui_normal_DynamicTextGroup1_Wheel1->start_x = 1608;
+    ui_normal_DynamicTextGroup1_Wheel1->start_y = 583;
+    ui_normal_DynamicTextGroup1_Wheel1->width = 5;
+    ui_normal_DynamicTextGroup1_Wheel1->font_size = 50;
+    ui_normal_DynamicTextGroup1_Wheel1->str_length = 6;
+    strcpy(ui_normal_DynamicTextGroup1_Wheel1->string, "WHEEL1");
+
+
+    ui_proc_string_frame(&ui_normal_DynamicTextGroup1_6);
+    SEND_MESSAGE((uint8_t *) &ui_normal_DynamicTextGroup1_6, sizeof(ui_normal_DynamicTextGroup1_6));
+}
+
+void _ui_update_normal_DynamicTextGroup1_6() {
+    ui_normal_DynamicTextGroup1_6.option.operate_type = 2;
+
+    ui_proc_string_frame(&ui_normal_DynamicTextGroup1_6);
+    SEND_MESSAGE((uint8_t *) &ui_normal_DynamicTextGroup1_6, sizeof(ui_normal_DynamicTextGroup1_6));
+}
+
+void _ui_remove_normal_DynamicTextGroup1_6() {
+    ui_normal_DynamicTextGroup1_6.option.operate_type = 3;
+
+    ui_proc_string_frame(&ui_normal_DynamicTextGroup1_6);
+    SEND_MESSAGE((uint8_t *) &ui_normal_DynamicTextGroup1_6, sizeof(ui_normal_DynamicTextGroup1_6));
+}
+ui_string_frame_t ui_normal_DynamicTextGroup1_7;
+ui_interface_string_t* ui_normal_DynamicTextGroup1_Wheel2 = &(ui_normal_DynamicTextGroup1_7.option);
+
+void _ui_init_normal_DynamicTextGroup1_7() {
+    ui_normal_DynamicTextGroup1_7.option.figure_name[0] = 1;
+    ui_normal_DynamicTextGroup1_7.option.figure_name[1] = 1;
+    ui_normal_DynamicTextGroup1_7.option.figure_name[2] = 7;
+    ui_normal_DynamicTextGroup1_7.option.operate_type = 1;
+
+    ui_normal_DynamicTextGroup1_Wheel2->figure_type = 7;
+    ui_normal_DynamicTextGroup1_Wheel2->operate_type = 1;
+    ui_normal_DynamicTextGroup1_Wheel2->layer = 0;
+    ui_normal_DynamicTextGroup1_Wheel2->color = 4;
+    ui_normal_DynamicTextGroup1_Wheel2->start_x = 1608;
+    ui_normal_DynamicTextGroup1_Wheel2->start_y = 583;
+    ui_normal_DynamicTextGroup1_Wheel2->width = 5;
+    ui_normal_DynamicTextGroup1_Wheel2->font_size = 50;
+    ui_normal_DynamicTextGroup1_Wheel2->str_length = 6;
+    strcpy(ui_normal_DynamicTextGroup1_Wheel2->string, "WHEEL2");
+
+
+    ui_proc_string_frame(&ui_normal_DynamicTextGroup1_7);
+    SEND_MESSAGE((uint8_t *) &ui_normal_DynamicTextGroup1_7, sizeof(ui_normal_DynamicTextGroup1_7));
+}
+
+void _ui_update_normal_DynamicTextGroup1_7() {
+    ui_normal_DynamicTextGroup1_7.option.operate_type = 2;
+
+    ui_proc_string_frame(&ui_normal_DynamicTextGroup1_7);
+    SEND_MESSAGE((uint8_t *) &ui_normal_DynamicTextGroup1_7, sizeof(ui_normal_DynamicTextGroup1_7));
+}
+
+void _ui_remove_normal_DynamicTextGroup1_7() {
+    ui_normal_DynamicTextGroup1_7.option.operate_type = 3;
+
+    ui_proc_string_frame(&ui_normal_DynamicTextGroup1_7);
+    SEND_MESSAGE((uint8_t *) &ui_normal_DynamicTextGroup1_7, sizeof(ui_normal_DynamicTextGroup1_7));
+}
 
 void ui_init_normal_DynamicTextGroup1() {
     _ui_init_normal_DynamicTextGroup1_0();
     _ui_init_normal_DynamicTextGroup1_1();
+    _ui_init_normal_DynamicTextGroup1_2();
+    _ui_init_normal_DynamicTextGroup1_3();
+    _ui_init_normal_DynamicTextGroup1_4();
+    _ui_init_normal_DynamicTextGroup1_5();
+    _ui_init_normal_DynamicTextGroup1_6();
+    _ui_init_normal_DynamicTextGroup1_7();
 }
 
 void ui_update_normal_DynamicTextGroup1() {
     _ui_update_normal_DynamicTextGroup1_0();
     _ui_update_normal_DynamicTextGroup1_1();
+    _ui_update_normal_DynamicTextGroup1_2();
+    _ui_update_normal_DynamicTextGroup1_3();
+    _ui_update_normal_DynamicTextGroup1_4();
+    _ui_update_normal_DynamicTextGroup1_5();
+    _ui_update_normal_DynamicTextGroup1_6();
+    _ui_update_normal_DynamicTextGroup1_7();
 }
 
 void ui_remove_normal_DynamicTextGroup1() {
     _ui_remove_normal_DynamicTextGroup1_0();
     _ui_remove_normal_DynamicTextGroup1_1();
+    _ui_remove_normal_DynamicTextGroup1_2();
+    _ui_remove_normal_DynamicTextGroup1_3();
+    _ui_remove_normal_DynamicTextGroup1_4();
+    _ui_remove_normal_DynamicTextGroup1_5();
+    _ui_remove_normal_DynamicTextGroup1_6();
+    _ui_remove_normal_DynamicTextGroup1_7();
 }
 
 ui_5_frame_t ui_normal_LegDynamicGroup_0;
@@ -709,12 +956,19 @@ void _ui_remove_normal_StaticTextGroup1_6() {
 
 void ui_init_normal_StaticTextGroup1() {
     _ui_init_normal_StaticTextGroup1_0();
+    osDelay(100);
     _ui_init_normal_StaticTextGroup1_1();
+    osDelay(100);
     _ui_init_normal_StaticTextGroup1_2();
+    osDelay(100);
     _ui_init_normal_StaticTextGroup1_3();
+    osDelay(100);
     _ui_init_normal_StaticTextGroup1_4();
+    osDelay(100);
     _ui_init_normal_StaticTextGroup1_5();
+    osDelay(100);
     _ui_init_normal_StaticTextGroup1_6();
+    osDelay(100);
 }
 
 void ui_update_normal_StaticTextGroup1() {
@@ -736,4 +990,3 @@ void ui_remove_normal_StaticTextGroup1() {
     _ui_remove_normal_StaticTextGroup1_5();
     _ui_remove_normal_StaticTextGroup1_6();
 }
-
