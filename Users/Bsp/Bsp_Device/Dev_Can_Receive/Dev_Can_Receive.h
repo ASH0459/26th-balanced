@@ -115,9 +115,9 @@ static uint16_t float_to_uint(fp32 x_float, fp32 x_min, fp32 x_max, uint16_t bit
 class Wheel_Motor_Measure
 {
 public:
-    uint8_t id;                  // 电机id
+    uint16_t id;                 // 电机id
     FDCAN_HandleTypeDef *hfdcan; // 电机对应的fdcan
-    Wheel_Motor_Measure(const uint8_t id, FDCAN_HandleTypeDef *hfdcan)
+    Wheel_Motor_Measure(const uint16_t id, FDCAN_HandleTypeDef *hfdcan)
     {
         this->id = id;
         this->hfdcan = hfdcan;

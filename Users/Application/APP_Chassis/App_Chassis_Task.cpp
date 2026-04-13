@@ -263,8 +263,7 @@ extern "C"
     static void chassis_zero_output(Chassis_Move *chassis_move_control_loop);
     static void chassis_flip_control(Chassis_Move *chassis_move_control_loop);
     static void chassis_calc_support_force(Chassis_Move *chassis_move_control_loop);
-    static fp32 chassis_update_soft_lqr_ratio(Chassis_Move *chassis_move_control_loop);
-    static void chassis_apply_joint_output(Chassis_Move *chassis_move_control_loop, fp32 soft_lqr_ratio);
+    static void chassis_apply_joint_output(Chassis_Move *chassis_move_control_loop);
     static void chassis_limit_output(Chassis_Move *chassis_move_control_loop);
     static void chassis_save_last_feedback(Chassis_Move *chassis_move_control_loop);
     static void chassis_update_jump_phase(Chassis_Move *chassis_move_control_loop);
@@ -298,6 +297,7 @@ extern "C"
         /* 定义绝对延时变量 */
         TickType_t xLastWakeTime;
         const TickType_t xFrequency = pdMS_TO_TICKS(CHASSIS_CONTROL_TIME_MS);
+        TickType_t joint_reenable_tick = 0;
 
         /* 获取当前时间作为基准 */
         xLastWakeTime = xTaskGetTickCount();
@@ -326,15 +326,21 @@ extern "C"
             if (toe_is_error(CHASSIS_JOINT1_TOE) || toe_is_error(CHASSIS_JOINT2_TOE) ||
                 toe_is_error(CHASSIS_JOINT3_TOE) || toe_is_error(CHASSIS_JOINT4_TOE))
             {
-                // 关节电机扭矩清零
-                // for (int i = 0; i < 4; i++) {
-                //     chassis_move.chassis_joint[i].joint_T = 0.0f;
-                // }
+                // 关节掉线时先清零输出，避免异常扭矩持续下发
                 for (uint8_t i = 0; i < 4; i++)
                 {
-                    // 重新使能
-                    chassis_move.chassis_joint[i].chassis_joint_measure->Enable_Joint_Motor();
-                    HAL_Delay(JOINT_MOTOR_lIMIT_TIME);
+                    chassis_move.chassis_joint[i].joint_T = 0.0f;
+                }
+
+                // 非阻塞限频重使能，避免在控制环里引入 HAL_Delay 抖动
+                const TickType_t now = xTaskGetTickCount();
+                if ((now - joint_reenable_tick) >= pdMS_TO_TICKS(10))
+                {
+                    for (uint8_t i = 0; i < 4; i++)
+                    {
+                        chassis_move.chassis_joint[i].chassis_joint_measure->Enable_Joint_Motor();
+                    }
+                    joint_reenable_tick = now;
                 }
                 // 轮电机扭矩清零
                 // chassis_move.chassis_wheel[0].wheel_T = 0.0f;
@@ -473,11 +479,11 @@ extern "C"
         memcpy(chassis_move_init->chassis_vaestimatekf_xv.R_data, chassis_move_init->vaEstimateKF_R_VX, sizeof(chassis_move_init->vaEstimateKF_R_VX));
         memcpy(chassis_move_init->chassis_vaestimatekf_xv.H_data, chassis_move_init->vaEstimateKF_H_VX, sizeof(chassis_move_init->vaEstimateKF_H_VX));
 
-        memcpy(chassis_move_init->chassis_vaestimatekf_xv.F_data, chassis_move_init->vaEstimateKF_F_VA, sizeof(chassis_move_init->vaEstimateKF_F_VA));
-        memcpy(chassis_move_init->chassis_vaestimatekf_xv.P_data, chassis_move_init->vaEstimateKF_P_VA, sizeof(chassis_move_init->vaEstimateKF_P_VA));
-        memcpy(chassis_move_init->chassis_vaestimatekf_xv.Q_data, chassis_move_init->vaEstimateKF_Q_VA, sizeof(chassis_move_init->vaEstimateKF_Q_VA));
-        memcpy(chassis_move_init->chassis_vaestimatekf_xv.R_data, chassis_move_init->vaEstimateKF_R_VA, sizeof(chassis_move_init->vaEstimateKF_R_VA));
-        memcpy(chassis_move_init->chassis_vaestimatekf_xv.H_data, chassis_move_init->vaEstimateKF_H_VA, sizeof(chassis_move_init->vaEstimateKF_H_VA));
+        memcpy(chassis_move_init->chassis_vaestimatekf_va.F_data, chassis_move_init->vaEstimateKF_F_VA, sizeof(chassis_move_init->vaEstimateKF_F_VA));
+        memcpy(chassis_move_init->chassis_vaestimatekf_va.P_data, chassis_move_init->vaEstimateKF_P_VA, sizeof(chassis_move_init->vaEstimateKF_P_VA));
+        memcpy(chassis_move_init->chassis_vaestimatekf_va.Q_data, chassis_move_init->vaEstimateKF_Q_VA, sizeof(chassis_move_init->vaEstimateKF_Q_VA));
+        memcpy(chassis_move_init->chassis_vaestimatekf_va.R_data, chassis_move_init->vaEstimateKF_R_VA, sizeof(chassis_move_init->vaEstimateKF_R_VA));
+        memcpy(chassis_move_init->chassis_vaestimatekf_va.H_data, chassis_move_init->vaEstimateKF_H_VA, sizeof(chassis_move_init->vaEstimateKF_H_VA));
 
         memcpy(chassis_move_init->chassis_left_control.chassis_vaestimatekf_theta.F_data, chassis_move_init->vaEstimateKF_F_theta, sizeof(chassis_move_init->vaEstimateKF_F_theta));
         memcpy(chassis_move_init->chassis_left_control.chassis_vaestimatekf_theta.P_data, chassis_move_init->vaEstimateKF_P_theta, sizeof(chassis_move_init->vaEstimateKF_P_theta));
@@ -509,7 +515,7 @@ extern "C"
         {
             chassis_move_init->chassis_joint[i].chassis_joint_measure = chassis_joint[i].get_chassis_motor_measure_point();
             chassis_move_init->chassis_joint[i].chassis_joint_measure->Enable_Joint_Motor();
-            HAL_Delay(JOINT_MOTOR_lIMIT_TIME);
+            vTaskDelay(pdMS_TO_TICKS(JOINT_MOTOR_lIMIT_TIME));
         }
 
         // 初始化wbr数据
@@ -551,7 +557,7 @@ extern "C"
         first_order_filter_init(&chassis_move_init->chassis_right_control.d_theta_l_lowpass_filter, CHASSIS_CONTROL_TIME, chassis_d_theta_l_lowpass_filter);
         chassis_move_init->chassis_leg_filter_set.out = CHASSIS_LEG_MAX;
 
-        // 初始化斜坡函数，时间周期为 CHASSIS_CONTROL_TIME(0.002s)
+        // 初始化斜坡函数，时间周期为 CHASSIS_CONTROL_TIME(0.001s)
         ramp_init(&chassis_move_init->chassis_left_control.init_angle_ramp, CHASSIS_CONTROL_TIME, 2.0f * PI + 1.0f, -1.0f);
         ramp_init(&chassis_move_init->chassis_right_control.init_angle_ramp, CHASSIS_CONTROL_TIME, 2.0f * PI + 1.0f, -1.0f);
 
@@ -888,7 +894,7 @@ extern "C"
      */
     static void chassis_interference_prevention(Chassis_Move *chassis_move_prediction)
     {
-        // 用于防抖的计数器（假设控制周期2ms，15次等于30ms）
+        // 用于离地防抖的计数器（当前控制周期1ms，连续2次判定为离地）
         static uint16_t left_off_count = 0;
         static uint16_t right_off_count = 0;
 
@@ -1052,9 +1058,7 @@ extern "C"
         chassis_init_standup(chassis_move_control_loop);
         chassis_calc_support_force(chassis_move_control_loop);
 
-        // fp32 soft_lqr_ratio = chassis_update_soft_lqr_ratio(chassis_move_control_loop);
-        fp32 soft_lqr_ratio = 1.0f;
-        chassis_apply_joint_output(chassis_move_control_loop, soft_lqr_ratio);
+        chassis_apply_joint_output(chassis_move_control_loop);
         chassis_limit_output(chassis_move_control_loop);
         chassis_save_last_feedback(chassis_move_control_loop);
     }
@@ -1346,29 +1350,7 @@ extern "C"
         }
     }
 
-    static fp32 chassis_update_soft_lqr_ratio(Chassis_Move *chassis_move_control_loop)
-    {
-        static fp32 soft_lqr_ratio = 0.0f; // 静态变量，默认 1.0（全功率）
-
-        if ((chassis_move_control_loop->last_state == CHASSIS_INIT) &&
-            chassis_is_balancing_state(chassis_move_control_loop->state))
-        {
-            soft_lqr_ratio = 0.0f;
-        }
-
-        if (soft_lqr_ratio < 0.6f)
-        {
-            soft_lqr_ratio += 0.004f;
-            if (soft_lqr_ratio > 0.6f)
-            {
-                soft_lqr_ratio = 0.6f;
-            }
-        }
-
-        return soft_lqr_ratio;
-    }
-
-    static void chassis_apply_joint_output(Chassis_Move *chassis_move_control_loop, fp32 soft_lqr_ratio)
+    static void chassis_apply_joint_output(Chassis_Move *chassis_move_control_loop)
     {
         if (chassis_move_control_loop->state == CHASSIS_INIT &&
             chassis_move_control_loop->init_phase == CHASSIS_INIT_STAND)

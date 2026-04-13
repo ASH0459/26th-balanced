@@ -1,5 +1,31 @@
 $ErrorActionPreference = 'Stop'
 
+$taskHeaderPath = 'Users/Application/APP_Chassis/App_Chassis_Task.h'
+$taskHeader = Get-Content $taskHeaderPath -Raw
+
+$dtMsMatch = [regex]::Match($taskHeader, '(?m)^\s*#define\s+CHASSIS_CONTROL_TIME_MS\s+([0-9]+)\b')
+$dtSecMatch = [regex]::Match($taskHeader, '(?m)^\s*#define\s+CHASSIS_CONTROL_TIME\s+([0-9]*\.?[0-9]+)f?\b')
+$freqMatch = [regex]::Match($taskHeader, '(?m)^\s*#define\s+CHASSIS_CONTROL_FREQUENCE\s+([0-9]*\.?[0-9]+)f?\b')
+
+if (-not $dtMsMatch.Success -or -not $dtSecMatch.Success -or -not $freqMatch.Success) {
+  throw "Failed to parse control-time macros from $taskHeaderPath"
+}
+
+$dtMs = [int]$dtMsMatch.Groups[1].Value
+$dt = [double]$dtSecMatch.Groups[1].Value
+$freq = [double]$freqMatch.Groups[1].Value
+
+$dtFromMs = $dtMs / 1000.0
+$freqFromDt = 1.0 / $dt
+
+if ([Math]::Abs($dt - $dtFromMs) -gt 1e-9) {
+  throw "Control time mismatch: CHASSIS_CONTROL_TIME_MS=$dtMs ms but CHASSIS_CONTROL_TIME=$dt s"
+}
+
+if ([Math]::Abs($freq - $freqFromDt) -gt 1e-3) {
+  throw "Frequency mismatch: CHASSIS_CONTROL_FREQUENCE=$freq Hz but 1/CHASSIS_CONTROL_TIME=$freqFromDt Hz"
+}
+
 # 1) 8-direction decode & normalization check
 $dirs = [ordered]@{
   0=@(0.0,0.0); 1=@(1.0,0.0); 2=@(-1.0,0.0); 3=@(0.0,1.0); 4=@(0.0,-1.0);
@@ -46,36 +72,42 @@ foreach ($k in $dirs.Keys) {
 }
 
 # 2) Gyro ramp up/down smoothness (same constants as behaviour file)
-$dt = 0.002
+# dt comes from CHASSIS_CONTROL_TIME in App_Chassis_Task.h.
 $up = 24.0
 $down = 18.0
 $target = 12.0
 $spin = 0.0
 $trace = @()
 
-for ($i = 0; $i -lt 260; $i++) {
-  $step = $up * $dt
+$upStep = $up * $dt
+$downStep = $down * $dt
+$upTicks = [int][Math]::Ceiling($target / $upStep) + 10
+$downTicks = [int][Math]::Ceiling($target / $downStep) + 10
+$upEndIndex = $upTicks - 1
+
+for ($i = 0; $i -lt $upTicks; $i++) {
+  $step = $upStep
   if ($spin -lt $target) { $spin = [Math]::Min($spin + $step, $target) }
   $trace += $spin
 }
 
-for ($i = 0; $i -lt 400; $i++) {
-  $step = $down * $dt
+for ($i = 0; $i -lt $downTicks; $i++) {
+  $step = $downStep
   if ($spin -gt 0.0) { $spin = [Math]::Max($spin - $step, 0.0) }
   $trace += $spin
 }
 
 $monoUp = $true
-for ($i = 1; $i -lt 260; $i++) {
+for ($i = 1; $i -lt $upTicks; $i++) {
   if ($trace[$i] + 1e-9 -lt $trace[$i-1]) { $monoUp = $false; break }
 }
 
 $monoDown = $true
-for ($i = 261; $i -lt $trace.Count; $i++) {
+for ($i = $upTicks; $i -lt $trace.Count; $i++) {
   if ($trace[$i] -gt $trace[$i-1] + 1e-9) { $monoDown = $false; break }
 }
 
-$gyroPass = $monoUp -and $monoDown -and ([Math]::Abs($trace[259] - $target) -lt 1e-6) -and ([Math]::Abs($trace[-1] - 0.0) -lt 1e-6)
+$gyroPass = $monoUp -and $monoDown -and ([Math]::Abs($trace[$upEndIndex] - $target) -lt 1e-6) -and ([Math]::Abs($trace[-1] - 0.0) -lt 1e-6)
 
 # 3) Static source checks for mode=6 no-action and VT timeout safe-stop
 $beh = Get-Content 'Users/Application/APP_Chassis/App_Chassis_Behaviour.cpp' -Raw
@@ -99,7 +131,7 @@ $summary = [PSCustomObject]@{
   GyroRampSmoothPass = $gyroPass
   Mode6NoActionPass = $mode6Pass
   TimeoutSafeStopPass = $timeoutPass
-  GyroRampUpFinal = [Math]::Round($trace[259], 3)
+  GyroRampUpFinal = [Math]::Round($trace[$upEndIndex], 3)
   GyroRampDownFinal = [Math]::Round($trace[-1], 3)
 }
 

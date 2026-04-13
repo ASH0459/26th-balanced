@@ -17,7 +17,6 @@
 /** * @brief 头文件 */
 #include "Dev_Can_Receive.h"
 #include "App_Detect_Task.h"
-#include <bits/range_access.h>
 
 #include "main.h"
 #include "HDL_SuperCap.hpp"
@@ -99,9 +98,8 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 			case CAN_CHASSIS_JOINT_LEFT_1_ID:
 			case CAN_CHASSIS_JOINT_LEFT_2_ID:
 			{
-				static uint8_t i = 0;
-				// get motor id
-				i = rx_header.Identifier - CAN_CHASSIS_JOINT_LEFT_1_ID;
+				const uint8_t i =
+					(rx_header.Identifier == CAN_CHASSIS_JOINT_LEFT_1_ID) ? 0U : 1U;
 				chassis_joint[i].get_joint_motor_measure(rx_data); // 对应电机获取对应值
 				// D[0]高4位为电机ID，低4位为错误码；错误码为0时才认为电机在线
 				uint8_t err_code = rx_data[0] & 0xF0;
@@ -177,9 +175,8 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
 			case CAN_CHASSIS_JOINT_RIGHT_1_ID:
 			case CAN_CHASSIS_JOINT_RIGHT_2_ID:
 			{
-				static uint8_t i = 0;
-				// get motor id
-				i = rx_header.Identifier - CAN_CHASSIS_JOINT_LEFT_1_ID;
+				const uint8_t i =
+					(rx_header.Identifier == CAN_CHASSIS_JOINT_RIGHT_1_ID) ? 2U : 3U;
 				chassis_joint[i].get_joint_motor_measure(rx_data); // 对应电机获取对应值
 				// D[0]高4位为电机ID，低4位为错误码；错误码为0时才认为电机在线
 				uint8_t err_code = rx_data[0] & 0xF0;

@@ -414,9 +414,6 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
         {
         case CHASSIS_STOP:
             if (requested_mode == CHASSIS_MODE_NORMAL ||
-                requested_mode == CHASSIS_MODE_STEP_1 ||
-                requested_mode == CHASSIS_MODE_STEP_2 ||
-                requested_mode == CHASSIS_MODE_JUMP ||
                 requested_mode == CHASSIS_MODE_UI_RESET)
             {
                 chassis_move_mode->pending_state = chassis_requested_mode_to_pending_state(requested_mode);

@@ -5,21 +5,29 @@
 #include "main.h"
 #include "arm_math.h"
 
-typedef __packed struct
+#if defined(__GNUC__) || defined(__clang__)
+#define USERLIB_PACKED_PREFIX
+#define USERLIB_PACKED_SUFFIX __attribute__((packed))
+#else
+#define USERLIB_PACKED_PREFIX __packed
+#define USERLIB_PACKED_SUFFIX
+#endif
+
+typedef USERLIB_PACKED_PREFIX struct USERLIB_PACKED_SUFFIX
 {
-    float input;        //输入数据
-    float out;          //输出数据
-    float min_value;    //限幅最小值
-    float max_value;    //限幅最大值
-    float frame_period; //时间间隔
+    float input;        // 输入数据
+    float out;          // 输出数据
+    float min_value;    // 限幅最小值
+    float max_value;    // 限幅最大值
+    float frame_period; // 时间间隔
 } ramp_function_source_t;
 
-typedef __packed struct
+typedef USERLIB_PACKED_PREFIX struct USERLIB_PACKED_SUFFIX
 {
-    float input;        //输入数据
-    float out;          //滤波输出的数据
-    float num[1];       //滤波参数
-    float frame_period; //滤波的时间间隔 单位 s
+    float input;        // 输入数据
+    float out;          // 滤波输出的数据
+    float num[1];       // 滤波参数
+    float frame_period; // 滤波的时间间隔 单位 s
 } first_order_filter_type_t;
 
 #ifdef __cplusplus
@@ -27,71 +35,73 @@ extern "C"
 {
 #endif
 
-//快速开方
-extern float invSqrt(float num);
+    // 快速开方
+    extern float invSqrt(float num);
 
-//斜波函数初始化
-void ramp_init(ramp_function_source_t *ramp_source_type, float frame_period, float max, float min);
+    // 斜波函数初始化
+    void ramp_init(ramp_function_source_t *ramp_source_type, float frame_period, float max, float min);
 
-//斜波函数计算
-void ramp_calc(ramp_function_source_t *ramp_source_type, float input);
+    // 斜波函数计算
+    void ramp_calc(ramp_function_source_t *ramp_source_type, float input);
 
-//一阶滤波初始化
-extern void
-first_order_filter_init(first_order_filter_type_t *first_order_filter_type, float frame_period, const float num[1]);
+    // 一阶滤波初始化
+    extern void
+    first_order_filter_init(first_order_filter_type_t *first_order_filter_type, float frame_period, const float num[1]);
 
-//一阶滤波计算
-extern void first_order_filter_cali(first_order_filter_type_t *first_order_filter_type, float __packed input);
+    // 一阶滤波计算
+    extern void first_order_filter_cali(first_order_filter_type_t *first_order_filter_type, float input);
 
-//绝对限制
-extern void abs_limit(float *num, float Limit);
+    // 绝对限制
+    extern void abs_limit(float *num, float Limit);
 
-//判断符号位
-extern float sign(float value);
+    // 判断符号位
+    extern float sign(float value);
 
-//浮点死区
-extern float float_deadline(float Value, float minValue, float maxValue);
+    // 浮点死区
+    extern float float_deadline(float Value, float minValue, float maxValue);
 
-//int26死区
-extern int16_t int16_deadline(int16_t Value, int16_t minValue, int16_t maxValue);
+    // int26死区
+    extern int16_t int16_deadline(int16_t Value, int16_t minValue, int16_t maxValue);
 
-//限幅函数
-extern float float_constrain(float Value, float minValue, float maxValue);
+    // 限幅函数
+    extern float float_constrain(float Value, float minValue, float maxValue);
 
-//限幅函数
-extern int16_t int16_constrain(int16_t Value, int16_t minValue, int16_t maxValue);
+    // 限幅函数
+    extern int16_t int16_constrain(int16_t Value, int16_t minValue, int16_t maxValue);
 
-extern void fn_Uint16Limit(uint16_t *value, uint16_t min, uint16_t max);
+    extern void fn_Uint16Limit(uint16_t *value, uint16_t min, uint16_t max);
 
+    // 循环限幅函数
+    extern float loop_float_constrain(float Input, float minValue, float maxValue);
 
-//循环限幅函数
-extern float loop_float_constrain(float Input, float minValue, float maxValue);
+    // 角度 °限幅 180 ~ -180
+    extern float theta_format(float Ang);
 
-//角度 °限幅 180 ~ -180
-extern float theta_format(float Ang);
+    // 将角度限制在0~360
+    extern float angle_format_360(float angle);
 
-//将角度限制在0~360
-extern float angle_format_360(float angle);
-
-//弧度格式化为-PI~PI
+// 弧度格式化为-PI~PI
 #define rad_format(Ang) loop_float_constrain((Ang), -PI, PI)
-#define rad_format_90(Ang) loop_float_constrain((Ang), -PI/2, PI/2)
+#define rad_format_90(Ang) loop_float_constrain((Ang), -PI / 2, PI / 2)
 
-// 生成随机数
-extern float Range_Number(float min, float max, const unsigned int *seed);
+    // 生成随机数
+    extern float Range_Number(float min, float max, const unsigned int *seed);
 
-/**
-  * @brief          计算浮点数数组之和
-  * @param[in]      array   需要计算的数组
-  *                 length  需要计算的数组长度
-  *
-  * @retval         浮点数数组之和
-  */
-extern float float_sum(float *array, uint8_t length);
+    /**
+     * @brief          计算浮点数数组之和
+     * @param[in]      array   需要计算的数组
+     *                 length  需要计算的数组长度
+     *
+     * @retval         浮点数数组之和
+     */
+    extern float float_sum(float *array, uint8_t length);
 
-extern float shortest_angle_error(float target, float current);
+    extern float shortest_angle_error(float target, float current);
 #ifdef __cplusplus
 }
 #endif
+
+#undef USERLIB_PACKED_PREFIX
+#undef USERLIB_PACKED_SUFFIX
 
 #endif
