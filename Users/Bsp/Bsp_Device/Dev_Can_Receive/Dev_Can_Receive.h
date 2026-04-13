@@ -70,6 +70,7 @@ typedef enum
     CHASSIS_MODE_STEP_1 = 4,
     CHASSIS_MODE_STEP_2 = 5,
     CHASSIS_MODE_SMALL_GYRO = 6,
+    CHASSIS_MODE_UI_RESET = 7,
 } chassis_mode_e;
 
 typedef enum

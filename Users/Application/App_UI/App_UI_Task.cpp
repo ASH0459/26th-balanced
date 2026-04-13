@@ -13,7 +13,7 @@
 #include "wbr.h"
 #include <math.h>
 
-#define LOW_AMMO_THRESHOLD 10              // 17mm剩余弹量低于该值时显示LOW AMMO告警
+#define LOW_AMMO_THRESHOLD 10 // 17mm剩余弹量低于该值时显示LOW AMMO告警
 
 // ui_normal.c由UI工具生成，头文件只暴露整组接口；这里单独调用某个字符串的新增/删除接口显示告警。
 extern "C" void _ui_init_normal_DynamicTextGroup1_0(void);
@@ -37,14 +37,21 @@ typedef void (*UI_Warning_Func)(void);
 
 typedef struct
 {
-  uint8_t toe;           // detect模块里的设备编号
-  UI_Warning_Func show;  // 发送该设备掉线文字
-  UI_Warning_Func hide;  // 删除该设备掉线文字
+  uint8_t toe;          // detect模块里的设备编号
+  UI_Warning_Func show; // 发送该设备掉线文字
+  UI_Warning_Func hide; // 删除该设备掉线文字
 } UI_Offline_Warning_t;
+
+static uint8_t g_ui_low_ammo_warning_visible = 0U;
+static uint8_t g_ui_offline_warning_visible = 0U;
+static uint8_t g_ui_offline_active_index = 0xFFU;
+static uint8_t g_ui_reset_mode_latched = 0U;
 
 static void UI_Init(void);
 static void UI_data_update(void);
 static void UI_updata(void);
+static void UI_Handle_Reset_Request(void);
+static void UI_Reset_Dynamic_Warnings(void);
 static void cap_energy_Update(void);
 static void Gimbal_Chassis_Relative_Angle_Update(void);
 static void Chassis_State_Rect_Update(void);
@@ -80,6 +87,7 @@ void UI_Task(void *argument)
 
   while (1)
   {
+    UI_Handle_Reset_Request();
     UI_data_update();
     UI_updata();
   }
@@ -128,6 +136,51 @@ static void UI_updata(void)
   osDelay(20);
   ui_update_normal_LegDynamicGroup();
   osDelay(20);
+}
+
+/**
+ * @brief 检查云台下发的UI重置模式并在上升沿重新初始化UI。
+ * @note 仅在从非UI_Reset切换到UI_Reset时触发一次，避免持续重入初始化。
+ */
+static void UI_Handle_Reset_Request(void)
+{
+  Chassis_Move *chassis_move = Get_Chassis_Move_Point();
+  uint8_t reset_request = 0U;
+
+  if (chassis_move != nullptr &&
+      chassis_move->chassis_gimbal_data != nullptr &&
+      chassis_move->chassis_gimbal_data->chassis_behaviour_mode == CHASSIS_MODE_UI_RESET)
+  {
+    reset_request = 1U;
+  }
+
+  if (reset_request != 0U && g_ui_reset_mode_latched == 0U)
+  {
+    UI_Reset_Dynamic_Warnings();
+    UI_Init();
+  }
+
+  g_ui_reset_mode_latched = reset_request;
+}
+
+/**
+ * @brief 删除所有动态文字告警并重置本地可见状态。
+ * @note UI重置后强制清零本地状态，后续告警由周期逻辑重新按需发送。
+ */
+static void UI_Reset_Dynamic_Warnings(void)
+{
+  _ui_remove_normal_DynamicTextGroup1_0();
+  _ui_remove_normal_DynamicTextGroup1_1();
+  _ui_remove_normal_DynamicTextGroup1_2();
+  _ui_remove_normal_DynamicTextGroup1_3();
+  _ui_remove_normal_DynamicTextGroup1_4();
+  _ui_remove_normal_DynamicTextGroup1_5();
+  _ui_remove_normal_DynamicTextGroup1_6();
+  _ui_remove_normal_DynamicTextGroup1_7();
+
+  g_ui_low_ammo_warning_visible = 0U;
+  g_ui_offline_warning_visible = 0U;
+  g_ui_offline_active_index = 0xFFU;
 }
 
 /**
@@ -410,14 +463,13 @@ static void UI_Set_Warning_Text(uint8_t warning_active,
 static void Low_Ammo_Warning_Update(void)
 {
   uint16_t bullet_remaining = 0U;
-  static uint8_t warning_visible = 0U;
 
   if (toe_is_error(Referee_TOE))
   {
     UI_Set_Warning_Text(0U,
                         _ui_init_normal_DynamicTextGroup1_0,
                         _ui_remove_normal_DynamicTextGroup1_0,
-                        &warning_visible);
+                        &g_ui_low_ammo_warning_visible);
     return;
   }
 
@@ -427,7 +479,7 @@ static void Low_Ammo_Warning_Update(void)
   UI_Set_Warning_Text((bullet_remaining_signed < LOW_AMMO_THRESHOLD) ? 1U : 0U,
                       _ui_init_normal_DynamicTextGroup1_0,
                       _ui_remove_normal_DynamicTextGroup1_0,
-                      &warning_visible);
+                      &g_ui_low_ammo_warning_visible);
 }
 
 /**
@@ -446,8 +498,6 @@ static void Device_Offline_Warnings_Update(void)
       {CHASSIS_WHEEL1_TOE, _ui_init_normal_DynamicTextGroup1_6, _ui_remove_normal_DynamicTextGroup1_6},
       {CHASSIS_WHEEL2_TOE, _ui_init_normal_DynamicTextGroup1_7, _ui_remove_normal_DynamicTextGroup1_7},
   };
-  static uint8_t warning_visible = 0U;
-  static uint8_t active_index = 0xFFU;
   uint8_t selected_index = 0xFFU;
   const uint8_t warning_count = (uint8_t)(sizeof(warnings) / sizeof(warnings[0]));
 
@@ -461,16 +511,16 @@ static void Device_Offline_Warnings_Update(void)
     }
   }
 
-  if (active_index != selected_index)
+  if (g_ui_offline_active_index != selected_index)
   {
     // 切换告警对象前删除上一条可见文字，并重置显示状态。
-    if (active_index < warning_count && warning_visible != 0U)
+    if (g_ui_offline_active_index < warning_count && g_ui_offline_warning_visible != 0U)
     {
-      warnings[active_index].hide();
+      warnings[g_ui_offline_active_index].hide();
     }
 
-    active_index = selected_index;
-    warning_visible = 0U;
+    g_ui_offline_active_index = selected_index;
+    g_ui_offline_warning_visible = 0U;
   }
 
   if (selected_index < warning_count)
@@ -478,7 +528,7 @@ static void Device_Offline_Warnings_Update(void)
     UI_Set_Warning_Text(1U,
                         warnings[selected_index].show,
                         warnings[selected_index].hide,
-                        &warning_visible);
+                        &g_ui_offline_warning_visible);
   }
 }
 
