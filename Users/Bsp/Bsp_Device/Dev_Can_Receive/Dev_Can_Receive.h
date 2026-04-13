@@ -69,6 +69,7 @@ typedef enum
     CHASSIS_MODE_JUMP = 3,
     CHASSIS_MODE_STEP_1 = 4,
     CHASSIS_MODE_STEP_2 = 5,
+    CHASSIS_MODE_SMALL_GYRO = 6,
 } chassis_mode_e;
 
 typedef enum
@@ -343,6 +344,8 @@ extern Gimbal_Data gimbal_data;
  * @note           已在FDCAN中断中接入，打包协议:
  *                 [0..1] v_set, [2..3] turn_set, [4] mode_byte,
  *                 [5] fric_state, [6..7] yaw_err_mrad.
+ *                 普通模式下 turn_set 是相对角目标；CHASSIS_MODE_SMALL_GYRO 下
+ *                 turn_set 是小陀螺角速度命令，单位同为 0.001 rad/s。
  *                 yaw_err_mrad = forward_middle_yaw - current_yaw,
  *                 unit: 0.001 rad, range: [-PI, PI].
  */
