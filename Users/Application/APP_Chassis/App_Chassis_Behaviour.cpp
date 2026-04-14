@@ -651,7 +651,11 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
             break;
 
         case CHASSIS_LEG_1:
-            if (step1_edge)
+            if (jump_edge)
+            {
+                chassis_move_mode->state = CHASSIS_JUMP;
+            }
+            else if (step1_edge)
             {
                 chassis_move_mode->state = CHASSIS_NORMAL;
             }
@@ -662,7 +666,11 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
             break;
 
         case CHASSIS_LEG_2:
-            if (step2_edge)
+            if (jump_edge)
+            {
+                chassis_move_mode->state = CHASSIS_JUMP;
+            }
+            else if (step2_edge)
             {
                 chassis_move_mode->state = CHASSIS_NORMAL;
             }
@@ -738,13 +746,29 @@ void chassis_behaviour_control_set(fp32 *vx_set, fp32 *body_yaw_err_set, fp32 *d
         break;
 
     case CHASSIS_LEG_1:
-        chassis_action_hold_control(vx_set, body_yaw_err_set, d_yaw_set, leg_set,
-                                    chassis_move_rc_to_vector, CHASSIS_LEG_1_TARGET);
+        if (protocol_valid)
+        {
+            chassis_normal_control(vx_set, body_yaw_err_set, d_yaw_set, leg_set,
+                                   chassis_move_rc_to_vector, CHASSIS_LEG_1_TARGET);
+        }
+        else
+        {
+            chassis_action_hold_control(vx_set, body_yaw_err_set, d_yaw_set, leg_set,
+                                        chassis_move_rc_to_vector, CHASSIS_LEG_1_TARGET);
+        }
         break;
 
     case CHASSIS_LEG_2:
-        chassis_action_hold_control(vx_set, body_yaw_err_set, d_yaw_set, leg_set,
-                                    chassis_move_rc_to_vector, CHASSIS_LEG_2_TARGET);
+        if (protocol_valid)
+        {
+            chassis_normal_control(vx_set, body_yaw_err_set, d_yaw_set, leg_set,
+                                   chassis_move_rc_to_vector, CHASSIS_LEG_2_TARGET);
+        }
+        else
+        {
+            chassis_action_hold_control(vx_set, body_yaw_err_set, d_yaw_set, leg_set,
+                                        chassis_move_rc_to_vector, CHASSIS_LEG_2_TARGET);
+        }
         break;
 
     case CHASSIS_JUMP:
