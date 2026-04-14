@@ -628,8 +628,8 @@ extern "C"
         }
         else if (chassis_move_transit->state == CHASSIS_JUMP)
         {
-            chassis_move_transit->chassis_v_set = 0.0f;
-            chassis_move_transit->chassis_x_set = chassis_move_transit->x_filter;
+            //chassis_move_transit->chassis_v_set = 0.0f;
+            //chassis_move_transit->chassis_x_set = chassis_move_transit->x_filter;
             chassis_move_transit->chassis_d_yaw_set = 0.0f;
             chassis_move_transit->chassis_yaw_err = 0.0f;
             chassis_move_transit->chassis_leg_set = CHASSIS_JUMP_TAKEOFF_TARGET;
@@ -935,7 +935,7 @@ extern "C"
         }
 
         // ========== 左腿防抖检测 ==========
-        if (chassis_move_prediction->chassis_left_control.Fwn <= 70.0f)
+        if (chassis_move_prediction->chassis_left_control.Fwn <= 80.0f)
         {
             left_off_count++;
             if (left_off_count > 1)
@@ -950,7 +950,7 @@ extern "C"
             chassis_move_prediction->chassis_left_control.chassis_off_ground_detection = CHASSIS_TOUCH_GROUND;
         }
 
-        if (chassis_move_prediction->chassis_right_control.Fwn <= 70.0f)
+        if (chassis_move_prediction->chassis_right_control.Fwn <= 80.0f)
         {
             right_off_count++;
             if (right_off_count > 1)
@@ -1344,10 +1344,21 @@ extern "C"
                  chassis_move_control_loop->jump_phase == CHASSIS_JUMP_TAKEOFF)
         {
             // 重力补偿 + 侧向惯性力矩补偿 + 左腿腿长PID
-            chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t = -chassis_move_control_loop->chassis_left_control.fd_leg + chassis_move_control_loop->chassis_left_control.Fbl_spring + CHASSIS_JUMP_TAKEOFF_FORCE_BONUS;
+            chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t = -chassis_move_control_loop->chassis_left_control.fd_leg  - CHASSIS_JUMP_TAKEOFF_FORCE_BONUS;
 
             // 重力补偿 + 侧向惯性力矩补偿 + 右腿腿长PID
-            chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t = -chassis_move_control_loop->chassis_right_control.fd_leg + chassis_move_control_loop->chassis_right_control.Fbl_spring + CHASSIS_JUMP_TAKEOFF_FORCE_BONUS;
+            chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t = -chassis_move_control_loop->chassis_right_control.fd_leg  - CHASSIS_JUMP_TAKEOFF_FORCE_BONUS;
+        }
+        else if (chassis_move_control_loop->state == CHASSIS_JUMP &&
+                 chassis_move_control_loop->jump_phase == CHASSIS_JUMP_READYLAND)
+        {
+            // 重力补偿 + 侧向惯性力矩补偿 + 左腿腿长PID
+            chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t = -chassis_move_control_loop->chassis_left_control.fd_leg
+                                                                                + chassis_move_control_loop->chassis_left_control.Fbl_spring;
+
+            // 重力补偿 + 侧向惯性力矩补偿 + 右腿腿长PID
+            chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t = -chassis_move_control_loop->chassis_right_control.fd_leg
+                                                                                 + chassis_move_control_loop->chassis_right_control.Fbl_spring;
         }
         else // 正常情况下支持力处理
         {

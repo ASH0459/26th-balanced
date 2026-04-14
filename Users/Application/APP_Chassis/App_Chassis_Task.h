@@ -117,7 +117,7 @@
 // 左右腿长度PID
 #define LEG_PID_KP 2000.0f
 #define LEG_PID_KI 2.4f
-#define LEG_PID_KD 100000.0f
+#define LEG_PID_KD 200000.0f
 #define LEG_PID_MAX_OUT 200.0f // 300
 #define LEG_PID_MAX_IOUT 40.0f
 
