@@ -2,6 +2,8 @@ $ErrorActionPreference = 'Stop'
 
 $taskHeaderPath = 'Users/Application/APP_Chassis/App_Chassis_Task.h'
 $taskHeader = Get-Content $taskHeaderPath -Raw
+$paramsHeaderPath = 'Users/Application/APP_Chassis/App_Chassis_Params.h'
+$paramsHeader = Get-Content $paramsHeaderPath -Raw
 
 $dtMsMatch = [regex]::Match($taskHeader, '(?m)^\s*#define\s+CHASSIS_CONTROL_TIME_MS\s+([0-9]+)\b')
 $dtSecMatch = [regex]::Match($taskHeader, '(?m)^\s*#define\s+CHASSIS_CONTROL_TIME\s+([0-9]*\.?[0-9]+)f?\b')
@@ -24,6 +26,13 @@ if ([Math]::Abs($dt - $dtFromMs) -gt 1e-9) {
 
 if ([Math]::Abs($freq - $freqFromDt) -gt 1e-3) {
   throw "Frequency mismatch: CHASSIS_CONTROL_FREQUENCE=$freq Hz but 1/CHASSIS_CONTROL_TIME=$freqFromDt Hz"
+}
+
+$gyroRampUpMatch = [regex]::Match($paramsHeader, '(?m)^\s*#define\s+CHASSIS_SMALL_GYRO_RAMP_UP_RATE\s+([0-9]*\.?[0-9]+)f?\b')
+$gyroRampDownMatch = [regex]::Match($paramsHeader, '(?m)^\s*#define\s+CHASSIS_SMALL_GYRO_RAMP_DOWN_RATE\s+([0-9]*\.?[0-9]+)f?\b')
+
+if (-not $gyroRampUpMatch.Success -or -not $gyroRampDownMatch.Success) {
+  throw "Failed to parse small-gyro ramp macros from $paramsHeaderPath"
 }
 
 # 1) 8-direction decode & normalization check
@@ -73,8 +82,8 @@ foreach ($k in $dirs.Keys) {
 
 # 2) Gyro ramp up/down smoothness (same constants as behaviour file)
 # dt comes from CHASSIS_CONTROL_TIME in App_Chassis_Task.h.
-$up = 24.0
-$down = 18.0
+$up = [double]$gyroRampUpMatch.Groups[1].Value
+$down = [double]$gyroRampDownMatch.Groups[1].Value
 $target = 12.0
 $spin = 0.0
 $trace = @()

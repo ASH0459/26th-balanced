@@ -16,18 +16,6 @@ static fp32 clamp_abs_fp32(fp32 value, fp32 limit)
     return value;
 }
 
-static constexpr fp32 CHASSIS_SMALL_GYRO_D_YAW_MAX = 1000.0f;
-static constexpr fp32 CHASSIS_SMALL_GYRO_RAMP_UP_RATE = 24.0f;
-static constexpr fp32 CHASSIS_SMALL_GYRO_RAMP_DOWN_RATE = 18.0f;
-static constexpr fp32 CHASSIS_DIRECTION_YAW_RAMP_RATE = 4.0f;
-static constexpr fp32 CHASSIS_DIRECTION_D_YAW_MAX = 8.0f;
-static constexpr fp32 CHASSIS_DIRECTION_VX_ACCEL = 4.5f;
-static constexpr fp32 CHASSIS_DIRECTION_VX_BRAKE_ACCEL = 5.0f;
-static constexpr fp32 CHASSIS_HEADING_SWITCH_HYSTERESIS = 0.03f;
-static constexpr fp32 CHASSIS_SIDE_HEADING_THRESHOLD = 0.35f;
-static constexpr fp32 CHASSIS_FRONT_BACK_RAMP_RELEASE_ERR = 0.12f;
-static constexpr fp32 CHASSIS_DIRECTION_EPSILON = 1e-6f;
-
 typedef enum
 {
     CHASSIS_SMALL_GYRO_DISABLED = 0,

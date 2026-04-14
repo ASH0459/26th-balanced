@@ -28,6 +28,7 @@
 
 #include "wbr.h"
 #include "kalman_filter.h"
+#include "App_Chassis_Params.h"
 // 任务开始前空闲一段时间
 #define CHASSIS_TASK_INIT_TIME 1000
 
@@ -57,14 +58,6 @@
 #define CHASSIS_CONTROL_TIME_MS 1
 #define JOINT_MOTOR_lIMIT_TIME 1
 
-// 最大最小速度设定
-#define NORMAL_MAX_CHASSIS_SPEED_V 0.5f
-#define NORMAL_MIN_CHASSIS_SPEED_V -0.5f
-
-// 小陀螺最大最小速度设定
-#define ROTATION_MAX_CHASSIS_SPEED_V 0.5f
-#define ROTATION_MIN_CHASSIS_SPEED_V -0.5f
-
 // 关节最大最小力矩
 #define JOINT_MAX_TORQUE 40.0f
 #define JOINT_MIN_TORQUE -40.0f
@@ -92,21 +85,17 @@
 #define CHASSIS_NORMAL_LEG_TARGET CHASSIS_LEG_MIN
 #define CHASSIS_LEG_1_TARGET 0.26f
 #define CHASSIS_LEG_2_TARGET CHASSIS_LEG_MAX
-#define CHASSIS_LEG_STEP_RAMP_SPEED 0.10f
 #define CHASSIS_INIT_RETRACT_LEG_TARGET CHASSIS_NORMAL_LEG_TARGET
 #define CHASSIS_JUMP_TAKEOFF_TARGET 0.35f
 #define CHASSIS_JUMP_AIRBORNE_TARGET 0.20f
 #define CHASSIS_JUMP_LAND_TARGET CHASSIS_JUMP_AIRBORNE_TARGET
-#define CHASSIS_JUMP_AIRBORNE_LEG_RAMP_SPEED 0.80f
 #define CHASSIS_JUMP_TAKEOFF_FORCE_BONUS 120.0f
 #define CHASSIS_JUMP_LAND_TICKS 150U
 #define CHASSIS_POSTURE_STABLE_TICKS 50U
 
 // 初始化时机体未水平的自扶正腿部旋转参数
 #define CHASSIS_INIT_LEVEL_ANGLE_STEP 0.8f     // 机体未水平时腿部旋转角度 (rad/s)
-#define CHASSIS_INIT_LEVEL_ROTATE_SPEED 0.5f   // 机体未水平时腿部旋转速度 (rad/s)
 #define CHASSIS_INIT_LEVEL_TORQUE_LIMIT 12.0f  // 机体未水平时腿部旋转力矩限制 (Nm)
-#define CHASSIS_INIT_LEVEL_SPEED_LIMIT 1.5f    // 机体未水平时腿部旋转速度限制 (rad/s)
 #define CHASSIS_INIT_LEVEL_SYNC_ANGLE 0.5f     // 机体未水平时两条腿的同步旋转角度差阈值 (rad)
 #define CHASSIS_INIT_LEVEL_SYNC_MIN_RATIO 0.0f // 机体未水平时两条腿的同步旋转最小速度比例
 
@@ -192,9 +181,6 @@
 // 跟随底盘yaw模式下，遥控器的yaw遥杆（max 660）增加到车体角度的比例
 #define CHASSIS_ANGLE_Z_RC_SEN 0.000002f
 
-// 不跟随云台的时候 遥控器的yaw遥杆（max 660）转化成车体旋转速度的比例
-#define CHASSIS_WZ_RC_SEN 0.01f
-
 /*  */
 #define CHASSIS_ACCEL_X_NUM 0.1666666667f
 #define CHASSIS_ACCEL_Y_NUM 0.3333333333f
@@ -246,15 +232,6 @@
 #define CHASSIS_LEFT_KEY KEY_PRESSED_OFFSET_A
 #define CHASSIS_RIGHT_KEY KEY_PRESSED_OFFSET_D
 
-// 键盘控制最大速度 (m/s)
-#define CHASSIS_KEY_MAX_SPEED 2.0f
-#define CHASSIS_KEY_MAX_SPEED_UP 1.0f
-
-#define CHASSIS_KEY_ACCEL 1.8f
-
-// 键盘速度斜坡步长 (m/s per loop, 1000Hz下 0→1.5m/s 约0.38秒)
-#define CHASSIS_KEY_RAMP_STEP 0.004f
-
 // M3508电机原始转速数据转化成Rpm的比例  3591/187
 // #define M3508_MOTOR_RPM_TO_VECTOR           0.052074631021999f
 #define M3508_MOTOR_RPM_TO_VECTOR 0.000415809748903494517209f
@@ -262,24 +239,6 @@
 
 // 单个底盘电机最大速度
 #define MAX_WHEEL_SPEED 40.0f
-
-/* 无超电 X方向最大速度 */
-#define NORMAL_MAX_CHASSIS_SPEED_X 4.5f
-
-/* 无超电 Y方向最大速度 */
-#define NORMAL_MAX_CHASSIS_SPEED_Y 4.5f
-
-// 底盘设置旋转速度，设置前后左右轮不同设定速度的比例分权 0为在几何中心，不需要补偿
-#define CHASSIS_WZ_SET_SCALE 0.0f
-
-// 底盘小陀螺减缓速度
-#define CHASSIS_SPIN_LOW_SPEED 1.5f
-
-// 底盘小陀螺基本速度
-#define CHASSIS_SPIN_MAIN_SPEED 50.0f
-
-// 底盘小陀螺减去x,y方向的速度比例系数
-#define CHASSIS_SPIN_LOW_SEN 0.6
 
 // 摇摆原地不动摇摆最大角度(rad)
 #define SWING_NO_MOVE_ANGLE 0.7f
