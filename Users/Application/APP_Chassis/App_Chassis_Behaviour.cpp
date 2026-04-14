@@ -563,8 +563,7 @@ static void chassis_jump_control(fp32 *vx_set, fp32 *body_yaw_err_set, fp32 *d_y
         chassis_move_rc_to_vector->chassis_leg_filter_set.out = CHASSIS_JUMP_TAKEOFF_TARGET;
         *leg_set = CHASSIS_JUMP_TAKEOFF_TARGET;
         break;
-    case CHASSIS_JUMP_AIRBORNE:
-    case CHASSIS_JUMP_LAND:
+    case CHASSIS_JUMP_READYLAND:
         *leg_set = chassis_ramp_leg_target(chassis_move_rc_to_vector,
                                            CHASSIS_JUMP_AIRBORNE_TARGET,
                                            CHASSIS_JUMP_AIRBORNE_LEG_RAMP_SPEED);
