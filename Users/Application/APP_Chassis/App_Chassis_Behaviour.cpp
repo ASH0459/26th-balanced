@@ -589,7 +589,9 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
     const bool_t step2_edge = chassis_is_request_rising_edge(chassis_move_mode, CHASSIS_MODE_STEP_2);
     const bool_t jump_edge = chassis_is_request_rising_edge(chassis_move_mode, CHASSIS_MODE_JUMP);
 
-    if (requested_mode == CHASSIS_MODE_NO_FORCE)
+    if (requested_mode == CHASSIS_MODE_NO_FORCE ||
+        requested_mode == CHASSIS_MODE_RESERVED ||
+        requested_mode == CHASSIS_MODE_RESERVED_2)
     {
         chassis_move_mode->pending_state = CHASSIS_NORMAL;
         chassis_move_mode->state = CHASSIS_STOP;

@@ -36,47 +36,46 @@ extern "C"
 #endif
 
     // 拟合矩阵K，A，B
-    fp32 fitted_matrix_K[40][6] = {{
-        -1.5152, 1.1725, -2.4929, -1.6736, 0.52327, 3.1789},
-{-2.2985, 1.9099, -3.1571, -2.6996, 0.21512, 4.076},
-{-3.8392, -3.8823, 3.6946, 5.312, -0.29332, -4.748},
-{-0.44367, -0.74096, 0.72537, 0.92273, -0.071706, -0.82195},
-{-1.9139, -25.382, 3.3251, 13.45, 4.5296, 2.0547},
-{-0.17922, -3.4137, 0.18969, 0.51918, 0.072841, 0.62664},
-{-1.3792, 9.7159, -34.038, -10.099, 12.448, 20.713},
-{-0.050932, 1.2709, -5.0042, -1.5081, 1.6577, 1.9099},
-{-18.989, 35.032, 22.479, -22.633, -36.187, -3.1844},
-{-2.2919, 4.4638, 2.9656, -2.9707, -4.7073, -0.58453},
-{-1.5152, -2.4929, 1.1725, 3.1789, 0.52327, -1.6736},
-{-2.2985, -3.1571, 1.9099, 4.076, 0.21512, -2.6996},
-{3.8392, -3.6946, 3.8823, 4.748, 0.29332, -5.312},
-{0.44367, -0.72537, 0.74096, 0.82195, 0.071706, -0.92273},
-{-1.3792, -34.038, 9.7159, 20.713, 12.448, -10.099},
-{-0.050932, -5.0042, 1.2709, 1.9099, 1.6577, -1.5081},
-{-1.9139, 3.3251, -25.382, 2.0547, 4.5296, 13.45},
-{-0.17922, 0.18969, -3.4137, 0.62664, 0.072841, 0.51918},
-{-18.989, 22.479, 35.032, -3.1844, -36.187, -22.633},
-{-2.2919, 2.9656, 4.4638, -0.58453, -4.7073, -2.9707},
-{19.982, -55.688, -39.85, 29.484, 45.368, 41.225},
-{30.175, -77.811, -62.972, 39.9, 69.463, 63.67},
-{-10.654, 40.234, 7.0439, -54.754, 7.4723, -14.112},
-{-1.3169, 6.2027, 0.90269, -9.2219, 4.0576, -2.4699},
-{75.891, -72.361, -31.209, -32.591, 269.6, -14.301},
-{15.875, -32.898, -2.177, 14.99, 35.637, -4.2622},
-{25.537, -165.14, -58.402, 205.14, -247.05, 163.82},
-{3.2824, -26.819, -4.1325, 33.848, -40.195, 26.297},
-{-34.406, -834, 209.15, 921.73, 263.18, -327.81},
-{-6.7723, -114.7, 34.288, 131.86, 31.778, -52.104},
-{19.982, -39.85, -55.688, 41.225, 45.368, 29.484},
-{30.175, -62.972, -77.811, 63.67, 69.463, 39.9},
-{10.654, -7.0439, -40.234, 14.112, -7.4723, 54.754},
-{1.3169, -0.90269, -6.2027, 2.4699, -4.0576, 9.2219},
-{25.537, -58.402, -165.14, 163.82, -247.05, 205.14},
-{3.2824, -4.1325, -26.819, 26.297, -40.195, 33.848},
-{75.891, -31.209, -72.361, -14.301, 269.6, -32.591},
-{15.875, -2.177, -32.898, -4.2622, 35.637, 14.99},
-{-34.406, 209.15, -834, -327.81, 263.18, 921.73},
-{-6.7723, 34.288, -114.7, -52.104, 31.778, 131.86}};
+    fp32 fitted_matrix_K[40][6] = {{-1.5152, 1.1725, -2.4929, -1.6736, 0.52327, 3.1789},
+                                   {-2.2985, 1.9099, -3.1571, -2.6996, 0.21512, 4.076},
+                                   {-3.8392, -3.8823, 3.6946, 5.312, -0.29332, -4.748},
+                                   {-0.44367, -0.74096, 0.72537, 0.92273, -0.071706, -0.82195},
+                                   {-1.9139, -25.382, 3.3251, 13.45, 4.5296, 2.0547},
+                                   {-0.17922, -3.4137, 0.18969, 0.51918, 0.072841, 0.62664},
+                                   {-1.3792, 9.7159, -34.038, -10.099, 12.448, 20.713},
+                                   {-0.050932, 1.2709, -5.0042, -1.5081, 1.6577, 1.9099},
+                                   {-18.989, 35.032, 22.479, -22.633, -36.187, -3.1844},
+                                   {-2.2919, 4.4638, 2.9656, -2.9707, -4.7073, -0.58453},
+                                   {-1.5152, -2.4929, 1.1725, 3.1789, 0.52327, -1.6736},
+                                   {-2.2985, -3.1571, 1.9099, 4.076, 0.21512, -2.6996},
+                                   {3.8392, -3.6946, 3.8823, 4.748, 0.29332, -5.312},
+                                   {0.44367, -0.72537, 0.74096, 0.82195, 0.071706, -0.92273},
+                                   {-1.3792, -34.038, 9.7159, 20.713, 12.448, -10.099},
+                                   {-0.050932, -5.0042, 1.2709, 1.9099, 1.6577, -1.5081},
+                                   {-1.9139, 3.3251, -25.382, 2.0547, 4.5296, 13.45},
+                                   {-0.17922, 0.18969, -3.4137, 0.62664, 0.072841, 0.51918},
+                                   {-18.989, 22.479, 35.032, -3.1844, -36.187, -22.633},
+                                   {-2.2919, 2.9656, 4.4638, -0.58453, -4.7073, -2.9707},
+                                   {19.982, -55.688, -39.85, 29.484, 45.368, 41.225},
+                                   {30.175, -77.811, -62.972, 39.9, 69.463, 63.67},
+                                   {-10.654, 40.234, 7.0439, -54.754, 7.4723, -14.112},
+                                   {-1.3169, 6.2027, 0.90269, -9.2219, 4.0576, -2.4699},
+                                   {75.891, -72.361, -31.209, -32.591, 269.6, -14.301},
+                                   {15.875, -32.898, -2.177, 14.99, 35.637, -4.2622},
+                                   {25.537, -165.14, -58.402, 205.14, -247.05, 163.82},
+                                   {3.2824, -26.819, -4.1325, 33.848, -40.195, 26.297},
+                                   {-34.406, -834, 209.15, 921.73, 263.18, -327.81},
+                                   {-6.7723, -114.7, 34.288, 131.86, 31.778, -52.104},
+                                   {19.982, -39.85, -55.688, 41.225, 45.368, 29.484},
+                                   {30.175, -62.972, -77.811, 63.67, 69.463, 39.9},
+                                   {10.654, -7.0439, -40.234, 14.112, -7.4723, 54.754},
+                                   {1.3169, -0.90269, -6.2027, 2.4699, -4.0576, 9.2219},
+                                   {25.537, -58.402, -165.14, 163.82, -247.05, 205.14},
+                                   {3.2824, -4.1325, -26.819, 26.297, -40.195, 33.848},
+                                   {75.891, -31.209, -72.361, -14.301, 269.6, -32.591},
+                                   {15.875, -2.177, -32.898, -4.2622, 35.637, 14.99},
+                                   {-34.406, 209.15, -834, -327.81, 263.18, 921.73},
+                                   {-6.7723, 34.288, -114.7, -52.104, 31.778, 131.86}};
 
     fp32 fitted_matrix_A[15][6];
     fp32 fitted_matrix_B[20][6];
@@ -865,25 +864,21 @@ extern "C"
         fp32 virtual_hardstop_force_L = 0.0f;
         fp32 virtual_hardstop_force_R = 0.0f;
 
-        if (L_left < 0.18f) {
+        if (L_left < 0.18f)
+        {
             // 类似一个单向刚度极大的弹簧：(0.18 - L) * K
             virtual_hardstop_force_L = 45;
         }
-        if (L_right < 0.18f) {
+        if (L_right < 0.18f)
+        {
             virtual_hardstop_force_R = 20;
         }
 
         // 左轮地面支持力
-        chassis_move_update->chassis_left_control.Fwn = chassis_move_update->chassis_left_control.wbr_control.Fbl_r * arm_cos_f32(chassis_move_update->chassis_left_control.wbr_control.theta_l)
-        + MASS_OF_LEG * (GRAVITY_ACCELERATION + chassis_move_update->chassis_accel_n_z - (1 - chassis_move_update->chassis_left_control.eta)
-            * chassis_move_update->chassis_left_control.wbr_control.dd_L * arm_cos_f32(chassis_move_update->chassis_left_control.wbr_control.theta_l))
-        + Get_FeedForward_Force(chassis_move_update->chassis_left_control.wbr_control.L) + virtual_hardstop_force_L;
+        chassis_move_update->chassis_left_control.Fwn = chassis_move_update->chassis_left_control.wbr_control.Fbl_r * arm_cos_f32(chassis_move_update->chassis_left_control.wbr_control.theta_l) + MASS_OF_LEG * (GRAVITY_ACCELERATION + chassis_move_update->chassis_accel_n_z - (1 - chassis_move_update->chassis_left_control.eta) * chassis_move_update->chassis_left_control.wbr_control.dd_L * arm_cos_f32(chassis_move_update->chassis_left_control.wbr_control.theta_l)) + Get_FeedForward_Force(chassis_move_update->chassis_left_control.wbr_control.L) + virtual_hardstop_force_L;
 
         // 右轮地面支持力
-        chassis_move_update->chassis_right_control.Fwn = chassis_move_update->chassis_right_control.wbr_control.Fbl_r * arm_cos_f32(chassis_move_update->chassis_right_control.wbr_control.theta_l)
-        + MASS_OF_LEG * (GRAVITY_ACCELERATION + chassis_move_update->chassis_accel_n_z - (1 - chassis_move_update->chassis_right_control.eta)
-            * chassis_move_update->chassis_right_control.wbr_control.dd_L * arm_cos_f32(chassis_move_update->chassis_right_control.wbr_control.theta_l))
-        + Get_FeedForward_Force(chassis_move_update->chassis_right_control.wbr_control.L) + virtual_hardstop_force_R;
+        chassis_move_update->chassis_right_control.Fwn = chassis_move_update->chassis_right_control.wbr_control.Fbl_r * arm_cos_f32(chassis_move_update->chassis_right_control.wbr_control.theta_l) + MASS_OF_LEG * (GRAVITY_ACCELERATION + chassis_move_update->chassis_accel_n_z - (1 - chassis_move_update->chassis_right_control.eta) * chassis_move_update->chassis_right_control.wbr_control.dd_L * arm_cos_f32(chassis_move_update->chassis_right_control.wbr_control.theta_l)) + Get_FeedForward_Force(chassis_move_update->chassis_right_control.wbr_control.L) + virtual_hardstop_force_R;
 
         // 计算矩阵K，A，B
         decompose_fitted_matrix_to_K(&chassis_move_update->chassis_left_control.wbr_control, &chassis_move_update->chassis_right_control.wbr_control, fitted_matrix_K, LQR_K);
@@ -1211,8 +1206,10 @@ extern "C"
             break;
 
         case CHASSIS_JUMP_TAKEOFF:
-            if (chassis_move_control_loop->chassis_left_control.wbr_control.L >= CHASSIS_JUMP_TAKEOFF_TARGET - 0.01f &&
-                 chassis_move_control_loop->chassis_right_control.wbr_control.L >= CHASSIS_JUMP_TAKEOFF_TARGET - 0.01f)
+            if (both_off_ground ||
+                (chassis_move_control_loop->chassis_left_control.wbr_control.L >= CHASSIS_JUMP_TAKEOFF_TARGET - 0.01f &&
+                 chassis_move_control_loop->chassis_right_control.wbr_control.L >= CHASSIS_JUMP_TAKEOFF_TARGET - 0.01f) ||
+                chassis_move_control_loop->jump_phase_ticks >= CHASSIS_JUMP_LAND_TICKS)
             {
                 chassis_move_control_loop->jump_phase = CHASSIS_JUMP_READYLAND;
                 chassis_move_control_loop->jump_phase_ticks = 0;
@@ -1220,9 +1217,11 @@ extern "C"
             break;
 
         case CHASSIS_JUMP_READYLAND:
-            if (chassis_move_control_loop->jump_phase_ticks >= CHASSIS_JUMP_LAND_TICKS &&
-                fabsf(chassis_move_control_loop->chassis_left_control.wbr_control.L - CHASSIS_JUMP_LAND_TARGET) < 0.02f &&
-                fabsf(chassis_move_control_loop->chassis_right_control.wbr_control.L - CHASSIS_JUMP_LAND_TARGET) < 0.02f)
+            if ((both_touch_ground &&
+                 chassis_move_control_loop->jump_phase_ticks >= CHASSIS_JUMP_LAND_TICKS &&
+                 fabsf(chassis_move_control_loop->chassis_left_control.wbr_control.L - CHASSIS_JUMP_LAND_TARGET) < 0.02f &&
+                 fabsf(chassis_move_control_loop->chassis_right_control.wbr_control.L - CHASSIS_JUMP_LAND_TARGET) < 0.02f) ||
+                chassis_move_control_loop->jump_phase_ticks >= (CHASSIS_JUMP_LAND_TICKS * 3U))
             {
                 chassis_move_control_loop->jump_phase = CHASSIS_JUMP_DONE;
                 chassis_move_control_loop->jump_phase_ticks = 0;
@@ -1342,18 +1341,13 @@ extern "C"
             chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t = -chassis_move_control_loop->chassis_right_control.fd_leg + chassis_move_control_loop->chassis_right_control.Fbl_spring + 100;
         }
         else if (chassis_move_control_loop->state == CHASSIS_JUMP &&
-            chassis_move_control_loop->jump_phase == CHASSIS_JUMP_TAKEOFF)
+                 chassis_move_control_loop->jump_phase == CHASSIS_JUMP_TAKEOFF)
         {
             // 重力补偿 + 侧向惯性力矩补偿 + 左腿腿长PID
-            chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t = - chassis_move_control_loop->chassis_left_control.fd_leg
-                                                                                + chassis_move_control_loop->chassis_left_control.Fbl_spring
-                                                                                + CHASSIS_JUMP_TAKEOFF_FORCE_BONUS;
+            chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t = -chassis_move_control_loop->chassis_left_control.fd_leg + chassis_move_control_loop->chassis_left_control.Fbl_spring + CHASSIS_JUMP_TAKEOFF_FORCE_BONUS;
 
             // 重力补偿 + 侧向惯性力矩补偿 + 右腿腿长PID
-            chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t = - chassis_move_control_loop->chassis_right_control.fd_leg
-                                                                                 + chassis_move_control_loop->chassis_right_control.Fbl_spring
-                                                                                 + CHASSIS_JUMP_TAKEOFF_FORCE_BONUS;
-
+            chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t = -chassis_move_control_loop->chassis_right_control.fd_leg + chassis_move_control_loop->chassis_right_control.Fbl_spring + CHASSIS_JUMP_TAKEOFF_FORCE_BONUS;
         }
         else // 正常情况下支持力处理
         {
@@ -1370,15 +1364,12 @@ extern "C"
             else
             {
                 // 重力补偿 + 侧向惯性力矩补偿 + 左腿腿长PID
-                chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t = - chassis_move_control_loop->chassis_left_control.fd_leg
-                                                                                    + chassis_move_control_loop->chassis_left_control.Fbl_spring;
+                chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t = -chassis_move_control_loop->chassis_left_control.fd_leg + chassis_move_control_loop->chassis_left_control.Fbl_spring;
 
                 // 重力补偿 + 侧向惯性力矩补偿 + 右腿腿长PID
-                chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t = - chassis_move_control_loop->chassis_right_control.fd_leg
-                                                                                     + chassis_move_control_loop->chassis_right_control.Fbl_spring;
+                chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t = -chassis_move_control_loop->chassis_right_control.fd_leg + chassis_move_control_loop->chassis_right_control.Fbl_spring;
             }
         }
-
     }
 
     static void chassis_apply_joint_output(Chassis_Move *chassis_move_control_loop)
@@ -1386,13 +1377,13 @@ extern "C"
         if (chassis_move_control_loop->state == CHASSIS_INIT &&
             chassis_move_control_loop->init_phase == CHASSIS_INIT_STAND)
         {
-            //chassis_move_control_loop->chassis_wheel[0].wheel_T *= 0.0
-            //chassis_move_control_loop->chassis_wheel[1].wheel_T *= 0.0f;
+            // chassis_move_control_loop->chassis_wheel[0].wheel_T *= 0.0
+            // chassis_move_control_loop->chassis_wheel[1].wheel_T *= 0.0f;
 
-            //chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t = LQR_K[2][4] * chassis_move_control_loop->chassis_left_control.theta_l + LQR_K[2][5] * chassis_move_control_loop->chassis_left_control.d_theta_l + LQR_K[2][6] * chassis_move_control_loop->chassis_right_control.theta_l + LQR_K[2][7] * chassis_move_control_loop->chassis_right_control.d_theta_l;
+            // chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t = LQR_K[2][4] * chassis_move_control_loop->chassis_left_control.theta_l + LQR_K[2][5] * chassis_move_control_loop->chassis_left_control.d_theta_l + LQR_K[2][6] * chassis_move_control_loop->chassis_right_control.theta_l + LQR_K[2][7] * chassis_move_control_loop->chassis_right_control.d_theta_l;
 
-            //chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t = LQR_K[3][4] * chassis_move_control_loop->chassis_left_control.theta_l + LQR_K[3][5] * chassis_move_control_loop->chassis_left_control.d_theta_l + LQR_K[3][6] * chassis_move_control_loop->chassis_right_control.theta_l + LQR_K[3][7] * chassis_move_control_loop->chassis_right_control.d_theta_l;
-            // 左前关节电机力矩
+            // chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t = LQR_K[3][4] * chassis_move_control_loop->chassis_left_control.theta_l + LQR_K[3][5] * chassis_move_control_loop->chassis_left_control.d_theta_l + LQR_K[3][6] * chassis_move_control_loop->chassis_right_control.theta_l + LQR_K[3][7] * chassis_move_control_loop->chassis_right_control.d_theta_l;
+            //  左前关节电机力矩
             chassis_move_control_loop->chassis_joint[0].joint_T = -chassis_move_control_loop->chassis_left_control.wbr_control.J[0][0] * chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t - chassis_move_control_loop->chassis_left_control.wbr_control.J[0][1] * chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t;
             // 左后关节电机力矩
             chassis_move_control_loop->chassis_joint[1].joint_T = chassis_move_control_loop->chassis_left_control.wbr_control.J[1][0] * chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t + chassis_move_control_loop->chassis_left_control.wbr_control.J[1][1] * chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t;
