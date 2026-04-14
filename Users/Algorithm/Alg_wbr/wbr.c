@@ -58,7 +58,7 @@ void wbr_calc(wbr_leg_t *wbr)
 
 	// 五连杆长度L相关数据
 	arm_sqrt_f32(wbr->Xe * wbr->Xe + wbr->Ye * wbr->Ye, &wbr->L);  //计算虚拟杆长
-	wbr->dd_L = wbr->d_L - wbr->d_L_p;	//计算虚拟杆加速度用于离地检测
+	wbr->dd_L = (wbr->d_L - wbr->d_L_p);	//计算虚拟杆加速度用于离地检测
 
 	// 五连杆角度theta相关数据
 	wbr->theta = atan2f(wbr->Xe, wbr->Ye);
