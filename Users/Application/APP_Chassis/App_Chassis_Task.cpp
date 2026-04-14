@@ -919,18 +919,11 @@ extern "C"
 
         if (chassis_move_prediction->state == CHASSIS_STOP ||
             chassis_move_prediction->state == CHASSIS_FLIP ||
-            chassis_move_prediction->state == CHASSIS_INIT ||
-            (chassis_move_prediction->state == CHASSIS_JUMP && chassis_move_prediction->jump_phase == CHASSIS_JUMP_TAKEOFF))
+            chassis_move_prediction->state == CHASSIS_INIT)
         {
             chassis_move_prediction->chassis_left_control.chassis_off_ground_detection = CHASSIS_TOUCH_GROUND;
             chassis_move_prediction->chassis_right_control.chassis_off_ground_detection = CHASSIS_TOUCH_GROUND;
             left_off_count = right_off_count = 0;
-            return;
-        }
-        if (chassis_move_prediction->state == CHASSIS_JUMP && chassis_move_prediction->jump_phase == CHASSIS_JUMP_READYLAND)
-        {
-            chassis_move_prediction->chassis_left_control.chassis_off_ground_detection = CHASSIS_OFF_GROUND;
-            chassis_move_prediction->chassis_right_control.chassis_off_ground_detection = CHASSIS_OFF_GROUND;
             return;
         }
 
@@ -1197,6 +1190,10 @@ extern "C"
         const bool_t right_off_ground = chassis_move_control_loop->chassis_right_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND;
         const bool_t both_off_ground = left_off_ground && right_off_ground;
         const bool_t both_touch_ground = !left_off_ground && !right_off_ground;
+        const bool_t legs_near_takeoff_target =
+            (chassis_move_control_loop->chassis_left_control.wbr_control.L >= CHASSIS_JUMP_TAKEOFF_TARGET - 0.01f) &&
+            (chassis_move_control_loop->chassis_right_control.wbr_control.L >= CHASSIS_JUMP_TAKEOFF_TARGET - 0.01f);
+        const bool_t takeoff_hold_done = chassis_move_control_loop->jump_phase_ticks >= 60U;
 
         switch (chassis_move_control_loop->jump_phase)
         {
@@ -1206,9 +1203,7 @@ extern "C"
             break;
 
         case CHASSIS_JUMP_TAKEOFF:
-            if (both_off_ground ||
-                (chassis_move_control_loop->chassis_left_control.wbr_control.L >= CHASSIS_JUMP_TAKEOFF_TARGET - 0.01f &&
-                 chassis_move_control_loop->chassis_right_control.wbr_control.L >= CHASSIS_JUMP_TAKEOFF_TARGET - 0.01f) ||
+            if ((takeoff_hold_done && (both_off_ground || legs_near_takeoff_target)) ||
                 chassis_move_control_loop->jump_phase_ticks >= CHASSIS_JUMP_LAND_TICKS)
             {
                 chassis_move_control_loop->jump_phase = CHASSIS_JUMP_READYLAND;
