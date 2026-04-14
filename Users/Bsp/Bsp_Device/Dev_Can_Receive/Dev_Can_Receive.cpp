@@ -56,6 +56,20 @@ void CAN_cmd_wheel(const fp32 motor1, const fp32 motor2)
 {
 	int16_t motor1_current = (int16_t)(motor1 * CONSTANT_OF_TORQUE);
 	int16_t motor2_current = (int16_t)(motor2 * CONSTANT_OF_TORQUE);
+	const uint16_t shoot_heat = power_heat_data_t.shooter_id1_17mm_cooling_heat;
+	const uint16_t shoot_heat_limit = robot_state.shooter_barrel_heat_limit;
+	const uint16_t shoot_cooling_value = robot_state.shooter_barrel_cooling_value;
+
+	const uint16_t packed_heat = (shoot_heat > 0x0FFFU) ? 0x0FFFU : shoot_heat;
+	const uint16_t packed_heat_limit = (shoot_heat_limit > 0x0FFFU) ? 0x0FFFU : shoot_heat_limit;
+	const uint8_t packed_cooling_value =
+		(shoot_cooling_value > 0x00FFU) ? 0x00FFU : (uint8_t)shoot_cooling_value;
+
+	// bytes[4..7] bit layout: [heat(12b) | heat_limit(12b) | cooling_value(8b)]
+	const uint32_t heat_payload =
+		(((uint32_t)packed_heat) << 20) |
+		(((uint32_t)packed_heat_limit) << 8) |
+		((uint32_t)packed_cooling_value);
 
 	FDCAN_TxHeaderTypeDef TxHeader;
 	static uint8_t chassis_can_send_data[8];
@@ -74,10 +88,10 @@ void CAN_cmd_wheel(const fp32 motor1, const fp32 motor2)
 	chassis_can_send_data[1] = motor1_current;
 	chassis_can_send_data[2] = motor2_current >> 8;
 	chassis_can_send_data[3] = motor2_current;
-	chassis_can_send_data[4] = power_heat_data_t.shooter_id1_17mm_cooling_heat >> 8;
-	chassis_can_send_data[5] = power_heat_data_t.shooter_id1_17mm_cooling_heat;
-	chassis_can_send_data[6] = 0;
-	chassis_can_send_data[7] = 0;
+	chassis_can_send_data[4] = (uint8_t)(heat_payload >> 24);
+	chassis_can_send_data[5] = (uint8_t)(heat_payload >> 16);
+	chassis_can_send_data[6] = (uint8_t)(heat_payload >> 8);
+	chassis_can_send_data[7] = (uint8_t)(heat_payload);
 
 	HAL_FDCAN_AddMessageToTxFifoQ(&CHASSIS_WHEEL_CAN, &TxHeader, chassis_can_send_data);
 }
