@@ -19,6 +19,13 @@ static fp32 clamp_abs_fp32(fp32 value, fp32 limit)
 static constexpr fp32 CHASSIS_SMALL_GYRO_D_YAW_MAX = 1000.0f;
 static constexpr fp32 CHASSIS_SMALL_GYRO_RAMP_UP_RATE = 24.0f;
 static constexpr fp32 CHASSIS_SMALL_GYRO_RAMP_DOWN_RATE = 18.0f;
+static constexpr fp32 CHASSIS_DIRECTION_YAW_RAMP_RATE = 4.0f;
+static constexpr fp32 CHASSIS_DIRECTION_D_YAW_MAX = 8.0f;
+static constexpr fp32 CHASSIS_DIRECTION_VX_ACCEL = 4.5f;
+static constexpr fp32 CHASSIS_DIRECTION_VX_BRAKE_ACCEL = 5.0f;
+static constexpr fp32 CHASSIS_HEADING_SWITCH_HYSTERESIS = 0.03f;
+static constexpr fp32 CHASSIS_SIDE_HEADING_THRESHOLD = 0.35f;
+static constexpr fp32 CHASSIS_FRONT_BACK_RAMP_RELEASE_ERR = 0.12f;
 static constexpr fp32 CHASSIS_DIRECTION_EPSILON = 1e-6f;
 
 typedef enum
@@ -33,6 +40,7 @@ typedef struct
 {
     fp32 heading;
     fp32 speed_scale;
+    fp32 speed_sign;
     bool_t moving;
 } chassis_motion_intent_t;
 
@@ -61,6 +69,30 @@ static fp32 chassis_ramp_to_target(fp32 current, fp32 target, fp32 max_step)
     }
 
     return current;
+}
+
+static fp32 wrap_to_pi(fp32 angle)
+{
+    while (angle > PI)
+    {
+        angle -= 2.0f * PI;
+    }
+    while (angle < -PI)
+    {
+        angle += 2.0f * PI;
+    }
+    return angle;
+}
+
+static fp32 chassis_ramp_angle_to_target(fp32 current, fp32 target, fp32 max_step)
+{
+    if (max_step <= 0.0f)
+    {
+        return wrap_to_pi(target);
+    }
+
+    const fp32 delta = clamp_abs_fp32(shortest_angle_error(target, current), max_step);
+    return wrap_to_pi(current + delta);
 }
 
 static fp32 clamp_leg_length(fp32 leg_set)
@@ -123,6 +155,51 @@ static Chassis_State_e chassis_requested_mode_to_pending_state(chassis_mode_e re
     }
 }
 
+static bool_t chassis_heading_is_side(fp32 heading)
+{
+    const fp32 side_error = fabsf(fabsf(wrap_to_pi(heading)) - PI * 0.5f);
+    return side_error <= CHASSIS_SIDE_HEADING_THRESHOLD;
+}
+
+static bool_t chassis_direction_is_left_right(chassis_direction_intent_e direction_intent)
+{
+    return direction_intent == CHASSIS_DIRECTION_LEFT ||
+           direction_intent == CHASSIS_DIRECTION_RIGHT;
+}
+
+static bool_t chassis_direction_is_front_back(chassis_direction_intent_e direction_intent)
+{
+    return direction_intent == CHASSIS_DIRECTION_FRONT ||
+           direction_intent == CHASSIS_DIRECTION_BACK;
+}
+
+static bool_t chassis_direction_is_diagonal(chassis_direction_intent_e direction_intent)
+{
+    return direction_intent == CHASSIS_DIRECTION_FRONT_LEFT ||
+           direction_intent == CHASSIS_DIRECTION_FRONT_RIGHT ||
+           direction_intent == CHASSIS_DIRECTION_BACK_LEFT ||
+           direction_intent == CHASSIS_DIRECTION_BACK_RIGHT;
+}
+
+static fp32 chassis_snap_to_cardinal_heading(fp32 heading)
+{
+    const fp32 candidate_heading[4] = {0.0f, PI * 0.5f, PI, -PI * 0.5f};
+    fp32 snapped_heading = candidate_heading[0];
+    fp32 min_error = fabsf(shortest_angle_error(candidate_heading[0], heading));
+
+    for (uint8_t i = 1U; i < 4U; i++)
+    {
+        const fp32 error = fabsf(shortest_angle_error(candidate_heading[i], heading));
+        if (error < min_error)
+        {
+            min_error = error;
+            snapped_heading = candidate_heading[i];
+        }
+    }
+
+    return snapped_heading;
+}
+
 static void chassis_direction_to_vector(chassis_direction_intent_e direction_intent, fp32 *x, fp32 *y)
 {
     *x = 0.0f;
@@ -137,26 +214,26 @@ static void chassis_direction_to_vector(chassis_direction_intent_e direction_int
         *x = -1.0f;
         break;
     case CHASSIS_DIRECTION_LEFT:
-        *y = 1.0f;
+        *y = -1.0f;
         break;
     case CHASSIS_DIRECTION_RIGHT:
-        *y = -1.0f;
+        *y = 1.0f;
         break;
     case CHASSIS_DIRECTION_FRONT_LEFT:
         *x = 1.0f;
-        *y = 1.0f;
+        *y = -1.0f;
         break;
     case CHASSIS_DIRECTION_FRONT_RIGHT:
         *x = 1.0f;
-        *y = -1.0f;
+        *y = 1.0f;
         break;
     case CHASSIS_DIRECTION_BACK_LEFT:
         *x = -1.0f;
-        *y = 1.0f;
+        *y = -1.0f;
         break;
     case CHASSIS_DIRECTION_BACK_RIGHT:
         *x = -1.0f;
-        *y = -1.0f;
+        *y = 1.0f;
         break;
     case CHASSIS_DIRECTION_STOP:
     default:
@@ -164,7 +241,8 @@ static void chassis_direction_to_vector(chassis_direction_intent_e direction_int
     }
 }
 
-static chassis_motion_intent_t chassis_build_motion_intent(chassis_direction_intent_e direction_intent)
+static chassis_motion_intent_t chassis_build_motion_intent(chassis_direction_intent_e direction_intent,
+                                                           const fp32 heading_reference)
 {
     chassis_motion_intent_t intent{};
 
@@ -175,8 +253,9 @@ static chassis_motion_intent_t chassis_build_motion_intent(chassis_direction_int
     const fp32 norm = sqrtf(raw_x * raw_x + raw_y * raw_y);
     if (norm <= CHASSIS_DIRECTION_EPSILON)
     {
-        intent.heading = 0.0f;
+        intent.heading = heading_reference;
         intent.speed_scale = 0.0f;
+        intent.speed_sign = 0.0f;
         intent.moving = 0;
         return intent;
     }
@@ -184,10 +263,112 @@ static chassis_motion_intent_t chassis_build_motion_intent(chassis_direction_int
     const fp32 unit_x = raw_x / norm;
     const fp32 unit_y = raw_y / norm;
 
-    intent.heading = atan2f(unit_y, unit_x);
+    const fp32 heading_forward = atan2f(unit_y, unit_x);
+    const fp32 heading_reverse = wrap_to_pi(heading_forward + PI);
+    const fp32 forward_error = fabsf(shortest_angle_error(heading_forward, heading_reference));
+    const fp32 reverse_error = fabsf(shortest_angle_error(heading_reverse, heading_reference));
+
+    const bool_t prefer_reverse =
+        (reverse_error + CHASSIS_HEADING_SWITCH_HYSTERESIS < forward_error) ||
+        (fabsf(reverse_error - forward_error) <= CHASSIS_HEADING_SWITCH_HYSTERESIS &&
+         raw_x < -CHASSIS_DIRECTION_EPSILON);
+
+    intent.heading = prefer_reverse ? heading_reverse : heading_forward;
     intent.speed_scale = sqrtf(unit_x * unit_x + unit_y * unit_y);
+    intent.speed_sign = prefer_reverse ? -1.0f : 1.0f;
     intent.moving = 1;
     return intent;
+}
+
+static fp32 chassis_update_heading_target(chassis_direction_intent_e direction_intent, bool_t gyro_requested,
+                                          bool_t hard_reset, Chassis_Move *chassis_move,
+                                          chassis_motion_intent_t *motion_intent_out,
+                                          bool_t *yaw_ramp_active_out)
+{
+    static fp32 heading_target = 0.0f;
+    static uint8_t heading_target_init_flag = 0U;
+    static uint8_t last_gyro_requested = 0U;
+    static uint8_t front_back_side_ramp_latch = 0U;
+
+    if (chassis_move == nullptr || chassis_move->chassis_gimbal_data == nullptr)
+    {
+        return 0.0f;
+    }
+
+    const fp32 current_heading = chassis_move->chassis_gimbal_data->chassis_relative_angle;
+    if (hard_reset || heading_target_init_flag == 0U)
+    {
+        heading_target = current_heading;
+        heading_target_init_flag = 1U;
+        last_gyro_requested = static_cast<uint8_t>(gyro_requested != 0U);
+        front_back_side_ramp_latch = 0U;
+    }
+
+    const chassis_motion_intent_t motion_intent = chassis_build_motion_intent(direction_intent, heading_target);
+    const bool_t left_right_cmd = chassis_direction_is_left_right(direction_intent);
+    const bool_t front_back_cmd = chassis_direction_is_front_back(direction_intent);
+    const bool_t diagonal_cmd = chassis_direction_is_diagonal(direction_intent);
+
+    if (!front_back_cmd)
+    {
+        front_back_side_ramp_latch = 0U;
+    }
+
+    if (front_back_cmd &&
+        (chassis_heading_is_side(current_heading) || chassis_heading_is_side(heading_target)))
+    {
+        front_back_side_ramp_latch = 1U;
+    }
+
+    bool_t yaw_ramp_active = left_right_cmd || diagonal_cmd ||
+                             (front_back_cmd && front_back_side_ramp_latch != 0U);
+
+    if (gyro_requested)
+    {
+        heading_target = current_heading;
+        yaw_ramp_active = 0;
+    }
+    else if (last_gyro_requested != 0U)
+    {
+        heading_target = chassis_snap_to_cardinal_heading(current_heading);
+    }
+    else if (motion_intent.moving)
+    {
+        if (yaw_ramp_active)
+        {
+            heading_target = chassis_ramp_angle_to_target(heading_target,
+                                                          motion_intent.heading,
+                                                          CHASSIS_DIRECTION_YAW_RAMP_RATE * CHASSIS_CONTROL_TIME);
+        }
+        else
+        {
+            heading_target = motion_intent.heading;
+        }
+    }
+
+    if (front_back_side_ramp_latch != 0U && front_back_cmd)
+    {
+        const fp32 heading_err = fabsf(shortest_angle_error(motion_intent.heading, current_heading));
+        if (heading_err <= CHASSIS_FRONT_BACK_RAMP_RELEASE_ERR)
+        {
+            front_back_side_ramp_latch = 0U;
+        }
+    }
+
+    last_gyro_requested = static_cast<uint8_t>(gyro_requested != 0U);
+
+    if (motion_intent_out != nullptr)
+    {
+        *motion_intent_out = motion_intent;
+        motion_intent_out->heading = heading_target;
+    }
+
+    if (yaw_ramp_active_out != nullptr)
+    {
+        *yaw_ramp_active_out = yaw_ramp_active;
+    }
+
+    return heading_target;
 }
 
 static fp32 chassis_update_vx_ramp(fp32 target_vx, bool_t hard_reset)
@@ -202,6 +383,7 @@ static fp32 chassis_update_vx_ramp(fp32 target_vx, bool_t hard_reset)
     }
 
     const fp32 target = clamp_abs_fp32(target_vx, CHASSIS_KEY_MAX_SPEED);
+    const fp32 accel = (target * vx_ramp.out < 0.0f) ? CHASSIS_DIRECTION_VX_BRAKE_ACCEL : CHASSIS_DIRECTION_VX_ACCEL;
 
     if (hard_reset)
     {
@@ -211,11 +393,11 @@ static fp32 chassis_update_vx_ramp(fp32 target_vx, bool_t hard_reset)
 
     if (fabsf(target) < 1e-6f)
     {
-        vx_ramp.out = chassis_ramp_to_target(vx_ramp.out, 0.0f, CHASSIS_KEY_ACCEL * CHASSIS_CONTROL_TIME);
+        vx_ramp.out = chassis_ramp_to_target(vx_ramp.out, 0.0f, CHASSIS_DIRECTION_VX_BRAKE_ACCEL * CHASSIS_CONTROL_TIME);
     }
     else if (vx_ramp.out < target)
     {
-        ramp_calc(&vx_ramp, CHASSIS_KEY_ACCEL);
+        ramp_calc(&vx_ramp, accel);
         if (vx_ramp.out > target)
         {
             vx_ramp.out = target;
@@ -223,7 +405,7 @@ static fp32 chassis_update_vx_ramp(fp32 target_vx, bool_t hard_reset)
     }
     else if (vx_ramp.out > target)
     {
-        ramp_calc(&vx_ramp, -CHASSIS_KEY_ACCEL);
+        ramp_calc(&vx_ramp, -accel);
         if (vx_ramp.out < target)
         {
             vx_ramp.out = target;
@@ -299,6 +481,7 @@ static fp32 chassis_follow_yaw_control(const fp32 target_relative_yaw, fp32 *bod
 static void chassis_action_hold_control(fp32 *vx_set, fp32 *body_yaw_err_set, fp32 *d_yaw_set, fp32 *leg_set,
                                         Chassis_Move *chassis_move_rc_to_vector, fp32 target_leg_length)
 {
+    (void)chassis_update_heading_target(CHASSIS_DIRECTION_STOP, 0, 1, chassis_move_rc_to_vector, nullptr, nullptr);
     *vx_set = chassis_update_vx_ramp(0.0f, 0);
     const fp32 yaw_pid = chassis_follow_yaw_control(0.0f, body_yaw_err_set, chassis_move_rc_to_vector);
     const fp32 spin_cmd = chassis_update_small_gyro_state_machine(0, 0.0f, 0, chassis_move_rc_to_vector);
@@ -309,28 +492,45 @@ static void chassis_action_hold_control(fp32 *vx_set, fp32 *body_yaw_err_set, fp
 static void chassis_normal_control(fp32 *vx_set, fp32 *body_yaw_err_set, fp32 *d_yaw_set, fp32 *leg_set,
                                    Chassis_Move *chassis_move_rc_to_vector, fp32 target_leg_length)
 {
-    const chassis_motion_intent_t motion_intent =
-        chassis_build_motion_intent(chassis_move_rc_to_vector->chassis_gimbal_data->direction_intent);
+    const chassis_direction_intent_e direction_intent =
+        chassis_move_rc_to_vector->chassis_gimbal_data->direction_intent;
+    const bool_t gyro_requested = chassis_move_rc_to_vector->chassis_gimbal_data->gyro_enable == 1U;
+    bool_t yaw_ramp_active = 0;
+    chassis_motion_intent_t motion_intent{};
+    const fp32 heading_target = chassis_update_heading_target(
+        direction_intent,
+        gyro_requested,
+        0,
+        chassis_move_rc_to_vector,
+        &motion_intent,
+        &yaw_ramp_active);
+
     const fp32 speed_amplitude = fabsf(clamp_abs_fp32(chassis_move_rc_to_vector->chassis_gimbal_data->v_tmp,
                                                       CHASSIS_KEY_MAX_SPEED));
-    const fp32 target_vx = speed_amplitude * motion_intent.speed_scale;
+    const fp32 target_vx = motion_intent.moving
+                               ? speed_amplitude * motion_intent.speed_scale * motion_intent.speed_sign
+                               : 0.0f;
 
     *vx_set = chassis_update_vx_ramp(target_vx, 0);
 
-    const bool_t gyro_requested = chassis_move_rc_to_vector->chassis_gimbal_data->gyro_enable == 1U;
     fp32 yaw_pid = 0.0f;
     fp32 yaw_err = 0.0f;
 
     if (!gyro_requested)
     {
-        yaw_pid = chassis_follow_yaw_control(motion_intent.heading, &yaw_err, chassis_move_rc_to_vector);
+        yaw_pid = chassis_follow_yaw_control(heading_target, &yaw_err, chassis_move_rc_to_vector);
     }
 
     const fp32 spin_target = chassis_calc_spin_target(*vx_set);
     const fp32 spin_cmd = chassis_update_small_gyro_state_machine(gyro_requested, spin_target, 0, chassis_move_rc_to_vector);
+    const fp32 yaw_limit = gyro_requested
+                               ? CHASSIS_SMALL_GYRO_D_YAW_MAX
+                               : (yaw_ramp_active
+                                      ? CHASSIS_DIRECTION_D_YAW_MAX
+                                      : CHASSIS_SMALL_GYRO_D_YAW_MAX);
 
     *body_yaw_err_set = gyro_requested ? 0.0f : yaw_err;
-    *d_yaw_set = clamp_abs_fp32(yaw_pid + spin_cmd, CHASSIS_SMALL_GYRO_D_YAW_MAX);
+    *d_yaw_set = clamp_abs_fp32(yaw_pid + spin_cmd, yaw_limit);
     *leg_set = chassis_ramp_leg_target(chassis_move_rc_to_vector, target_leg_length, CHASSIS_LEG_STEP_RAMP_SPEED);
 }
 
@@ -360,6 +560,7 @@ static void chassis_init_control(fp32 *vx_set, fp32 *d_yaw_set, fp32 *leg_set, C
 static void chassis_jump_control(fp32 *vx_set, fp32 *body_yaw_err_set, fp32 *d_yaw_set, fp32 *leg_set,
                                  Chassis_Move *chassis_move_rc_to_vector)
 {
+    (void)chassis_update_heading_target(CHASSIS_DIRECTION_STOP, 0, 1, chassis_move_rc_to_vector, nullptr, nullptr);
     *vx_set = chassis_update_vx_ramp(0.0f, 0);
     const fp32 yaw_pid = chassis_follow_yaw_control(0.0f, body_yaw_err_set, chassis_move_rc_to_vector);
     const fp32 spin_cmd = chassis_update_small_gyro_state_machine(0, 0.0f, 0, chassis_move_rc_to_vector);

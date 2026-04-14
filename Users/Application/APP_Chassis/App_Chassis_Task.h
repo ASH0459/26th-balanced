@@ -276,7 +276,7 @@
 #define CHASSIS_SPIN_LOW_SPEED 1.5f
 
 // 底盘小陀螺基本速度
-#define CHASSIS_SPIN_MAIN_SPEED 12.0f
+#define CHASSIS_SPIN_MAIN_SPEED 50.0f
 
 // 底盘小陀螺减去x,y方向的速度比例系数
 #define CHASSIS_SPIN_LOW_SEN 0.6
