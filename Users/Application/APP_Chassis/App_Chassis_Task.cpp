@@ -82,10 +82,10 @@ extern "C"
 
     // 调试用参数
     fp32 LQR_K[4][10] = {
-        {-1.7015, -2.4894, -3.8637, -0.44552, -5.6625, -0.80472, -5.4193, -0.73546, -9.6512, -1.0981},
-        {-1.7015, -2.4894, 3.8637, 0.44552, -5.4193, -0.73546, -5.6625, -0.80472, -9.6512, -1.0981},
-        {5.1226, 8.3723, -4.2308, -0.26454, 64.027, 10.561, -15.98, -2.3189, -127.48, -18.694},
-        {5.1226, 8.3723, 4.2308, 0.26454, -15.98, -2.3189, 64.027, 10.561, -127.48, -18.694},
+        {-3.1361, -4.3765, -7.063, -0.65629, -8.044, -1.3304, -7.6912, -1.2401, -13.439, -1.6081},
+{-3.1361, -4.3765, 7.063, 0.65629, -7.6912, -1.2401, -8.044, -1.3304, -13.439, -1.6081},
+{3.5157, 5.8596, -2.9227, -0.15898, 66.569, 10.787, -21.853, -3.1056, -132.94, -19.273},
+{3.5157, 5.8596, 2.9227, 0.15898, -21.853, -3.1056, 66.569, 10.787, -132.94, -19.273},
     };
 
     // 最好的参数1
@@ -881,7 +881,7 @@ extern "C"
         chassis_move_update->chassis_right_control.Fwn = chassis_move_update->chassis_right_control.wbr_control.Fbl_r * arm_cos_f32(chassis_move_update->chassis_right_control.wbr_control.theta_l) + MASS_OF_LEG * (GRAVITY_ACCELERATION + chassis_move_update->chassis_accel_n_z - (1 - chassis_move_update->chassis_right_control.eta) * chassis_move_update->chassis_right_control.wbr_control.dd_L * arm_cos_f32(chassis_move_update->chassis_right_control.wbr_control.theta_l)) + Get_FeedForward_Force(chassis_move_update->chassis_right_control.wbr_control.L) + virtual_hardstop_force_R;
 
         // 计算矩阵K，A，B
-        decompose_fitted_matrix_to_K(&chassis_move_update->chassis_left_control.wbr_control, &chassis_move_update->chassis_right_control.wbr_control, fitted_matrix_K, LQR_K);
+        //decompose_fitted_matrix_to_K(&chassis_move_update->chassis_left_control.wbr_control, &chassis_move_update->chassis_right_control.wbr_control, fitted_matrix_K, LQR_K);
         //    decompose_fitted_matrix_to_A(&chassis_move_update->chassis_left_control.wbr_control, &chassis_move_update->chassis_right_control.wbr_control, fitted_matrix_A, LQR_A);
         //    decompose_fitted_matrix_to_B(&chassis_move_update->chassis_left_control.wbr_control, &chassis_move_update->chassis_right_control.wbr_control, fitted_matrix_B, LQR_B);
 
@@ -1293,8 +1293,8 @@ extern "C"
         }
 
         // 安全保护：限制积分后的期望腿长不超出物理机械极限
-        independent_leg_set_L = float_constrain(independent_leg_set_L, CHASSIS_LEG_MIN, 0.3);
-        independent_leg_set_R = float_constrain(independent_leg_set_R, CHASSIS_LEG_MIN, 0.3);
+        independent_leg_set_L = float_constrain(independent_leg_set_L, CHASSIS_LEG_MIN, 0.33);
+        independent_leg_set_R = float_constrain(independent_leg_set_R, CHASSIS_LEG_MIN, 0.33);
 
         // 计算底层腿长PID输出 (推力Fbl_t)
         control_loop->chassis_left_control.fd_leg = Leg_PID_Calc(&control_loop->chassis_left_control.leg_pid_control, control_loop->chassis_left_control.wbr_control.L, independent_leg_set_L);
@@ -1413,10 +1413,14 @@ extern "C"
                 chassis_move_control_loop->chassis_wheel[0].wheel_T = 0.0f;
                 chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t =
                     LQR_K[2][4] * chassis_move_control_loop->chassis_left_control.theta_l +
-                    LQR_K[2][5] * chassis_move_control_loop->chassis_left_control.d_theta_l;
+                    LQR_K[2][5] * chassis_move_control_loop->chassis_left_control.d_theta_l +
+                    LQR_K[2][6] * chassis_move_control_loop->chassis_right_control.theta_l +
+                    LQR_K[2][7] * chassis_move_control_loop->chassis_right_control.d_theta_l;
 
                 chassis_move_control_loop->chassis_wheel[1].wheel_T = 0.0f;
                 chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t =
+                    LQR_K[3][4] * chassis_move_control_loop->chassis_left_control.theta_l +
+                    LQR_K[3][5] * chassis_move_control_loop->chassis_left_control.d_theta_l +
                     LQR_K[3][6] * chassis_move_control_loop->chassis_right_control.theta_l +
                     LQR_K[3][7] * chassis_move_control_loop->chassis_right_control.d_theta_l;
             }
