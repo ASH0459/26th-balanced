@@ -27,7 +27,7 @@ typedef struct
     fp32 phi2;
 
     // 计算得到的五连杆长度相关数据
-    fp32 L;
+    fp32 L, last_L;
 	fp32 d_L, d_L_p;
 	fp32 dd_L;
 
