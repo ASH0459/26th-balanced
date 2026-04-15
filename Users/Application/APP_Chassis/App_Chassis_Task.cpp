@@ -546,6 +546,7 @@ extern "C"
         const static fp32 chassis_leg_order_filter[1] = {CHASSIS_ACCEL_LEG_NUM};
         const static fp32 chassis_theta_l_lowpass_filter[1] = {CHASSIS_THETA_L_LOWPASS_NUM};
         const static fp32 chassis_d_theta_l_lowpass_filter[1] = {CHASSIS_D_THETA_L_LOWPASS_NUM};
+        const static fp32 chassis_dd_L_lowpass_filter[1] = {CHASSIS_DD_L_LOWPASS_NUM};
 
         /* 滤波初始化：DT7发送设定值的低通滤波 */
         first_order_filter_init(&chassis_move_init->chassis_cmd_slow_set_vx, CHASSIS_CONTROL_TIME, chassis_DT7_x_order_filter);
@@ -555,6 +556,8 @@ extern "C"
         first_order_filter_init(&chassis_move_init->chassis_right_control.theta_l_lowpass_filter, CHASSIS_CONTROL_TIME, chassis_theta_l_lowpass_filter);
         first_order_filter_init(&chassis_move_init->chassis_left_control.d_theta_l_lowpass_filter, CHASSIS_CONTROL_TIME, chassis_d_theta_l_lowpass_filter);
         first_order_filter_init(&chassis_move_init->chassis_right_control.d_theta_l_lowpass_filter, CHASSIS_CONTROL_TIME, chassis_d_theta_l_lowpass_filter);
+        first_order_filter_init(&chassis_move_init->chassis_left_control.dd_L_lowpass_filter, CHASSIS_CONTROL_TIME, chassis_dd_L_lowpass_filter);
+        first_order_filter_init(&chassis_move_init->chassis_right_control.dd_L_lowpass_filter, CHASSIS_CONTROL_TIME, chassis_dd_L_lowpass_filter);
         chassis_move_init->chassis_leg_filter_set.out = CHASSIS_LEG_MAX;
 
         // 初始化斜坡函数，时间周期为 CHASSIS_CONTROL_TIME(0.001s)
@@ -628,8 +631,8 @@ extern "C"
         }
         else if (chassis_move_transit->state == CHASSIS_JUMP)
         {
-            //chassis_move_transit->chassis_v_set = 0.0f;
-            //chassis_move_transit->chassis_x_set = chassis_move_transit->x_filter;
+            // chassis_move_transit->chassis_v_set = 0.0f;
+            // chassis_move_transit->chassis_x_set = chassis_move_transit->x_filter;
             chassis_move_transit->chassis_d_yaw_set = 0.0f;
             chassis_move_transit->chassis_yaw_err = 0.0f;
             chassis_move_transit->chassis_leg_set = CHASSIS_JUMP_TAKEOFF_TARGET;
@@ -824,6 +827,11 @@ extern "C"
         chassis_move_update->chassis_left_control.wbr_control.d_L = chassis_move_update->chassis_left_control.wbr_control.J[0][0] * chassis_move_update->chassis_joint[0].chassis_joint_measure->vel - chassis_move_update->chassis_left_control.wbr_control.J[0][1] * chassis_move_update->chassis_joint[1].chassis_joint_measure->vel;
         chassis_move_update->chassis_right_control.wbr_control.d_L = -chassis_move_update->chassis_right_control.wbr_control.J[0][0] * chassis_move_update->chassis_joint[2].chassis_joint_measure->vel + chassis_move_update->chassis_right_control.wbr_control.J[0][1] * chassis_move_update->chassis_joint[3].chassis_joint_measure->vel;
 
+        first_order_filter_cali(&chassis_move_update->chassis_left_control.dd_L_lowpass_filter, chassis_move_update->chassis_left_control.wbr_control.dd_L);
+        first_order_filter_cali(&chassis_move_update->chassis_right_control.dd_L_lowpass_filter, chassis_move_update->chassis_right_control.wbr_control.dd_L);
+        chassis_move_update->chassis_left_control.dd_L_lowpass = chassis_move_update->chassis_left_control.dd_L_lowpass_filter.out;
+        chassis_move_update->chassis_right_control.dd_L_lowpass = chassis_move_update->chassis_right_control.dd_L_lowpass_filter.out;
+
         // 腿部角度卡尔曼滤波参数
         chassis_move_update->vaEstimateKF_F_theta[0] = 1.0f;
         chassis_move_update->vaEstimateKF_F_theta[1] = chassis_move_update->dt;
@@ -875,10 +883,10 @@ extern "C"
         }
 
         // 左轮地面支持力
-        chassis_move_update->chassis_left_control.Fwn = chassis_move_update->chassis_left_control.wbr_control.Fbl_r * arm_cos_f32(chassis_move_update->chassis_left_control.wbr_control.theta_l) + MASS_OF_LEG * (GRAVITY_ACCELERATION + chassis_move_update->chassis_accel_n_z - (1 - chassis_move_update->chassis_left_control.eta) * chassis_move_update->chassis_left_control.wbr_control.dd_L * arm_cos_f32(chassis_move_update->chassis_left_control.wbr_control.theta_l)) + Get_FeedForward_Force(chassis_move_update->chassis_left_control.wbr_control.L) + virtual_hardstop_force_L;
+        chassis_move_update->chassis_left_control.Fwn = chassis_move_update->chassis_left_control.wbr_control.Fbl_r * arm_cos_f32(chassis_move_update->chassis_left_control.wbr_control.theta_l) + MASS_OF_LEG * (GRAVITY_ACCELERATION + chassis_move_update->chassis_accel_n_z - (1 - chassis_move_update->chassis_left_control.eta) * chassis_move_update->chassis_left_control.dd_L_lowpass * arm_cos_f32(chassis_move_update->chassis_left_control.wbr_control.theta_l)) + Get_FeedForward_Force(chassis_move_update->chassis_left_control.wbr_control.L) + virtual_hardstop_force_L;
 
         // 右轮地面支持力
-        chassis_move_update->chassis_right_control.Fwn = chassis_move_update->chassis_right_control.wbr_control.Fbl_r * arm_cos_f32(chassis_move_update->chassis_right_control.wbr_control.theta_l) + MASS_OF_LEG * (GRAVITY_ACCELERATION + chassis_move_update->chassis_accel_n_z - (1 - chassis_move_update->chassis_right_control.eta) * chassis_move_update->chassis_right_control.wbr_control.dd_L * arm_cos_f32(chassis_move_update->chassis_right_control.wbr_control.theta_l)) + Get_FeedForward_Force(chassis_move_update->chassis_right_control.wbr_control.L) + virtual_hardstop_force_R;
+        chassis_move_update->chassis_right_control.Fwn = chassis_move_update->chassis_right_control.wbr_control.Fbl_r * arm_cos_f32(chassis_move_update->chassis_right_control.wbr_control.theta_l) + MASS_OF_LEG * (GRAVITY_ACCELERATION + chassis_move_update->chassis_accel_n_z - (1 - chassis_move_update->chassis_right_control.eta) * chassis_move_update->chassis_right_control.dd_L_lowpass * arm_cos_f32(chassis_move_update->chassis_right_control.wbr_control.theta_l)) + Get_FeedForward_Force(chassis_move_update->chassis_right_control.wbr_control.L) + virtual_hardstop_force_R;
 
         // 计算矩阵K，A，B
         decompose_fitted_matrix_to_K(&chassis_move_update->chassis_left_control.wbr_control, &chassis_move_update->chassis_right_control.wbr_control, fitted_matrix_K, LQR_K);
@@ -1293,8 +1301,8 @@ extern "C"
         }
 
         // 安全保护：限制积分后的期望腿长不超出物理机械极限
-        independent_leg_set_L = float_constrain(independent_leg_set_L, CHASSIS_LEG_MIN, 0.3);
-        independent_leg_set_R = float_constrain(independent_leg_set_R, CHASSIS_LEG_MIN, 0.3);
+        independent_leg_set_L = float_constrain(independent_leg_set_L, CHASSIS_LEG_MIN, CHASSIS_LEG_MAX);
+        independent_leg_set_R = float_constrain(independent_leg_set_R, CHASSIS_LEG_MIN, CHASSIS_LEG_MAX);
 
         // 计算底层腿长PID输出 (推力Fbl_t)
         control_loop->chassis_left_control.fd_leg = Leg_PID_Calc(&control_loop->chassis_left_control.leg_pid_control, control_loop->chassis_left_control.wbr_control.L, independent_leg_set_L);
@@ -1339,25 +1347,23 @@ extern "C"
                  chassis_move_control_loop->jump_phase == CHASSIS_JUMP_TAKEOFF)
         {
             // 重力补偿 + 侧向惯性力矩补偿 + 左腿腿长PID
-            chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t = -chassis_move_control_loop->chassis_left_control.fd_leg  - CHASSIS_JUMP_TAKEOFF_FORCE_BONUS;
+            chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t = -chassis_move_control_loop->chassis_left_control.fd_leg - CHASSIS_JUMP_TAKEOFF_FORCE_BONUS;
 
             // 重力补偿 + 侧向惯性力矩补偿 + 右腿腿长PID
-            chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t = -chassis_move_control_loop->chassis_right_control.fd_leg  - CHASSIS_JUMP_TAKEOFF_FORCE_BONUS;
+            chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t = -chassis_move_control_loop->chassis_right_control.fd_leg - CHASSIS_JUMP_TAKEOFF_FORCE_BONUS;
         }
         else if (chassis_move_control_loop->state == CHASSIS_JUMP &&
                  chassis_move_control_loop->jump_phase == CHASSIS_JUMP_READYLAND)
         {
             // 重力补偿 + 侧向惯性力矩补偿 + 左腿腿长PID
-            chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t = -chassis_move_control_loop->chassis_left_control.fd_leg
-                                                                                + chassis_move_control_loop->chassis_left_control.Fbl_spring;
+            chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t = -chassis_move_control_loop->chassis_left_control.fd_leg + chassis_move_control_loop->chassis_left_control.Fbl_spring;
 
             // 重力补偿 + 侧向惯性力矩补偿 + 右腿腿长PID
-            chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t = -chassis_move_control_loop->chassis_right_control.fd_leg
-                                                                                 + chassis_move_control_loop->chassis_right_control.Fbl_spring;
+            chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t = -chassis_move_control_loop->chassis_right_control.fd_leg + chassis_move_control_loop->chassis_right_control.Fbl_spring;
         }
         else // 正常情况下支持力处理
         {
-            Chassis_Landing_Admittance_Control(chassis_move_control_loop);
+            // Chassis_Landing_Admittance_Control(chassis_move_control_loop);
             // 五连杆左右腿支持力计算
             if (chassis_move_control_loop->chassis_left_control.chassis_off_ground_detection == CHASSIS_TOUCH_GROUND || chassis_move_control_loop->chassis_right_control.chassis_off_ground_detection == CHASSIS_TOUCH_GROUND)
             {
@@ -1370,7 +1376,7 @@ extern "C"
             else
             {
                 // 重力补偿 + 侧向惯性力矩补偿 + 左腿腿长PID
-                chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t = -chassis_move_control_loop->chassis_left_control.fd_leg + chassis_move_control_loop->chassis_left_control.Fbl_spring;
+                // chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t = -chassis_move_control_loop->chassis_left_control.fd_leg + chassis_move_control_loop->chassis_left_control.Fbl_spring;
 
                 // 重力补偿 + 侧向惯性力矩补偿 + 右腿腿长PID
                 chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t = -chassis_move_control_loop->chassis_right_control.fd_leg + chassis_move_control_loop->chassis_right_control.Fbl_spring;

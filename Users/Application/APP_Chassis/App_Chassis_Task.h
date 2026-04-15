@@ -115,10 +115,10 @@
 
 #define CHASSIS_X_BACK 0.2f
 // 左右腿长度PID
-#define LEG_PID_KP 2000.0f
-#define LEG_PID_KI 2.4f
+#define LEG_PID_KP 5000.0f
+#define LEG_PID_KI 2.0f
 #define LEG_PID_KD 200000.0f
-#define LEG_PID_MAX_OUT 200.0f // 300
+#define LEG_PID_MAX_OUT 2000.0f // 300
 #define LEG_PID_MAX_IOUT 40.0f
 
 /* 轮子相关数据 */
@@ -189,6 +189,7 @@
 #define CHASSIS_ACCEL_UP_NUM 0.5f
 #define CHASSIS_THETA_L_LOWPASS_NUM 0.01f
 #define CHASSIS_D_THETA_L_LOWPASS_NUM 0.005f
+#define CHASSIS_DD_L_LOWPASS_NUM 0.005f
 
 #define CHASSIS_FILTER_KALMAN 0
 #define CHASSIS_FILTER_LOWPASS 1
@@ -333,6 +334,7 @@ public:
     KalmanFilter_t chassis_vaestimatekf_theta;                   // 卡尔曼滤波观测器
     first_order_filter_type_t theta_l_lowpass_filter;            // 腿角度一阶低通
     first_order_filter_type_t d_theta_l_lowpass_filter;          // 腿角速度一阶低通
+    first_order_filter_type_t dd_L_lowpass_filter;               // 腿长加速度一阶低通
     chassis_off_ground_detection_e chassis_off_ground_detection; // 离地检测枚举
 
     ramp_function_source_t init_angle_ramp; // 用于倒地自启的斜坡函数
@@ -343,24 +345,25 @@ public:
     PidTypeDef_t init_leg_angle_pid;        // 初始化收腿角度PID
     fp32 Fbl_gravity;                       // 重力补偿前馈
     fp32 Fbl_inertial;                      // 侧向惯性力矩补偿前馈
-    fp32 Fbl_spring;
-    wbr_leg_t wbr_control;  // wbr连杆解算
-    fp32 eta;               // 腿部质心位置系数
-    fp32 l_b = L_B;         // 机体到腿部质心的距离
-    fp32 i_l = I_L;         // 腿部转动惯量
-    fp32 Fwn;               // 驱动轮支持力
-    fp32 v_real_n;          // 速度预测
-    fp32 chassis_d_yaw_n;   // yaw轴角速度预测
-    fp32 d_theta_w_n;       // 驱动轮角速度预测
-    fp32 Tw_adapt;          // 驱动轮力矩补偿
-    fp32 theta_l;           // 腿原始角度
-    fp32 theta_l_set;       // 腿角度设置
-    fp32 d_theta_l;         // 腿原始角速度
-    fp32 theta_l_filter;    // 腿滤波后角度
-    fp32 d_theta_l_filter;  // 腿滤波后角速度
-    fp32 theta_l_lowpass;   // 腿低通后角度
-    fp32 d_theta_l_lowpass; // 腿低通后角速度
-    fp32 d_theta_l_set;     // 腿角速度设置
+    fp32 Fbl_spring;                        // 腿部弹力补偿前馈
+    wbr_leg_t wbr_control;                  // wbr连杆解算
+    fp32 eta;                               // 腿部质心位置系数
+    fp32 l_b = L_B;                         // 机体到腿部质心的距离
+    fp32 i_l = I_L;                         // 腿部转动惯量
+    fp32 Fwn;                               // 驱动轮支持力
+    fp32 v_real_n;                          // 速度预测
+    fp32 chassis_d_yaw_n;                   // yaw轴角速度预测
+    fp32 d_theta_w_n;                       // 驱动轮角速度预测
+    fp32 Tw_adapt;                          // 驱动轮力矩补偿
+    fp32 theta_l;                           // 腿原始角度
+    fp32 theta_l_set;                       // 腿角度设置
+    fp32 d_theta_l;                         // 腿原始角速度
+    fp32 theta_l_filter;                    // 腿滤波后角度
+    fp32 d_theta_l_filter;                  // 腿滤波后角速度
+    fp32 theta_l_lowpass;                   // 腿低通后角度
+    fp32 d_theta_l_lowpass;                 // 腿低通后角速度
+    fp32 dd_L_lowpass;                      // 腿长加速度低通后值
+    fp32 d_theta_l_set;                     // 腿角速度设置
 };
 
 /* 底盘控制类 */

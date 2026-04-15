@@ -9,7 +9,7 @@
     "stm32DebugHelper.refreshInterval": 100,
     "stm32DebugHelper.chartMaxPoints": 1200,
     "stm32DebugHelper.chartWindowMs": 10000,
-    "stm32DebugHelper.chartPushInterval": 50,
+    "stm32DebugHelper.chartPushInterval": 17,
     "C_Cpp.default.compileCommands": "${workspaceFolder}/compile_commands.json",
     "C_Cpp.default.compilerPath": "C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/arm-none-eabi-g++.exe",
     "C_Cpp.intelliSenseEngine": "default",
@@ -31,5 +31,6 @@
         "ins_task.h": "c",
         "complex": "cpp"
     },
-    "python-envs.defaultEnvManager": "ms-python.python:system"
+    "python-envs.defaultEnvManager": "ms-python.python:system",
+    "stm32DebugHelper.chartSamplingMode": "live"
 }
