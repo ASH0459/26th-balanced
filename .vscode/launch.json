@@ -1,0 +1,24 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "STM32H723 OpenOCD (daplink)",
+            "type": "cortex-debug",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "executable": "${workspaceFolder}/build/Debug/26th_balance_infantry.elf",
+            "servertype": "openocd",
+            "serverpath": "C:/Users/ASH/.eide/tools/openocd_7a1adfbec_mingw32/bin/openocd.exe",
+            "gdbPath": "C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/arm-none-eabi-gdb.exe",
+            "configFiles": [
+                "${workspaceFolder}/daplink.cfg"
+            ],
+            "runToEntryPoint": "main",
+            "showDevDebugOutput": "raw",
+            "liveWatch": {
+                "enabled": true,
+                "samplesPerSecond": 4
+            }
+        }
+    ]
+}

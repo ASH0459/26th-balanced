@@ -1,0 +1,22 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "OpenOCD: daplink (tcl 50001)",
+            "type": "shell",
+            "command": "C:/Users/ASH/.eide/tools/openocd_7a1adfbec_mingw32/bin/openocd.exe",
+            "args": [
+                "-f",
+                "${workspaceFolder}/daplink.cfg",
+                "-c",
+                "gdb_port 50000",
+                "-c",
+                "tcl_port 50001",
+                "-c",
+                "telnet_port 50002"
+            ],
+            "isBackground": true,
+            "problemMatcher": []
+        }
+    ]
+}
