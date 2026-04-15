@@ -3,6 +3,13 @@
     "cmake.configureOnOpen": true,
     "cmake.defaultConfigurePreset": "Debug",
     "cmake.defaultBuildPreset": "Debug",
+    "stm32DebugHelper.elfPath": "C:/Code/RM/RM/26th_balanced_code/build/Debug/26th_balance_infantry.elf",
+    "stm32DebugHelper.openocdHost": "127.0.0.1",
+    "stm32DebugHelper.openocdPort": 50001,
+    "stm32DebugHelper.refreshInterval": 100,
+    "stm32DebugHelper.chartMaxPoints": 1200,
+    "stm32DebugHelper.chartWindowMs": 10000,
+    "stm32DebugHelper.chartPushInterval": 17,
     "C_Cpp.default.compileCommands": "${workspaceFolder}/compile_commands.json",
     "C_Cpp.default.compilerPath": "C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/14.2 rel1/bin/arm-none-eabi-g++.exe",
     "C_Cpp.intelliSenseEngine": "default",
@@ -23,5 +30,7 @@
         "wbr.h": "c",
         "ins_task.h": "c",
         "complex": "cpp"
-    }
+    },
+    "python-envs.defaultEnvManager": "ms-python.python:system",
+    "stm32DebugHelper.chartSamplingMode": "live"
 }
