@@ -143,6 +143,17 @@ static Chassis_State_e chassis_requested_mode_to_pending_state(chassis_mode_e re
     }
 }
 
+static Chassis_State_e chassis_sanitize_pending_state(Chassis_State_e pending_state)
+{
+    if (pending_state == CHASSIS_LEG_1 ||
+        pending_state == CHASSIS_LEG_2 ||
+        pending_state == CHASSIS_NORMAL)
+    {
+        return pending_state;
+    }
+    return CHASSIS_NORMAL;
+}
+
 static bool_t chassis_heading_is_side(fp32 heading)
 {
     const fp32 side_error = fabsf(fabsf(wrap_to_pi(heading)) - PI * 0.5f);
@@ -607,14 +618,31 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
                 requested_mode == CHASSIS_MODE_UI_RESET)
             {
                 chassis_move_mode->pending_state = chassis_requested_mode_to_pending_state(requested_mode);
+#if CHASSIS_BYPASS_INIT_MODE
+                if (chassis_move_mode->posture == CHASSIS_POSTURE_DOWN)
+                {
+                    chassis_move_mode->state = CHASSIS_FLIP;
+                }
+                else
+                {
+                    chassis_move_mode->state = chassis_sanitize_pending_state(chassis_move_mode->pending_state);
+                    chassis_move_mode->pending_state = CHASSIS_NORMAL;
+                }
+#else
                 chassis_move_mode->state = (chassis_move_mode->posture == CHASSIS_POSTURE_DOWN) ? CHASSIS_FLIP : CHASSIS_INIT;
+#endif
             }
             break;
 
         case CHASSIS_FLIP:
             if (chassis_move_mode->posture == CHASSIS_POSTURE_UP)
             {
+#if CHASSIS_BYPASS_INIT_MODE
+                chassis_move_mode->state = chassis_sanitize_pending_state(chassis_move_mode->pending_state);
+                chassis_move_mode->pending_state = CHASSIS_NORMAL;
+#else
                 chassis_move_mode->state = CHASSIS_INIT;
+#endif
             }
             break;
 
@@ -623,6 +651,13 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
             {
                 chassis_move_mode->state = CHASSIS_FLIP;
             }
+#if CHASSIS_BYPASS_INIT_MODE
+            else
+            {
+                chassis_move_mode->state = chassis_sanitize_pending_state(chassis_move_mode->pending_state);
+                chassis_move_mode->pending_state = CHASSIS_NORMAL;
+            }
+#else
             else if (chassis_move_mode->init_phase == CHASSIS_INIT_DONE)
             {
                 chassis_move_mode->state = chassis_move_mode->pending_state;
@@ -634,6 +669,7 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
                 }
                 chassis_move_mode->pending_state = CHASSIS_NORMAL;
             }
+#endif
             break;
 
         case CHASSIS_NORMAL:

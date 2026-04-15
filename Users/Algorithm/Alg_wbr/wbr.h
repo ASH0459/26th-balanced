@@ -27,7 +27,7 @@ typedef struct
     fp32 phi2;
 
     // 计算得到的五连杆长度相关数据
-    fp32 L, last_L;
+    fp32 L, L_p;
 	fp32 d_L, d_L_p;
 	fp32 dd_L;
 
@@ -76,7 +76,7 @@ extern void wbr_init(wbr_leg_t *wbr);
   * @param			dt   时间步长，单位：秒
   * @retval     	无
   */
-extern void wbr_calc(wbr_leg_t *wbr);
+extern void wbr_calc(wbr_leg_t *wbr, fp32 dt);
 
 /**
   * @brief  		根据已知的物理参数计算WBR的力矩设置

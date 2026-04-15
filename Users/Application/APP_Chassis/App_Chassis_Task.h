@@ -64,7 +64,7 @@
 
 // 腿的最大最小长度
 #define CHASSIS_LEG_MAX 0.35f
-#define CHASSIS_LEG_MIN 0.17f
+#define CHASSIS_LEG_MIN 0.21f
 
 // 初始化收腿目标角度 (rad)，原始坐标系下为-1.26rad，换算到0~2π下为2π-1.26
 #define CHASSIS_INIT_LEG_ANGLE_TARGET_RAW (-1.26f)
@@ -115,9 +115,9 @@
 
 #define CHASSIS_X_BACK 0.2f
 // 左右腿长度PID
-#define LEG_PID_KP 5000.0f
+#define LEG_PID_KP 2000.0f
 #define LEG_PID_KI 2.0f
-#define LEG_PID_KD 200000.0f
+#define LEG_PID_KD 500.0f
 #define LEG_PID_MAX_OUT 2000.0f // 300
 #define LEG_PID_MAX_IOUT 40.0f
 
@@ -351,6 +351,7 @@ public:
     fp32 l_b = L_B;                         // 机体到腿部质心的距离
     fp32 i_l = I_L;                         // 腿部转动惯量
     fp32 Fwn;                               // 驱动轮支持力
+    fp32 Fwn_test;
     fp32 v_real_n;                          // 速度预测
     fp32 chassis_d_yaw_n;                   // yaw轴角速度预测
     fp32 d_theta_w_n;                       // 驱动轮角速度预测

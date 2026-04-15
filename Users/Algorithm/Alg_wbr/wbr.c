@@ -25,7 +25,7 @@ void wbr_init(wbr_leg_t *wbr)
   * @param			dt   时间步长，单位：秒
   * @retval     	无
   */
-void wbr_calc(wbr_leg_t *wbr)
+void wbr_calc(wbr_leg_t *wbr, fp32 dt)
 {
 	wbr->X1 = - wbr->L1u * arm_cos_f32(wbr->phi1);
 	wbr->X2 = - wbr->L2u * arm_cos_f32(wbr->phi2);
@@ -58,7 +58,8 @@ void wbr_calc(wbr_leg_t *wbr)
 
 	// 五连杆长度L相关数据
 	arm_sqrt_f32(wbr->Xe * wbr->Xe + wbr->Ye * wbr->Ye, &wbr->L);  //计算虚拟杆长
-	wbr->dd_L = (wbr->d_L - wbr->d_L_p);	//计算虚拟杆加速度用于离地检测
+	wbr->d_L = (wbr->L - wbr->L_p) / dt;	//计算虚拟杆长速度
+	wbr->dd_L = (wbr->d_L - wbr->d_L_p) ;	//计算虚拟杆加速度用于离地检测
 
 	// 五连杆角度theta相关数据
 	wbr->theta = atan2f(wbr->Xe, wbr->Ye);
@@ -78,6 +79,7 @@ void wbr_calc(wbr_leg_t *wbr)
 	wbr->total_theta_l = 2 * PI * wbr->count + wbr->theta_l;
 
 	// 更新数据
+	wbr->L_p = wbr->L;
 	wbr->d_L_p = wbr->d_L;
 	wbr->theta_l_p = wbr->theta_l;
 }

@@ -44,6 +44,11 @@
 // 初始化自扶正阶段的腿部旋转速度硬限幅。
 #define CHASSIS_INIT_LEVEL_SPEED_LIMIT 1.5f
 
+/* -------------------- 初始化流程开关 -------------------- */
+// 1: 绕过 CHASSIS_INIT 模式，姿态正常后直接进入 pending_state。
+// 0: 保留原始 INIT 流程。
+#define CHASSIS_BYPASS_INIT_MODE 0
+
 /* -------------------- 行为层 yaw/朝向切换参数 -------------------- */
 // 组合 yaw 指令输出的全局角速度保护上限。
 #define CHASSIS_SMALL_GYRO_D_YAW_MAX 1000.0f
