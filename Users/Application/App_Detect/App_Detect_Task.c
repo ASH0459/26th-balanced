@@ -206,27 +206,16 @@ static void detect_init(uint32_t time)
     // 设置离线时间，上线稳定工作时间，优先级 offlineTime onlinetime priority
     uint16_t set_item[ERROR_LIST_LENGHT][3] =
         {
-            {100, 10, 15}, // DBUS
+            {100, 10, 1},  // DBUS (当前工程未接入，后续会在下方禁用)
             {100, 10, 15}, // VT
-            {2000, 2, 8},   // joint1
-            {2000, 2, 8},   // joint2
-            {2000, 2, 8},   // joint3
-            {2000, 2, 8},   // joint4
-            {2000, 10, 8},  // motor5
-            {2000, 10, 8},  // motor6
-            {10, 10, 12},  // trigger
-            {2, 3, 14},    // yaw
-            {2, 3, 13},    // pitch
-            {10, 10, 11},  // fric1
-            {10, 10, 10},  // fric2
-            {100, 100, 7}, // supcap
-            {2, 3, 7},     // board gyro
-            {5, 5, 7},     // board accel
-            {40, 200, 7},  // board mag
-            {100, 100, 5}, // referee
-            {10, 10, 7},   // rm imu
-            {100, 100, 1}, // oled
-            {100, 10, 5},  // referee
+            {100, 20, 8},  // chassis joint1
+            {100, 20, 8},  // chassis joint2
+            {100, 20, 8},  // chassis joint3
+            {100, 20, 8},  // chassis joint4
+            {100, 20, 8},  // chassis wheel1
+            {100, 20, 8},  // chassis wheel2
+            {300, 100, 7}, // referee (UART10空闲中断触发)
+            {400, 100, 6}, // supercap (任务周期100ms，留足抖动裕量)
         };
 
     for (uint8_t i = 0; i < ERROR_LIST_LENGHT; i++)
@@ -249,9 +238,10 @@ static void detect_init(uint32_t time)
         error_list[i].work_time = time;
     }
 
-    error_list[OLED_TOE].data_is_error_fun = NULL;
-    // error_list[OLED_TOE].solve_lost_fun = OLED_com_reset;
-    error_list[OLED_TOE].solve_data_error_fun = NULL;
+    // 当前工程未接入DBUS接收链路，避免常驻误判离线。
+    error_list[DBUS_TOE].enable = 0;
+    error_list[DBUS_TOE].error_exist = 0;
+    error_list[DBUS_TOE].is_lost = 0;
 
     // error_list[DBUSTOE].dataIsErrorFun = RC_data_is_error;
     // error_list[DBUSTOE].solveLostFun = slove_RC_lost;

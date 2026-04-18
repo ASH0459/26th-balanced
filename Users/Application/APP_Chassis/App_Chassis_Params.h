@@ -49,6 +49,11 @@
 // 0: 保留原始 INIT 流程。
 #define CHASSIS_BYPASS_INIT_MODE 0
 
+/* -------------------- 输出调试开关 -------------------- */
+// 1: 腿部仅保留垂直支持力（禁用 Tbl_t 横向输出）并关闭轮子输出。
+// 0: 保持轮腿协同输出。
+#define CHASSIS_VERTICAL_SUPPORT_ONLY_MODE 0
+
 /* -------------------- 行为层 yaw/朝向切换参数 -------------------- */
 // 组合 yaw 指令输出的全局角速度保护上限。
 #define CHASSIS_SMALL_GYRO_D_YAW_MAX 1000.0f

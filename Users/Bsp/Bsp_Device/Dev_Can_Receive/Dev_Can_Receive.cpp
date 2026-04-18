@@ -17,6 +17,7 @@
 /** * @brief 头文件 */
 #include "Dev_Can_Receive.h"
 #include "App_Detect_Task.h"
+#include "App_Chassis_Task.h"
 
 #include "main.h"
 #include "HDL_SuperCap.hpp"
@@ -45,6 +46,89 @@ Wheel_Motor_Measure chassis_wheel[2] = {
 };
 
 Gimbal_Data gimbal_data;
+
+namespace
+{
+	constexpr uint8_t JOINT_COMM_LOST_ERR_CODE = 0x0DU;
+	constexpr uint32_t JOINT_CLEAR_ERR_GAP_MS = 10U;
+	constexpr uint16_t JOINT_CLEAR_ERR_MODE_ID = 0U;
+
+	static void clear_err(FDCAN_HandleTypeDef *hcan, const uint16_t motor_id, const uint16_t mode_id)
+	{
+		if (hcan == nullptr)
+		{
+			return;
+		}
+
+		uint8_t data[8];
+		const uint16_t id = static_cast<uint16_t>(motor_id + mode_id);
+		data[0] = 0xFF;
+		data[1] = 0xFF;
+		data[2] = 0xFF;
+		data[3] = 0xFF;
+		data[4] = 0xFF;
+		data[5] = 0xFF;
+		data[6] = 0xFF;
+		data[7] = 0xFB;
+
+		FDCAN_TxHeaderTypeDef tx_header;
+		tx_header.Identifier = id;
+		tx_header.IdType = FDCAN_STANDARD_ID;
+		tx_header.TxFrameType = FDCAN_DATA_FRAME;
+		tx_header.DataLength = FDCAN_DLC_BYTES_8;
+		tx_header.ErrorStateIndicator = FDCAN_ESI_ACTIVE;
+		tx_header.BitRateSwitch = FDCAN_BRS_OFF;
+		tx_header.FDFormat = FDCAN_CLASSIC_CAN;
+		tx_header.TxEventFifoControl = FDCAN_NO_TX_EVENTS;
+		tx_header.MessageMarker = 0;
+
+		HAL_FDCAN_AddMessageToTxFifoQ(hcan, &tx_header, data);
+	}
+
+	static bool_t is_joint_comm_lost_error(const uint8_t status_byte)
+	{
+		const uint8_t err_code_low = status_byte & 0x0FU;
+		const uint8_t err_code_high = (status_byte >> 4) & 0x0FU;
+		return (err_code_low == JOINT_COMM_LOST_ERR_CODE) || (err_code_high == JOINT_COMM_LOST_ERR_CODE);
+	}
+
+	static bool_t can_clear_joint_motor_error_now(void)
+	{
+		return (chassis_move.posture == CHASSIS_POSTURE_UP) &&
+			   (gimbal_data.protocol_valid != 0U) &&
+			   (gimbal_data.chassis_behaviour_mode == CHASSIS_MODE_NO_FORCE);
+	}
+
+	static void try_clear_joint_motor_error_if_needed(const uint8_t joint_index, const uint8_t status_byte)
+	{
+		static uint32_t last_clear_err_tick[4] = {0U};
+		if (joint_index >= 4U)
+		{
+			return;
+		}
+
+		if (is_joint_comm_lost_error(status_byte) == 0U)
+		{
+			return;
+		}
+
+		if (can_clear_joint_motor_error_now() == 0U)
+		{
+			return;
+		}
+
+		const uint32_t now = HAL_GetTick();
+		if ((now - last_clear_err_tick[joint_index]) < JOINT_CLEAR_ERR_GAP_MS)
+		{
+			return;
+		}
+
+		clear_err(chassis_joint[joint_index].hfdcan,
+				  chassis_joint[joint_index].id,
+				  JOINT_CLEAR_ERR_MODE_ID);
+		last_clear_err_tick[joint_index] = now;
+	}
+} // namespace
 
 /**
  * @brief          发送轮电机控制电流(0x201,0x202)
@@ -115,6 +199,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 				const uint8_t i =
 					(rx_header.Identifier == CAN_CHASSIS_JOINT_LEFT_1_ID) ? 0U : 1U;
 				chassis_joint[i].get_joint_motor_measure(rx_data); // 对应电机获取对应值
+				try_clear_joint_motor_error_if_needed(i, rx_data[0]);
 				// D[0]高4位为电机ID，低4位为错误码；错误码为0时才认为电机在线
 				uint8_t err_code = rx_data[0] & 0xF0;
 				if (err_code == 0x10)
@@ -192,6 +277,7 @@ void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo1ITs)
 				const uint8_t i =
 					(rx_header.Identifier == CAN_CHASSIS_JOINT_RIGHT_1_ID) ? 2U : 3U;
 				chassis_joint[i].get_joint_motor_measure(rx_data); // 对应电机获取对应值
+				try_clear_joint_motor_error_if_needed(i, rx_data[0]);
 				// D[0]高4位为电机ID，低4位为错误码；错误码为0时才认为电机在线
 				uint8_t err_code = rx_data[0] & 0xF0;
 				if (err_code == 0x10)
