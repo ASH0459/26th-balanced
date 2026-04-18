@@ -50,10 +50,6 @@
 // 驱动轮补偿系数
 #define K_APAPT 0.35f
 
-// 最长腿长和最短腿长 待改
-#define LEG_MAX_LENGTH 0.3f
-#define LEG_MIN_LENGTH 0.1f
-
 // 底盘任务控制间隔
 #define CHASSIS_CONTROL_TIME_MS 1
 #define JOINT_MOTOR_lIMIT_TIME 1
@@ -64,7 +60,7 @@
 
 // 腿的最大最小长度
 #define CHASSIS_LEG_MAX 0.35f
-#define CHASSIS_LEG_MIN 0.21f
+#define CHASSIS_LEG_MIN 0.19f
 
 // 初始化收腿目标角度 (rad)，原始坐标系下为-1.26rad，换算到0~2π下为2π-1.26
 #define CHASSIS_INIT_LEG_ANGLE_TARGET_RAW (-1.26f)
@@ -93,6 +89,10 @@
 #define CHASSIS_JUMP_LAND_TICKS 150U
 #define CHASSIS_POSTURE_STABLE_TICKS 50U
 
+// 离地检测迟滞阈值：落地阈值需高于离地阈值
+#define CHASSIS_OFF_GROUND_FORCE_THRESHOLD 60.0f
+#define CHASSIS_TOUCH_GROUND_FORCE_THRESHOLD 120.0f
+
 // 初始化时机体未水平的自扶正腿部旋转参数
 #define CHASSIS_INIT_LEVEL_ANGLE_STEP 0.8f     // 机体未水平时腿部旋转角度 (rad/s)
 #define CHASSIS_INIT_LEVEL_TORQUE_LIMIT 12.0f  // 机体未水平时腿部旋转力矩限制 (Nm)
@@ -115,10 +115,10 @@
 
 #define CHASSIS_X_BACK 0.2f
 // 左右腿长度PID
-#define LEG_PID_KP 2000.0f
-#define LEG_PID_KI 2.0f
-#define LEG_PID_KD 500.0f
-#define LEG_PID_MAX_OUT 2000.0f // 300
+#define LEG_PID_KP 2500.0f
+#define LEG_PID_KI 0.0f
+#define LEG_PID_KD 100000.0f
+#define LEG_PID_MAX_OUT 200000.0f // 300
 #define LEG_PID_MAX_IOUT 40.0f
 
 /* 轮子相关数据 */
@@ -261,9 +261,9 @@
 #define CHASSIS_DT7_Y_PID_MAX_OUT 10.0f
 #define CHASSIS_DT7_Y_PID_MAX_IOUT 2.0f
 
-#define LEG_NORMAL_SUPPORT_FORCE 105.0f // 正常站立时单腿的平均支持力 (N)
-#define ADMITTANCE_EXTEND_KP 0.00003f   // 导纳积分系数：控制空中伸腿和触地退让的快慢
-#define RAMP_RECOVERY_STEP 0.0004f      // 落地恢复斜坡步长：控制落地后恢复正常腿长的速度
+#define LEG_NORMAL_SUPPORT_FORCE 115.0f // 正常站立时单腿的平均支持力 (N)
+#define ADMITTANCE_EXTEND_KP 0.00002f   // 导纳积分系数：控制空中伸腿和触地退让的快慢
+#define RAMP_RECOVERY_STEP 0.0005f      // 落地恢复斜坡步长：控制落地后恢复正常腿长的速度
 
 /* 底盘状态机 */
 typedef enum
@@ -352,19 +352,19 @@ public:
     fp32 i_l = I_L;                         // 腿部转动惯量
     fp32 Fwn;                               // 驱动轮支持力
     fp32 Fwn_test;
-    fp32 v_real_n;                          // 速度预测
-    fp32 chassis_d_yaw_n;                   // yaw轴角速度预测
-    fp32 d_theta_w_n;                       // 驱动轮角速度预测
-    fp32 Tw_adapt;                          // 驱动轮力矩补偿
-    fp32 theta_l;                           // 腿原始角度
-    fp32 theta_l_set;                       // 腿角度设置
-    fp32 d_theta_l;                         // 腿原始角速度
-    fp32 theta_l_filter;                    // 腿滤波后角度
-    fp32 d_theta_l_filter;                  // 腿滤波后角速度
-    fp32 theta_l_lowpass;                   // 腿低通后角度
-    fp32 d_theta_l_lowpass;                 // 腿低通后角速度
-    fp32 dd_L_lowpass;                      // 腿长加速度低通后值
-    fp32 d_theta_l_set;                     // 腿角速度设置
+    fp32 v_real_n;          // 速度预测
+    fp32 chassis_d_yaw_n;   // yaw轴角速度预测
+    fp32 d_theta_w_n;       // 驱动轮角速度预测
+    fp32 Tw_adapt;          // 驱动轮力矩补偿
+    fp32 theta_l;           // 腿原始角度
+    fp32 theta_l_set;       // 腿角度设置
+    fp32 d_theta_l;         // 腿原始角速度
+    fp32 theta_l_filter;    // 腿滤波后角度
+    fp32 d_theta_l_filter;  // 腿滤波后角速度
+    fp32 theta_l_lowpass;   // 腿低通后角度
+    fp32 d_theta_l_lowpass; // 腿低通后角速度
+    fp32 dd_L_lowpass;      // 腿长加速度低通后值
+    fp32 d_theta_l_set;     // 腿角速度设置
 };
 
 /* 底盘控制类 */

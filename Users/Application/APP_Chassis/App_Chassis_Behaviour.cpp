@@ -550,6 +550,11 @@ static void chassis_init_control(fp32 *vx_set, fp32 *d_yaw_set, fp32 *leg_set, C
         first_order_filter_cali(&chassis_move_rc_to_vector->chassis_leg_filter_set, CHASSIS_NORMAL_LEG_TARGET);
         *leg_set = chassis_move_rc_to_vector->chassis_leg_filter_set.out;
     }
+    else if (chassis_move_rc_to_vector->init_phase == CHASSIS_INIT_FOLD)
+    {
+        chassis_move_rc_to_vector->chassis_leg_filter_set.out = CHASSIS_LEG_MAX;
+        *leg_set = CHASSIS_LEG_MAX;
+    }
     else
     {
         *leg_set = chassis_move_rc_to_vector->chassis_leg_filter_set.out;

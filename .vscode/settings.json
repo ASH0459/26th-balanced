@@ -3,6 +3,7 @@
     "cmake.configureOnOpen": true,
     "cmake.defaultConfigurePreset": "Debug",
     "cmake.defaultBuildPreset": "Debug",
+    "editor.cursorStyle": "line",
     "stm32DebugHelper.elfPath": "C:/Code/RM/RM/26th_balanced_code/build/Debug/26th_balance_infantry.elf",
     "stm32DebugHelper.openocdHost": "127.0.0.1",
     "stm32DebugHelper.openocdPort": 50001,
