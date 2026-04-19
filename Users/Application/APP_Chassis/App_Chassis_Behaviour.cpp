@@ -143,6 +143,7 @@ static Chassis_State_e chassis_requested_mode_to_pending_state(chassis_mode_e re
     }
 }
 
+#if CHASSIS_BYPASS_INIT_MODE
 static Chassis_State_e chassis_sanitize_pending_state(Chassis_State_e pending_state)
 {
     if (pending_state == CHASSIS_LEG_1 ||
@@ -153,6 +154,7 @@ static Chassis_State_e chassis_sanitize_pending_state(Chassis_State_e pending_st
     }
     return CHASSIS_NORMAL;
 }
+#endif
 
 static bool_t chassis_heading_is_side(fp32 heading)
 {
@@ -552,8 +554,10 @@ static void chassis_init_control(fp32 *vx_set, fp32 *d_yaw_set, fp32 *leg_set, C
     }
     else if (chassis_move_rc_to_vector->init_phase == CHASSIS_INIT_FOLD)
     {
-        chassis_move_rc_to_vector->chassis_leg_filter_set.out = CHASSIS_LEG_MAX;
-        *leg_set = CHASSIS_LEG_MAX;
+        chassis_move_rc_to_vector->chassis_leg_filter_set.num[0] = CHASSIS_ACCEL_LEG_NUM;
+        *leg_set = chassis_ramp_leg_target(chassis_move_rc_to_vector,
+                                           CHASSIS_LEG_MAX,
+                                           CHASSIS_LEG_STEP_RAMP_SPEED);
     }
     else
     {
@@ -762,8 +766,17 @@ void chassis_behaviour_control_set(fp32 *vx_set, fp32 *body_yaw_err_set, fp32 *d
     switch (chassis_move_rc_to_vector->state)
     {
     case CHASSIS_STOP:
-    case CHASSIS_FLIP:
         chassis_zero_force_control(vx_set, d_yaw_set, leg_set);
+        chassis_update_vx_ramp(0.0f, 1);
+        (void)chassis_update_small_gyro_state_machine(0, 0.0f, 1, chassis_move_rc_to_vector);
+        break;
+
+    case CHASSIS_FLIP:
+        *vx_set = 0.0f;
+        *d_yaw_set = 0.0f;
+        *leg_set = chassis_ramp_leg_target(chassis_move_rc_to_vector,
+                                           CHASSIS_LEG_MAX,
+                                           CHASSIS_LEG_STEP_RAMP_SPEED);
         chassis_update_vx_ramp(0.0f, 1);
         (void)chassis_update_small_gyro_state_machine(0, 0.0f, 1, chassis_move_rc_to_vector);
         break;

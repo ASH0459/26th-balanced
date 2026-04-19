@@ -83,9 +83,9 @@ extern "C"
     // 调试用参数
     fp32 LQR_K[4][10] = {
         {-1.6958, -2.5289, -3.8672, -0.44578, -5.554, -0.76506, -5.3346, -0.70678, -10.645, -1.2008},
-{-1.6958, -2.5289, 3.8672, 0.44578, -5.3346, -0.70678, -5.554, -0.76506, -10.645, -1.2008},
-{5.5762, 9.0773, -3.3588, -0.17982, 69.326, 10.748, -16.177, -2.1284, -138.12, -19.235},
-{5.5762, 9.0773, 3.3588, 0.17982, -16.177, -2.1284, 69.326, 10.748, -138.12, -19.235},
+        {-1.6958, -2.5289, 3.8672, 0.44578, -5.3346, -0.70678, -5.554, -0.76506, -10.645, -1.2008},
+        {5.5762, 9.0773, -3.3588, -0.17982, 69.326, 10.748, -16.177, -2.1284, -138.12, -19.235},
+        {5.5762, 9.0773, 3.3588, 0.17982, -16.177, -2.1284, 69.326, 10.748, -138.12, -19.235},
     };
 
     // 最好的参数1
@@ -165,9 +165,9 @@ extern "C"
         return (WHEEL_RADIUS * (-chassis_move_calc->chassis_wheel[0].vel + chassis_move_calc->chassis_wheel[1].vel) - chassis_move_calc->chassis_left_control.wbr_control.L * arm_cos_f32(chassis_move_calc->chassis_left_control.wbr_control.theta_l) * chassis_move_calc->chassis_left_control.wbr_control.d_theta_l + chassis_move_calc->chassis_right_control.wbr_control.L * arm_cos_f32(chassis_move_calc->chassis_right_control.wbr_control.theta_l) * chassis_move_calc->chassis_right_control.wbr_control.d_theta_l) / (2 * DRIVE_WHEEL_DIS);
     }
 
-    static inline fp32 chassis_calc_max_leg_extend_force(leg_control *leg)
+    static inline fp32 chassis_calc_leg_extend_force(leg_control *leg, fp32 target_leg_length)
     {
-        return -Leg_PID_Calc(&leg->leg_pid_control, leg->wbr_control.L, CHASSIS_LEG_MAX);
+        return -Leg_PID_Calc(&leg->leg_pid_control, leg->wbr_control.L, target_leg_length);
     }
 
     static inline chassis_off_ground_detection_e chassis_update_off_ground_detection_state(chassis_off_ground_detection_e current_state, fp32 support_force)
@@ -695,8 +695,12 @@ extern "C"
             chassis_move_transit->chassis_d_yaw_set = 0.0f;
             chassis_move_transit->chassis_yaw_set = chassis_move_transit->chassis_yaw;
             chassis_move_transit->chassis_yaw_err = 0.0f;
-            chassis_move_transit->chassis_leg_set = CHASSIS_LEG_MAX;
-            chassis_move_transit->chassis_leg_filter_set.out = CHASSIS_LEG_MAX;
+            const fp32 leg_length_avg =
+                0.5f * (chassis_move_transit->chassis_left_control.wbr_control.L +
+                        chassis_move_transit->chassis_right_control.wbr_control.L);
+            const fp32 leg_length_init = float_constrain(leg_length_avg, CHASSIS_LEG_MIN, CHASSIS_LEG_MAX);
+            chassis_move_transit->chassis_leg_set = leg_length_init;
+            chassis_move_transit->chassis_leg_filter_set.out = leg_length_init;
             chassis_move_transit->posture_stable_ticks = 0;
             chassis_reset_jump_state(chassis_move_transit);
         }
@@ -973,17 +977,12 @@ extern "C"
      */
     static void chassis_interference_prevention(Chassis_Move *chassis_move_prediction)
     {
-        // 用于离地防抖的计数器（当前控制周期1ms，连续2次判定为离地）
-        static uint16_t left_off_count = 0;
-        static uint16_t right_off_count = 0;
-
         if (chassis_move_prediction->state == CHASSIS_STOP ||
             chassis_move_prediction->state == CHASSIS_FLIP ||
             chassis_move_prediction->state == CHASSIS_INIT)
         {
             chassis_move_prediction->chassis_left_control.chassis_off_ground_detection = CHASSIS_TOUCH_GROUND;
             chassis_move_prediction->chassis_right_control.chassis_off_ground_detection = CHASSIS_TOUCH_GROUND;
-            left_off_count = right_off_count = 0;
             return;
         }
 
@@ -1217,11 +1216,12 @@ extern "C"
             right_torque = 0.0f;
         }
 
-        chassis_move_control_loop->chassis_leg_set = CHASSIS_LEG_MAX;
-        chassis_move_control_loop->chassis_leg_filter_set.out = CHASSIS_LEG_MAX;
-
-        const fp32 left_leg_extend_force = chassis_calc_max_leg_extend_force(&chassis_move_control_loop->chassis_left_control);
-        const fp32 right_leg_extend_force = chassis_calc_max_leg_extend_force(&chassis_move_control_loop->chassis_right_control);
+        const fp32 leg_extend_target =
+            float_constrain(chassis_move_control_loop->chassis_leg_set, CHASSIS_LEG_MIN, CHASSIS_LEG_MAX);
+        const fp32 left_leg_extend_force =
+            chassis_calc_leg_extend_force(&chassis_move_control_loop->chassis_left_control, leg_extend_target);
+        const fp32 right_leg_extend_force =
+            chassis_calc_leg_extend_force(&chassis_move_control_loop->chassis_right_control, leg_extend_target);
         const fp32 left_extend_torque_front = -chassis_move_control_loop->chassis_left_control.wbr_control.J[0][0] * left_leg_extend_force;
         const fp32 left_extend_torque_back = chassis_move_control_loop->chassis_left_control.wbr_control.J[1][0] * left_leg_extend_force;
         const fp32 right_extend_torque_front = chassis_move_control_loop->chassis_right_control.wbr_control.J[0][0] * right_leg_extend_force;
@@ -1425,13 +1425,12 @@ extern "C"
                 chassis_move_control_loop->chassis_right_control.fd_roll = 0.0f;
             }
 
-
             // 五连杆左右腿支持力计算
             // -重力补偿 + 侧向惯性力矩补偿 + 左腿腿长PID - 左腿roll轴补偿PID + 弹簧补偿
-            chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t = -chassis_move_control_loop->chassis_left_control.fd_roll - chassis_move_control_loop->chassis_left_control.fd_leg - chassis_move_control_loop->chassis_left_control.Fbl_gravity -chassis_move_control_loop->chassis_left_control.Fbl_inertial;
+            chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t = -chassis_move_control_loop->chassis_left_control.fd_roll - chassis_move_control_loop->chassis_left_control.fd_leg - chassis_move_control_loop->chassis_left_control.Fbl_gravity - chassis_move_control_loop->chassis_left_control.Fbl_inertial;
 
             // -重力补偿 - 侧向惯性力矩补偿 + 右腿腿长PID + 右腿roll轴补偿PID + 弹簧补偿
-            chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t = +chassis_move_control_loop->chassis_right_control.fd_roll - chassis_move_control_loop->chassis_right_control.fd_leg - chassis_move_control_loop->chassis_right_control.Fbl_gravity +chassis_move_control_loop->chassis_right_control.Fbl_inertial;
+            chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t = +chassis_move_control_loop->chassis_right_control.fd_roll - chassis_move_control_loop->chassis_right_control.fd_leg - chassis_move_control_loop->chassis_right_control.Fbl_gravity + chassis_move_control_loop->chassis_right_control.Fbl_inertial;
         }
     }
 
@@ -1478,7 +1477,7 @@ extern "C"
 #else
             chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t =
                 LQR_K[2][4] * chassis_move_control_loop->chassis_left_control.theta_l +
-                LQR_K[2][5] * chassis_move_control_loop->chassis_left_control.d_theta_l+
+                LQR_K[2][5] * chassis_move_control_loop->chassis_left_control.d_theta_l +
                 LQR_K[2][6] * chassis_move_control_loop->chassis_right_control.theta_l +
                 LQR_K[2][7] * chassis_move_control_loop->chassis_right_control.d_theta_l;
 #endif
@@ -1492,7 +1491,7 @@ extern "C"
 #else
             chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t =
                 LQR_K[3][4] * chassis_move_control_loop->chassis_left_control.theta_l +
-                LQR_K[3][5] * chassis_move_control_loop->chassis_left_control.d_theta_l+
+                LQR_K[3][5] * chassis_move_control_loop->chassis_left_control.d_theta_l +
                 LQR_K[3][6] * chassis_move_control_loop->chassis_right_control.theta_l +
                 LQR_K[3][7] * chassis_move_control_loop->chassis_right_control.d_theta_l;
 #endif
@@ -1642,11 +1641,12 @@ extern "C"
             fp32 right_torque = PID_Calc(&chassis_init_standup->chassis_right_control.init_leg_angle_pid,
                                          0.0f, right_error);
 
-            chassis_init_standup->chassis_leg_set = CHASSIS_LEG_MAX;
-            chassis_init_standup->chassis_leg_filter_set.out = CHASSIS_LEG_MAX;
-
-            const fp32 left_leg_extend_force = chassis_calc_max_leg_extend_force(&chassis_init_standup->chassis_left_control);
-            const fp32 right_leg_extend_force = chassis_calc_max_leg_extend_force(&chassis_init_standup->chassis_right_control);
+            const fp32 leg_extend_target =
+                float_constrain(chassis_init_standup->chassis_leg_set, CHASSIS_LEG_MIN, CHASSIS_LEG_MAX);
+            const fp32 left_leg_extend_force =
+                chassis_calc_leg_extend_force(&chassis_init_standup->chassis_left_control, leg_extend_target);
+            const fp32 right_leg_extend_force =
+                chassis_calc_leg_extend_force(&chassis_init_standup->chassis_right_control, leg_extend_target);
             const fp32 left_extend_torque_front = -chassis_init_standup->chassis_left_control.wbr_control.J[0][0] * left_leg_extend_force;
             const fp32 left_extend_torque_back = chassis_init_standup->chassis_left_control.wbr_control.J[1][0] * left_leg_extend_force;
             const fp32 right_extend_torque_front = chassis_init_standup->chassis_right_control.wbr_control.J[0][0] * right_leg_extend_force;
