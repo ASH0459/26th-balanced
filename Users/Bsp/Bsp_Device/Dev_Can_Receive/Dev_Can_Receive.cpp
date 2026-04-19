@@ -45,10 +45,40 @@ Wheel_Motor_Measure chassis_wheel[2] = {
 	Wheel_Motor_Measure(CAN_CHASSIS_WHEEL_RIGHT_ID, &CHASSIS_WHEEL_CAN), // 1号轮电机
 };
 
+Joint_Motor_Measure chassis_yaw_motor(
+	CAN_CHASSIS_YAW_MOTOR_ID,
+	&CHASSIS_WHEEL_CAN);
+
 Gimbal_Data gimbal_data;
 
 namespace
 {
+	static fp32 wrap_angle_to_pi(fp32 angle)
+	{
+		while (angle > PI)
+		{
+			angle -= 2.0f * PI;
+		}
+		while (angle < -PI)
+		{
+			angle += 2.0f * PI;
+		}
+		return angle;
+	}
+
+	static fp32 calc_relative_yaw_from_can3_motor(const Joint_Motor_Measure *yaw_motor)
+	{
+		if (yaw_motor == nullptr)
+		{
+			return 0.0f;
+		}
+
+		// DM/MIT回传pos范围是[-12.5, 12.5]，先缩放到[-PI, PI]再参与相对角计算。
+		const fp32 yaw_motor_pos_rad =
+			CHASSIS_YAW_MOTOR_DIR_SIGN * yaw_motor->pos * (PI / P_MAX);
+		return wrap_angle_to_pi(yaw_motor_pos_rad - YAW_CENTER_POS_RAD);
+	}
+
 	constexpr uint8_t JOINT_COMM_LOST_ERR_CODE = 0x0DU;
 	constexpr uint32_t JOINT_CLEAR_ERR_GAP_MS = 10U;
 	constexpr uint16_t JOINT_CLEAR_ERR_MODE_ID = 0U;
@@ -239,8 +269,14 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
 				detect_hook(CHASSIS_WHEEL1_TOE + i);		 // 设备检测函数，检测设备是否掉线
 				break;
 			}
-			case GIMBAL_ID: // 云台数据(新双板CAN协议)
-			case CAN_VT_ID:
+			case CAN_CHASSIS_YAW_MOTOR_ID:
+			{
+				chassis_yaw_motor.get_joint_motor_measure(rx_data);
+				gimbal_data.chassis_relative_angle = calc_relative_yaw_from_can3_motor(&chassis_yaw_motor);
+				break;
+			}
+			case CAN_VT_ID: // 云台数据(新双板CAN协议)
+			case GIMBAL_ID:
 			{
 				CAN_cmd_gimbal_receive(rx_data);
 				detect_hook(VT_TOE);

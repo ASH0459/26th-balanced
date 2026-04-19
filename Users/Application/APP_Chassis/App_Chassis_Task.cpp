@@ -83,9 +83,9 @@ extern "C"
     // 调试用参数
     fp32 LQR_K[4][10] = {
         {-3.8164, -5.2493, -8.6592, -0.75466, -7.7051, -1.1581, -7.5732, -1.1213, -18.421, -2.3089},
-{-3.8164, -5.2493, 8.6592, 0.75466, -7.5732, -1.1213, -7.7051, -1.1581, -18.421, -2.3089},
-{6.5988, 9.9898, -1.3336, 0.027103, 83.711, 12.264, -20.005, -2.4465, -169.24, -26.44},
-{6.5988, 9.9898, 1.3336, -0.027103, -20.005, -2.4465, 83.711, 12.264, -169.24, -26.44},
+        {-3.8164, -5.2493, 8.6592, 0.75466, -7.5732, -1.1213, -7.7051, -1.1581, -18.421, -2.3089},
+        {6.5988, 9.9898, -1.3336, 0.027103, 83.711, 12.264, -20.005, -2.4465, -169.24, -26.44},
+        {6.5988, 9.9898, 1.3336, -0.027103, -20.005, -2.4465, 83.711, 12.264, -169.24, -26.44},
     };
 
     // 最好的参数1
@@ -448,6 +448,10 @@ extern "C"
                 chassis_move.chassis_wheel[1].wheel_T = 0.0f;
             }
 
+#if CHASSIS_FORCE_ALL_MOTOR_ZERO_OUTPUT
+            chassis_zero_output(&chassis_move);
+#endif
+
             for (int i = 0; i < 4; i++)
             {
                 chassis_move.chassis_joint[i].chassis_joint_measure->Joint_MIT_Control(0, 0, 0, 0, chassis_move.chassis_joint[i].joint_T);
@@ -659,9 +663,6 @@ extern "C"
         ramp_init(&chassis_move_init->chassis_left_control.init_angle_ramp, CHASSIS_CONTROL_TIME, 2.0f * PI + 1.0f, -1.0f);
         ramp_init(&chassis_move_init->chassis_right_control.init_angle_ramp, CHASSIS_CONTROL_TIME, 2.0f * PI + 1.0f, -1.0f);
 
-        /* 小陀螺旋转速度缩放 */
-        chassis_move_init->chassis_spin_change_sen = CHASSIS_SPIN_LOW_SPEED;
-
         /* 底盘默认状态 */
         chassis_move_init->state = CHASSIS_STOP;
         chassis_move_init->last_state = CHASSIS_STOP;
@@ -798,10 +799,10 @@ extern "C"
          * PART1.  本部分代码获取控制设定值，并根据当前行为状态计算机器人速度/角速度/腿长目标
          */
 
-        static fp32 chassis_v_set = 0.0f, chassis_body_yaw_err = 0.0f, chassis_leg_set = 0.0f, chassis_d_yaw_set = 0.0f;
+        static fp32 chassis_v_set = 0.0f, chassis_yaw_set = 0.0f, chassis_leg_set = 0.0f, chassis_d_yaw_set = 0.0f;
 
         /* 获取三个控制设置值 */
-        chassis_behaviour_control_set(&chassis_v_set, &chassis_body_yaw_err, &chassis_d_yaw_set, &chassis_leg_set, chassis_move_control);
+        chassis_behaviour_control_set(&chassis_v_set, &chassis_yaw_set, &chassis_d_yaw_set, &chassis_leg_set, chassis_move_control);
 
         chassis_move_control->chassis_d_yaw_kinematic = chassis_calc_kinematic_d_yaw(chassis_move_control);
         chassis_move_control->chassis_d_yaw_imu = chassis_get_imu_d_yaw(chassis_move_control);
@@ -814,8 +815,9 @@ extern "C"
             chassis_move_control->chassis_yaw = chassis_move_control->chassis_gimbal_data->chassis_relative_angle;
             chassis_move_control->chassis_v_set = chassis_v_set;
             chassis_move_control->chassis_x_set += chassis_move_control->chassis_v_set * chassis_move_control->dt;
-            chassis_move_control->chassis_yaw_set = chassis_move_control->chassis_yaw + chassis_body_yaw_err;
-            chassis_move_control->chassis_yaw_err = chassis_body_yaw_err;
+            chassis_move_control->chassis_yaw_set = chassis_yaw_set;
+            chassis_move_control->chassis_yaw_err = shortest_angle_error(chassis_move_control->chassis_yaw_set,
+                                                                         chassis_move_control->chassis_yaw);
             chassis_move_control->chassis_d_yaw_set = chassis_d_yaw_set;
             chassis_move_control->chassis_leg_set = chassis_leg_set;
         }

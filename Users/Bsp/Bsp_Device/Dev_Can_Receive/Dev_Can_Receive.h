@@ -42,7 +42,15 @@
 #define T_MIN -40.0f
 #define T_MAX 40.0f
 
-#define YAW_MECHANICAL_ZERO 0.32f
+// 云台 YAW 轴“朝前”机械中值（rad）。
+// 相对角计算: relative_yaw = wrapToPi(yaw_motor_pos - YAW_CENTER_POS_RAD)
+#define YAW_CENTER_POS_RAD -0.5f
+
+// yaw 电机挂在底盘 CAN3 时的反馈 ID（按实际电机 ID 调整）。
+#define CHASSIS_YAW_MOTOR_CAN_ID 0x11
+
+// yaw 电机角度方向修正（若方向相反改为 -1.0f）。
+#define CHASSIS_YAW_MOTOR_DIR_SIGN 1.0f
 
 /** * @brief 结构体 */
 typedef enum
@@ -55,6 +63,7 @@ typedef enum
     CAN_CHASSIS_WHEEL_ALL_ID = 0x200,
     CAN_CHASSIS_WHEEL_LEFT_ID = 0x201,
     CAN_CHASSIS_WHEEL_RIGHT_ID = 0x202,
+    CAN_CHASSIS_YAW_MOTOR_ID = CHASSIS_YAW_MOTOR_CAN_ID,
 
     GIMBAL_ID = 0x302,
     CAN_VT_ID = 0x303,
@@ -72,19 +81,6 @@ typedef enum
     CHASSIS_MODE_RESERVED_2 = 6,
     CHASSIS_MODE_UI_RESET = 7,
 } chassis_mode_e;
-
-typedef enum
-{
-    CHASSIS_DIRECTION_STOP = 0,
-    CHASSIS_DIRECTION_FRONT = 1,
-    CHASSIS_DIRECTION_BACK = 2,
-    CHASSIS_DIRECTION_LEFT = 3,
-    CHASSIS_DIRECTION_RIGHT = 4,
-    CHASSIS_DIRECTION_FRONT_LEFT = 5,
-    CHASSIS_DIRECTION_FRONT_RIGHT = 6,
-    CHASSIS_DIRECTION_BACK_LEFT = 7,
-    CHASSIS_DIRECTION_BACK_RIGHT = 8,
-} chassis_direction_intent_e;
 
 typedef enum
 {
@@ -315,7 +311,7 @@ class Gimbal_Data
 public:
     fp32 v_tmp;
     fp32 chassis_relative_angle;
-    chassis_direction_intent_e direction_intent;
+    fp32 yaw_set;
     uint8_t gyro_enable;
     uint8_t protocol_valid;
     Fric_State_e fric_state;
@@ -351,16 +347,18 @@ extern Joint_Motor_Measure chassis_joint[4];
 
 extern Wheel_Motor_Measure chassis_wheel[2];
 
+extern Joint_Motor_Measure chassis_yaw_motor;
+
 extern Gimbal_Data gimbal_data;
 
 typedef struct
 {
     int16_t v_set;
-    uint8_t direction_intent;
+    uint8_t reserved;
     uint8_t gyro_enable;
     uint8_t mode_byte;
     uint8_t fric_state;
-    int16_t relative_angle;
+    int16_t turn_set;
 } gimbal_can_cmd_frame_t;
 
 inline bool_t chassis_mode_is_valid(const uint8_t mode_byte)
@@ -368,21 +366,16 @@ inline bool_t chassis_mode_is_valid(const uint8_t mode_byte)
     return mode_byte <= CHASSIS_MODE_UI_RESET;
 }
 
-inline bool_t chassis_direction_is_valid(const uint8_t direction_intent)
-{
-    return direction_intent <= CHASSIS_DIRECTION_BACK_RIGHT;
-}
-
 /**
  * @brief          接收云台数据并解包
  * @param[in]      received_data: 云台发送的8字节CAN数据
  * @retval         none
  * @note           已在FDCAN中断中接入，新双板协议:
- *                 [0..1] v_set(int16), [2] direction_intent(uint8),
+ *                 [0..1] v_set(int16), [2] reserved(uint8),
  *                 [3] gyro_enable(uint8), [4] mode_byte(uint8),
- *                 [5] fric_state(uint8), [6..7] relative_angle(int16).
- *                 若 direction/mode/gyro 编码异常，则进入安全态:
- *                 mode=NO_FORCE, direction=STOP, gyro=0, v_set=0.
+ *                 [5] fric_state(uint8), [6..7] turn_set(int16, rad*1000).
+ *                 若 mode 编码异常，则进入安全态:
+ *                 mode=NO_FORCE, v_set=0.
  */
 inline void CAN_cmd_gimbal_receive(const uint8_t *received_data)
 {
@@ -393,17 +386,14 @@ inline void CAN_cmd_gimbal_receive(const uint8_t *received_data)
 
     gimbal_can_cmd_frame_t frame{};
     frame.v_set = static_cast<int16_t>((received_data[0] << 8) | received_data[1]);
-    frame.direction_intent = received_data[2];
+    frame.reserved = received_data[2];
     frame.gyro_enable = received_data[3];
     frame.mode_byte = received_data[4];
     frame.fric_state = received_data[5];
-    frame.relative_angle = static_cast<int16_t>((received_data[6] << 8) | received_data[7]);
+    frame.turn_set = static_cast<int16_t>((received_data[6] << 8) | received_data[7]);
 
     const bool_t mode_valid = chassis_mode_is_valid(frame.mode_byte);
-    const bool_t direction_valid = chassis_direction_is_valid(frame.direction_intent);
-    const bool_t gyro_valid = frame.gyro_enable <= 1U;
-
-    gimbal_data.protocol_valid = static_cast<uint8_t>(mode_valid && direction_valid && gyro_valid);
+    gimbal_data.protocol_valid = static_cast<uint8_t>(mode_valid);
 
     const Fric_State_e fric_state =
         (frame.fric_state == FRIC_OFF || frame.fric_state == FRIC_ON ||
@@ -414,29 +404,27 @@ inline void CAN_cmd_gimbal_receive(const uint8_t *received_data)
             : FRIC_ERROR;
 
     gimbal_data.v_tmp = static_cast<fp32>(frame.v_set) / 1000.0f;
-    gimbal_data.direction_intent =
-        direction_valid ? static_cast<chassis_direction_intent_e>(frame.direction_intent) : CHASSIS_DIRECTION_STOP;
-    gimbal_data.gyro_enable = gyro_valid ? frame.gyro_enable : 0U;
+    gimbal_data.yaw_set = static_cast<fp32>(frame.turn_set) / 1000.0f;
+    if (gimbal_data.yaw_set > PI)
+    {
+        gimbal_data.yaw_set = PI;
+    }
+    else if (gimbal_data.yaw_set < -PI)
+    {
+        gimbal_data.yaw_set = -PI;
+    }
+    gimbal_data.gyro_enable = 0U;
     gimbal_data.chassis_behaviour_mode =
         mode_valid ? static_cast<chassis_mode_e>(frame.mode_byte) : CHASSIS_MODE_NO_FORCE;
-
-    gimbal_data.chassis_relative_angle = static_cast<fp32>(frame.relative_angle) / 1000.0f;
-    if (gimbal_data.chassis_relative_angle > PI)
-    {
-        gimbal_data.chassis_relative_angle = PI;
-    }
-    else if (gimbal_data.chassis_relative_angle < -PI)
-    {
-        gimbal_data.chassis_relative_angle = -PI;
-    }
+    (void)frame.reserved;
+    (void)frame.gyro_enable;
 
     gimbal_data.fric_state = fric_state;
 
     if (gimbal_data.protocol_valid == 0U)
     {
         gimbal_data.v_tmp = 0.0f;
-        gimbal_data.direction_intent = CHASSIS_DIRECTION_STOP;
-        gimbal_data.gyro_enable = 0U;
+        gimbal_data.yaw_set = gimbal_data.chassis_relative_angle;
         gimbal_data.chassis_behaviour_mode = CHASSIS_MODE_NO_FORCE;
     }
 }

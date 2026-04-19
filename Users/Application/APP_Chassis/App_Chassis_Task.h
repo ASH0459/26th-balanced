@@ -103,7 +103,7 @@
 #define YAW_PID_KP 30.0f
 #define YAW_PID_KI 0.0f
 #define YAW_PID_KD 10.0f
-#define YAW_PID_MAX_OUT 30.0f
+#define YAW_PID_MAX_OUT 0.0f
 #define YAW_PID_MAX_IOUT 0.0f
 
 // 左右腿roll轴PID
@@ -222,10 +222,6 @@
 
 // 底盘3508最大can发送电流值
 #define MAX_MOTOR_CAN_CURRENT 16000.0f
-
-// 底盘小陀螺按键
-#define GYROSCOPE_KEY KEY_PRESSED_OFFSET_SHIFT
-#define GYROSCOPE_OFF_KEY KEY_PRESSED_OFFSET_B
 
 // 底盘前后左右控制按键
 #define CHASSIS_FRONT_KEY KEY_PRESSED_OFFSET_W
@@ -466,8 +462,6 @@ public:
     fp32 vaEstimateKF_Q_VA[4] = {0.001f, 0.0f, 0.0f, 0.001f}; // 配置过程噪声协方差 Q
     fp32 vaEstimateKF_R_VA[4] = {0.01f, 0.0f, 0.0f, 0.5f};    // 配置测量噪声协方差 R
     fp32 vaEstimateKF_H_VA[4] = {1.0f, 0.0f, 0.0f, 1.0f};     // 配置测量矩阵 H（直接测量两个状态）
-
-    fp32 chassis_spin_change_sen; // 底盘旋转速度
 };
 
 extern Chassis_Move chassis_move;

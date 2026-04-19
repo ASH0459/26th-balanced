@@ -20,16 +20,6 @@
 // 行为层 v_set 目标的主限幅。
 #define CHASSIS_KEY_MAX_SPEED 2.0f
 
-/* -------------------- 小陀螺基础参数 -------------------- */
-// 小陀螺角速度下限。
-#define CHASSIS_SPIN_LOW_SPEED 1.5f
-
-// 小陀螺基础角速度（线速度耦合衰减前）。
-#define CHASSIS_SPIN_MAIN_SPEED 50.0f
-
-// 耦合系数：线速度越高，小陀螺目标角速度越低。
-#define CHASSIS_SPIN_LOW_SEN 0.6f
-
 /* -------------------- 腿长斜坡参数 -------------------- */
 // 跨步/状态切换时的通用腿长变化速率。
 #define CHASSIS_LEG_STEP_RAMP_SPEED 0.15f
@@ -53,6 +43,10 @@
 // 1: 腿部仅保留垂直支持力（禁用 Tbl_t 横向输出）并关闭轮子输出。
 // 0: 保持轮腿协同输出。
 #define CHASSIS_VERTICAL_SUPPORT_ONLY_MODE 0
+
+// 1: 强制所有底盘电机输出清零（关节 + 轮子），用于紧急停机/联调保护。
+// 0: 使用正常控制输出。
+#define CHASSIS_FORCE_ALL_MOTOR_ZERO_OUTPUT 0
 
 /* -------------------- 腿部水平输出角度衰减 -------------------- */
 // 1: 按摆杆角度衰减 Tbl_t，摆杆角越大，水平输出越小。
@@ -84,19 +78,9 @@
 #define CHASSIS_INIT_STAND_WHEEL_SCALE_MIN 0.2f
 #define CHASSIS_INIT_STAND_WHEEL_SCALE_MAX 1.0f
 
-/* -------------------- 行为层 yaw/朝向切换参数 -------------------- */
+/* -------------------- 行为层 yaw 与速度参数 -------------------- */
 // 组合 yaw 指令输出的全局角速度保护上限。
-#define CHASSIS_SMALL_GYRO_D_YAW_MAX 1000.0f
-
-// 小陀螺角速度斜坡：开启加速率 / 关闭减速率。
-#define CHASSIS_SMALL_GYRO_RAMP_UP_RATE 24.0f
-#define CHASSIS_SMALL_GYRO_RAMP_DOWN_RATE 18.0f
-
-// 方向切换时，heading 目标角的斜坡速率。
-#define CHASSIS_DIRECTION_YAW_RAMP_RATE 4.0f
-
-// heading 斜坡生效时的 yaw 角速度限幅。
-#define CHASSIS_DIRECTION_D_YAW_MAX 8.0f
+#define CHASSIS_D_YAW_MAX 1000.0f
 
 // 行为层 v_set 滤波使用的线速度加速/制动斜坡。
 #define CHASSIS_DIRECTION_VX_ACCEL 1.0f
@@ -105,18 +89,6 @@
 // v_set 加速阶段增益: 先急后缓（起步用 FAST，接近目标逐步过渡到 SLOW）。
 #define CHASSIS_DIRECTION_VX_ACCEL_FAST_GAIN 2.5f
 #define CHASSIS_DIRECTION_VX_ACCEL_SLOW_GAIN 0.3f
-
-// 方向解算迟滞，避免 180 度附近频繁翻转。
-#define CHASSIS_HEADING_SWITCH_HYSTERESIS 0.03f
-
-// 侧向朝向判定阈值（用于侧对到前后缓转锁存）。
-#define CHASSIS_SIDE_HEADING_THRESHOLD 0.35f
-
-// 侧对到前后缓转锁存的释放阈值。
-#define CHASSIS_FRONT_BACK_RAMP_RELEASE_ERR 0.12f
-
-// 方向向量归一化时的零向量保护阈值。
-#define CHASSIS_DIRECTION_EPSILON 1e-6f
 
 /* -------------------- 兼容保留（当前代码未引用） -------------------- */
 // 以下参数在当前控制链路中未被代码直接使用，保留用于旧逻辑兼容或后续扩展。
@@ -129,7 +101,7 @@
 #define NORMAL_MAX_CHASSIS_SPEED_X 4.5f
 #define NORMAL_MAX_CHASSIS_SPEED_Y 4.5f
 
-// 旧版小陀螺模式线速度边界。
+// 旧版旋转模式线速度边界。
 #define ROTATION_MAX_CHASSIS_SPEED_V 0.5f
 #define ROTATION_MIN_CHASSIS_SPEED_V -0.5f
 

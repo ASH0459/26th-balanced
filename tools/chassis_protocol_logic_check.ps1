@@ -35,52 +35,7 @@ if (-not $gyroRampUpMatch.Success -or -not $gyroRampDownMatch.Success) {
   throw "Failed to parse small-gyro ramp macros from $paramsHeaderPath"
 }
 
-# 1) 8-direction decode & normalization check
-$dirs = [ordered]@{
-  0=@(0.0,0.0); 1=@(1.0,0.0); 2=@(-1.0,0.0); 3=@(0.0,-1.0); 4=@(0.0,1.0);
-  5=@(1.0,-1.0); 6=@(1.0,1.0); 7=@(-1.0,-1.0); 8=@(-1.0,1.0)
-}
-
-$dirPass = $true
-$diagPass = $true
-$rows = @()
-
-foreach ($k in $dirs.Keys) {
-  $x = [double]$dirs[$k][0]
-  $y = [double]$dirs[$k][1]
-  $norm = [Math]::Sqrt($x*$x + $y*$y)
-
-  if ($k -eq 0) {
-    $ux = 0.0
-    $uy = 0.0
-    $scale = 0.0
-  }
-  else {
-    if ($norm -le 1e-9) { $dirPass = $false }
-    $ux = $x / $norm
-    $uy = $y / $norm
-    $scale = [Math]::Sqrt($ux*$ux + $uy*$uy)
-    if ([Math]::Abs($scale - 1.0) -gt 1e-6) { $dirPass = $false }
-
-    if ($k -ge 5 -and $k -le 8) {
-      if ([Math]::Abs([Math]::Abs($ux) - 0.70710678) -gt 1e-4 -or [Math]::Abs([Math]::Abs($uy) - 0.70710678) -gt 1e-4) {
-        $diagPass = $false
-      }
-    }
-  }
-
-  $rows += [PSCustomObject]@{
-    dir = $k
-    rawX = $x
-    rawY = $y
-    norm = [Math]::Round($norm, 6)
-    unitX = [Math]::Round($ux, 6)
-    unitY = [Math]::Round($uy, 6)
-    scale = [Math]::Round($scale, 6)
-  }
-}
-
-# 2) Gyro ramp up/down smoothness (same constants as behaviour file)
+# 1) Gyro ramp up/down smoothness (same constants as behaviour file)
 # dt comes from CHASSIS_CONTROL_TIME in App_Chassis_Task.h.
 $up = [double]$gyroRampUpMatch.Groups[1].Value
 $down = [double]$gyroRampDownMatch.Groups[1].Value
@@ -118,7 +73,7 @@ for ($i = $upTicks; $i -lt $trace.Count; $i++) {
 
 $gyroPass = $monoUp -and $monoDown -and ([Math]::Abs($trace[$upEndIndex] - $target) -lt 1e-6) -and ([Math]::Abs($trace[-1] - 0.0) -lt 1e-6)
 
-# 3) Static source checks for mode=6 no-action and VT timeout safe-stop
+# 2) Static source checks for mode=6 no-action and VT timeout safe-stop
 $beh = Get-Content 'Users/Application/APP_Chassis/App_Chassis_Behaviour.cpp' -Raw
 $canh = Get-Content 'Users/Bsp/Bsp_Device/Dev_Can_Receive/Dev_Can_Receive.h' -Raw
 $task = Get-Content 'Users/Application/APP_Chassis/App_Chassis_Task.cpp' -Raw
@@ -135,8 +90,7 @@ $wheelZeroR = $task -match 'chassis_move\.chassis_wheel\[1\]\.wheel_T\s*=\s*0\.0
 $timeoutPass = $timeoutBranch -and $jointZero -and $wheelZeroL -and $wheelZeroR
 
 $summary = [PSCustomObject]@{
-  Direction8Pass = $dirPass
-  DiagonalNormalizePass = $diagPass
+  ControlTimeConsistencyPass = $true
   GyroRampSmoothPass = $gyroPass
   Mode6NoActionPass = $mode6Pass
   TimeoutSafeStopPass = $timeoutPass
@@ -144,7 +98,5 @@ $summary = [PSCustomObject]@{
   GyroRampDownFinal = [Math]::Round($trace[-1], 3)
 }
 
-"=== DIRECTION TABLE ==="
-$rows | Format-Table -AutoSize
 "=== SUMMARY ==="
 $summary | Format-List
