@@ -372,6 +372,26 @@ static fp32 chassis_update_heading_target(chassis_direction_intent_e direction_i
     return heading_target;
 }
 
+static fp32 chassis_calc_vx_accel_step(fp32 current_vx, fp32 target_vx)
+{
+    const fp32 accel_base_step = CHASSIS_DIRECTION_VX_ACCEL * CHASSIS_CONTROL_TIME;
+    const fp32 abs_target = fabsf(target_vx);
+
+    if (accel_base_step <= 1e-6f || abs_target <= 1e-6f)
+    {
+        return accel_base_step;
+    }
+
+    fp32 progress = fabsf(current_vx) / abs_target;
+    progress = float_constrain(progress, 0.0f, 1.0f);
+
+    const fp32 fast_gain = float_constrain(CHASSIS_DIRECTION_VX_ACCEL_FAST_GAIN, 0.0f, 10.0f);
+    const fp32 slow_gain = float_constrain(CHASSIS_DIRECTION_VX_ACCEL_SLOW_GAIN, 0.0f, 10.0f);
+    const fp32 gain = slow_gain + (1.0f - progress) * (fast_gain - slow_gain);
+
+    return accel_base_step * gain;
+}
+
 static fp32 chassis_update_vx_ramp(fp32 target_vx, bool_t hard_reset)
 {
     static ramp_function_source_t vx_ramp;
@@ -384,7 +404,8 @@ static fp32 chassis_update_vx_ramp(fp32 target_vx, bool_t hard_reset)
     }
 
     const fp32 target = clamp_abs_fp32(target_vx, CHASSIS_KEY_MAX_SPEED);
-    const fp32 accel = (target * vx_ramp.out < 0.0f) ? CHASSIS_DIRECTION_VX_BRAKE_ACCEL : CHASSIS_DIRECTION_VX_ACCEL;
+    const fp32 brake_step = CHASSIS_DIRECTION_VX_BRAKE_ACCEL * CHASSIS_CONTROL_TIME;
+    const fp32 current = vx_ramp.out;
 
     if (hard_reset)
     {
@@ -394,20 +415,25 @@ static fp32 chassis_update_vx_ramp(fp32 target_vx, bool_t hard_reset)
 
     if (fabsf(target) < 1e-6f)
     {
-        vx_ramp.out = chassis_ramp_to_target(vx_ramp.out, 0.0f, CHASSIS_DIRECTION_VX_BRAKE_ACCEL * CHASSIS_CONTROL_TIME);
+        vx_ramp.out = chassis_ramp_to_target(vx_ramp.out, 0.0f, brake_step);
     }
-    else if (vx_ramp.out < target)
+    else if (current * target < 0.0f)
     {
-        ramp_calc(&vx_ramp, accel);
-        if (vx_ramp.out > target)
+        // 方向反转时，先用刹车斜坡减到0，再用加速斜坡进入反向目标，避免“反向起步过猛”。
+        vx_ramp.out = chassis_ramp_to_target(current, 0.0f, brake_step);
+
+        if (fabsf(vx_ramp.out) <= 1e-6f)
         {
-            vx_ramp.out = target;
+            const fp32 accel_step = chassis_calc_vx_accel_step(vx_ramp.out, target);
+            vx_ramp.out = chassis_ramp_to_target(vx_ramp.out, target, accel_step);
         }
     }
-    else if (vx_ramp.out > target)
+    else
     {
-        ramp_calc(&vx_ramp, -accel);
-        if (vx_ramp.out < target)
+        const fp32 step = (fabsf(target) < fabsf(current)) ? brake_step : chassis_calc_vx_accel_step(current, target);
+        vx_ramp.out = chassis_ramp_to_target(vx_ramp.out, target, step);
+
+        if (fabsf(vx_ramp.out - target) <= 1e-6f)
         {
             vx_ramp.out = target;
         }

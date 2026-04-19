@@ -39,7 +39,7 @@
 
 /* -------------------- 初始化自扶正参数 -------------------- */
 // 初始化自扶正阶段的腿部旋转速度设定。
-#define CHASSIS_INIT_LEVEL_ROTATE_SPEED 0.5f
+#define CHASSIS_INIT_LEVEL_ROTATE_SPEED 0.8f
 
 // 初始化自扶正阶段的腿部旋转速度硬限幅。
 #define CHASSIS_INIT_LEVEL_SPEED_LIMIT 1.5f
@@ -99,8 +99,12 @@
 #define CHASSIS_DIRECTION_D_YAW_MAX 8.0f
 
 // 行为层 v_set 滤波使用的线速度加速/制动斜坡。
-#define CHASSIS_DIRECTION_VX_ACCEL 4.0f
-#define CHASSIS_DIRECTION_VX_BRAKE_ACCEL 4.0f
+#define CHASSIS_DIRECTION_VX_ACCEL 1.0f
+#define CHASSIS_DIRECTION_VX_BRAKE_ACCEL 3.0f
+
+// v_set 加速阶段增益: 先急后缓（起步用 FAST，接近目标逐步过渡到 SLOW）。
+#define CHASSIS_DIRECTION_VX_ACCEL_FAST_GAIN 2.5f
+#define CHASSIS_DIRECTION_VX_ACCEL_SLOW_GAIN 0.3f
 
 // 方向解算迟滞，避免 180 度附近频繁翻转。
 #define CHASSIS_HEADING_SWITCH_HYSTERESIS 0.03f
