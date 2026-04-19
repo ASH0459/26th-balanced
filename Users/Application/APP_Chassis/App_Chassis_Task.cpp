@@ -98,27 +98,27 @@ extern "C"
 
     fp32 LQR_A[10][10] = {
         {0, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, -12.689, 0, -12.689, 0, 0, 0},
+        {0, 0, 0, 0, -18.446, 0, -18.446, 0, 0, 0},
         {0, 0, 0, 1, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, -2.5237, 0, 2.5237, 0, 0, 0},
+        {0, 0, 0, 0, -18.915, 0, 18.915, 0, 0, 0},
         {0, 0, 0, 0, 0, 1, 0, 0, 0, 0},
-        {0, 0, 0, 0, 143.64, 0, 8.6614, 0, 0, 0},
+        {0, 0, 0, 0, 230.26, 0, -5.6636, 0, 0, 0},
         {0, 0, 0, 0, 0, 0, 0, 1, 0, 0},
-        {0, 0, 0, 0, 8.6614, 0, 143.64, 0, 0, 0},
+        {0, 0, 0, 0, -5.6636, 0, 230.26, 0, 0, 0},
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-        {0, 0, 0, 0, -19.944, 0, -19.944, 0, 59.245, 0},
+        {0, 0, 0, 0, -28.655, 0, -28.655, 0, 97.234, 0},
     };
     fp32 LQR_B[10][4] = {
         {0, 0, 0, 0},
-        {4.0507, 4.0507, -0.80379, -0.80379},
+        {3.7721, 3.7721, -0.82511, -0.82511},
         {0, 0, 0, 0},
-        {-4.7198, 4.7198, -0.15986, 0.15986},
+        {-25.279, 25.279, -0.8461, 0.8461},
         {0, 0, 0, 0},
-        {-34.465, -3.4395, 9.0987, 0.54864},
+        {-18.183, -20.181, 10.3, -0.25335},
         {0, 0, 0, 0},
-        {-3.4395, -34.465, 0.54864, 9.0987},
+        {-20.181, -18.183, -0.25335, 10.3},
         {0, 0, 0, 0},
-        {-0.42712, -0.42712, -4.0454, -4.0454},
+        {-1.2642, -1.2642, -4.0638, -4.0638},
     };
 
 /* 消除DT7摇杆死区 */
@@ -149,6 +149,72 @@ extern "C"
     static inline fp32 chassis_select_d_theta_signal(const leg_control *leg, uint8_t filter_source)
     {
         return (filter_source == CHASSIS_FILTER_LOWPASS) ? leg->d_theta_l_lowpass : leg->d_theta_l_filter;
+    }
+
+    static inline fp32 chassis_calc_leg_tbl_attenuation_scale(fp32 abs_theta_l)
+    {
+#if CHASSIS_LEG_TBL_ANGLE_ATTENUATION_ENABLE
+        return 1.0f / (1.0f + expf(CHASSIS_LEG_TBL_ANGLE_ATTENUATION_SHARPNESS *
+                                   (abs_theta_l - CHASSIS_LEG_TBL_ANGLE_ATTENUATION_CENTER)));
+#else
+    (void)abs_theta_l;
+    return 1.0f;
+#endif
+    }
+
+    static inline void chassis_apply_leg_tbl_angle_attenuation(Chassis_Move *chassis_move_control_loop)
+    {
+#if CHASSIS_LEG_TBL_ANGLE_ATTENUATION_ENABLE
+        const fp32 abs_theta_l = fabsf(chassis_select_theta_signal(&chassis_move_control_loop->chassis_left_control, CHASSIS_LEFT_THETA_FILTER_SOURCE));
+        const fp32 scale_l = chassis_calc_leg_tbl_attenuation_scale(abs_theta_l);
+        chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t *= scale_l;
+
+        const fp32 abs_theta_r = fabsf(chassis_select_theta_signal(&chassis_move_control_loop->chassis_right_control, CHASSIS_RIGHT_THETA_FILTER_SOURCE));
+        const fp32 scale_r = chassis_calc_leg_tbl_attenuation_scale(abs_theta_r);
+        chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t *= scale_r;
+#else
+    (void)chassis_move_control_loop;
+#endif
+    }
+
+    static inline fp32 chassis_calc_init_stand_bias_strength(fp32 abs_theta_l)
+    {
+        return 1.0f / (1.0f + expf(-CHASSIS_INIT_STAND_DRIVE_BIAS_SHARPNESS *
+                                   (abs_theta_l - CHASSIS_INIT_STAND_DRIVE_BIAS_CENTER)));
+    }
+
+    static inline void chassis_apply_init_stand_drive_bias(Chassis_Move *chassis_move_control_loop)
+    {
+#if CHASSIS_INIT_STAND_DRIVE_BIAS_ENABLE
+        if (chassis_move_control_loop->state != CHASSIS_INIT ||
+            chassis_move_control_loop->init_phase != CHASSIS_INIT_STAND)
+        {
+            return;
+        }
+
+        const fp32 abs_theta_l = fabsf(chassis_select_theta_signal(&chassis_move_control_loop->chassis_left_control, CHASSIS_LEFT_THETA_FILTER_SOURCE));
+        const fp32 abs_theta_r = fabsf(chassis_select_theta_signal(&chassis_move_control_loop->chassis_right_control, CHASSIS_RIGHT_THETA_FILTER_SOURCE));
+
+        const fp32 bias_l = chassis_calc_init_stand_bias_strength(abs_theta_l);
+        const fp32 bias_r = chassis_calc_init_stand_bias_strength(abs_theta_r);
+
+        const fp32 leg_scale_span = CHASSIS_INIT_STAND_LEG_TBL_SCALE_MAX - CHASSIS_INIT_STAND_LEG_TBL_SCALE_MIN;
+        const fp32 wheel_scale_span = CHASSIS_INIT_STAND_WHEEL_SCALE_MAX - CHASSIS_INIT_STAND_WHEEL_SCALE_MIN;
+
+        const fp32 leg_scale_l = CHASSIS_INIT_STAND_LEG_TBL_SCALE_MIN + leg_scale_span * bias_l;
+        const fp32 leg_scale_r = CHASSIS_INIT_STAND_LEG_TBL_SCALE_MIN + leg_scale_span * bias_r;
+
+        const fp32 wheel_scale_l = CHASSIS_INIT_STAND_WHEEL_SCALE_MAX - wheel_scale_span * bias_l;
+        const fp32 wheel_scale_r = CHASSIS_INIT_STAND_WHEEL_SCALE_MAX - wheel_scale_span * bias_r;
+
+        chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t *= leg_scale_l;
+        chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t *= leg_scale_r;
+
+        chassis_move_control_loop->chassis_wheel[0].wheel_T *= wheel_scale_l;
+        chassis_move_control_loop->chassis_wheel[1].wheel_T *= wheel_scale_r;
+#else
+    (void)chassis_move_control_loop;
+#endif
     }
 
     static inline fp32 chassis_sanitize_dd_L(fp32 dd_L)
@@ -853,8 +919,6 @@ extern "C"
         // 调用WBR计算右腿和左腿的角度以及角速度，用于LQR控制
         wbr_calc(&chassis_move_update->chassis_left_control.wbr_control, chassis_move_update->dt);
         wbr_calc(&chassis_move_update->chassis_right_control.wbr_control, chassis_move_update->dt);
-        // test
-        // chassis_move_update->chassis_left_control.wbr_control.theta_l -=0.14f;
 
         // // 根据关节角度计算雅可比矩阵 用于求解关节电机扭矩
         wbr_jacobian_calc(&chassis_move_update->chassis_left_control.wbr_control);
@@ -869,8 +933,8 @@ extern "C"
         // test end
 
         // 计算腿部摆杆角速度和腿长变化速度
-        chassis_move_update->chassis_left_control.wbr_control.d_theta_l = chassis_move_update->chassis_left_control.wbr_control.J[1][0] * chassis_move_update->chassis_joint[0].chassis_joint_measure->vel - chassis_move_update->chassis_left_control.wbr_control.J[1][1] * chassis_move_update->chassis_joint[1].chassis_joint_measure->vel - *(chassis_move_update->chassis_INS_gyro + INS_GYRO_X_ADDRESS_OFFSET);
-        chassis_move_update->chassis_right_control.wbr_control.d_theta_l = -chassis_move_update->chassis_right_control.wbr_control.J[1][0] * chassis_move_update->chassis_joint[2].chassis_joint_measure->vel + chassis_move_update->chassis_right_control.wbr_control.J[1][1] * chassis_move_update->chassis_joint[3].chassis_joint_measure->vel - *(chassis_move_update->chassis_INS_gyro + INS_GYRO_X_ADDRESS_OFFSET);
+        // chassis_move_update->chassis_left_control.wbr_control.d_theta_l = chassis_move_update->chassis_left_control.wbr_control.J[1][0] * chassis_move_update->chassis_joint[0].chassis_joint_measure->vel - chassis_move_update->chassis_left_control.wbr_control.J[1][1] * chassis_move_update->chassis_joint[1].chassis_joint_measure->vel - *(chassis_move_update->chassis_INS_gyro + INS_GYRO_X_ADDRESS_OFFSET);
+        // chassis_move_update->chassis_right_control.wbr_control.d_theta_l = -chassis_move_update->chassis_right_control.wbr_control.J[1][0] * chassis_move_update->chassis_joint[2].chassis_joint_measure->vel + chassis_move_update->chassis_right_control.wbr_control.J[1][1] * chassis_move_update->chassis_joint[3].chassis_joint_measure->vel - *(chassis_move_update->chassis_INS_gyro + INS_GYRO_X_ADDRESS_OFFSET);
 
         fp32 left_dd_L_raw = chassis_sanitize_dd_L(chassis_move_update->chassis_left_control.wbr_control.dd_L);
         fp32 right_dd_L_raw = chassis_sanitize_dd_L(chassis_move_update->chassis_right_control.wbr_control.dd_L);
@@ -1071,6 +1135,9 @@ extern "C"
 
         chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t =
             (U_speed_leg_R * decay_Uspeed) + (U_yaw_leg_R * decay_Uyaw) + U_else_leg_R;
+
+        // INIT 起身站立阶段：摆杆角越大，增强腿水平输出并抑制轮子输出。
+        chassis_apply_init_stand_drive_bias(chassis_move_control_loop);
 
 #if CHASSIS_VERTICAL_SUPPORT_ONLY_MODE
         chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t = 0.0f;
@@ -1417,7 +1484,7 @@ extern "C"
         }
         else // 正常情况下支持力处理
         {
-            Chassis_Landing_Admittance_Control(chassis_move_control_loop);
+            // Chassis_Landing_Admittance_Control(chassis_move_control_loop);
 
             if (chassis_move_control_loop->chassis_left_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND && chassis_move_control_loop->chassis_right_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND)
             {
@@ -1445,6 +1512,7 @@ extern "C"
             // chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t = LQR_K[2][4] * chassis_move_control_loop->chassis_left_control.theta_l + LQR_K[2][5] * chassis_move_control_loop->chassis_left_control.d_theta_l + LQR_K[2][6] * chassis_move_control_loop->chassis_right_control.theta_l + LQR_K[2][7] * chassis_move_control_loop->chassis_right_control.d_theta_l;
 
             // chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t = LQR_K[3][4] * chassis_move_control_loop->chassis_left_control.theta_l + LQR_K[3][5] * chassis_move_control_loop->chassis_left_control.d_theta_l + LQR_K[3][6] * chassis_move_control_loop->chassis_right_control.theta_l + LQR_K[3][7] * chassis_move_control_loop->chassis_right_control.d_theta_l;
+            // chassis_apply_leg_tbl_angle_attenuation(chassis_move_control_loop);
             //  左前关节电机力矩
             chassis_move_control_loop->chassis_joint[0].joint_T = -chassis_move_control_loop->chassis_left_control.wbr_control.J[0][0] * chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t - chassis_move_control_loop->chassis_left_control.wbr_control.J[0][1] * chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t;
             // 左后关节电机力矩
@@ -1496,6 +1564,8 @@ extern "C"
                 LQR_K[3][7] * chassis_move_control_loop->chassis_right_control.d_theta_l;
 #endif
             }
+
+            chassis_apply_leg_tbl_angle_attenuation(chassis_move_control_loop);
 
             // 左前关节电机力矩
             chassis_move_control_loop->chassis_joint[0].joint_T = -chassis_move_control_loop->chassis_left_control.wbr_control.J[0][0] * chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t - chassis_move_control_loop->chassis_left_control.wbr_control.J[0][1] * chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t; //* soft_lqr_ratio;
@@ -1679,8 +1749,8 @@ extern "C"
         {
             if (chassis_init_standup->posture == CHASSIS_POSTURE_UP)
             {
-                if ((fabs(chassis_init_standup->chassis_left_control.theta_l) < 0.1) ||
-                    (fabs(chassis_init_standup->chassis_right_control.theta_l) < 0.1))
+                if ((fabs(chassis_init_standup->chassis_left_control.theta_l) < 0.2) ||
+                    (fabs(chassis_init_standup->chassis_right_control.theta_l) < 0.2))
                 {
                     chassis_init_standup->init_phase = CHASSIS_INIT_DONE;
                 }
