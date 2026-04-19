@@ -32,7 +32,7 @@
 
 /* -------------------- 腿长斜坡参数 -------------------- */
 // 跨步/状态切换时的通用腿长变化速率。
-#define CHASSIS_LEG_STEP_RAMP_SPEED 0.10f
+#define CHASSIS_LEG_STEP_RAMP_SPEED 0.15f
 
 // 跳跃空中/落地阶段的腿长恢复速率。
 #define CHASSIS_JUMP_AIRBORNE_LEG_RAMP_SPEED 0.80f
@@ -99,8 +99,8 @@
 #define CHASSIS_DIRECTION_D_YAW_MAX 8.0f
 
 // 行为层 v_set 滤波使用的线速度加速/制动斜坡。
-#define CHASSIS_DIRECTION_VX_ACCEL 4.5f
-#define CHASSIS_DIRECTION_VX_BRAKE_ACCEL 5.0f
+#define CHASSIS_DIRECTION_VX_ACCEL 4.0f
+#define CHASSIS_DIRECTION_VX_BRAKE_ACCEL 4.0f
 
 // 方向解算迟滞，避免 180 度附近频繁翻转。
 #define CHASSIS_HEADING_SWITCH_HYSTERESIS 0.03f
