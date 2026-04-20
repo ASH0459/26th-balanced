@@ -229,10 +229,19 @@ static void chassis_action_hold_control(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw
 static void chassis_normal_control(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set, fp32 *leg_set,
                                    Chassis_Move *chassis_move_rc_to_vector, fp32 target_leg_length)
 {
-    const fp32 target_vx = clamp_abs_fp32(chassis_move_rc_to_vector->chassis_gimbal_data->v_tmp,
-                                          CHASSIS_KEY_MAX_SPEED);
+    fp32 target_vx = 0;
 
-    *vx_set = chassis_update_vx_ramp(target_vx, 0);
+    if (target_vx > 0.0f) {
+        target_vx = clamp_abs_fp32(chassis_move_rc_to_vector->chassis_gimbal_data->v_tmp,
+                                          CHASSIS_KEY_MAX_SPEED);
+    }
+    else {
+        target_vx = clamp_abs_fp32(chassis_move_rc_to_vector->chassis_gimbal_data->v_tmp,
+                                          CHASSIS_KEY_BACK_MAX_SPEED);
+    }
+
+    //*vx_set = chassis_update_vx_ramp(target_vx, 0);
+    *vx_set = target_vx;
 
     const fp32 yaw_target = wrap_to_pi(chassis_move_rc_to_vector->chassis_gimbal_data->yaw_set);
     const fp32 yaw_pid = chassis_follow_yaw_control(yaw_target, chassis_move_rc_to_vector);

@@ -82,10 +82,10 @@ extern "C"
 
     // 调试用参数
     fp32 LQR_K[4][10] = {
-        {-1.7101, -2.4576, -3.4519, -0.42084, -4.8388, -0.5576, -4.5567, -0.51197, -10.572, -1.1869},
-{-1.7101, -2.4576, 3.4519, 0.42084, -4.5567, -0.51197, -4.8388, -0.5576, -10.572, -1.1869},
-{4.3511, 6.4996, -4.5934, -0.30052, 55.376, 4.7313, -15.74, -0.84813, -127.77, -19.936},
-{4.3511, 6.4996, 4.5934, 0.30052, -15.74, -0.84813, 55.376, 4.7313, -127.77, -19.936},
+        {-1.8494, -2.9785, -6.1156, -0.56997, -5.961, -0.87399, -5.6496, -0.79925, -17.196, -1.8607},
+{-1.8494, -2.9785, 6.1156, 0.56997, -5.6496, -0.79925, -5.961, -0.87399, -17.196, -1.8607},
+{8.1228, 13.873, -4.4553, -0.27176, 88.423, 15.371, -15.191, -2.3958, -220.02, -25.343},
+{8.1228, 13.873, 4.4553, 0.27176, -15.191, -2.3958, 88.423, 15.371, -220.02, -25.343},
     };
 
     // 最好的参数1
@@ -815,6 +815,15 @@ extern "C"
             chassis_move_control->chassis_yaw = chassis_move_control->chassis_gimbal_data->chassis_relative_angle;
             chassis_move_control->chassis_v_set = chassis_v_set;
             chassis_move_control->chassis_x_set += chassis_move_control->chassis_v_set * chassis_move_control->dt;
+            const fp32 MAX_X_ERR = 2.0f;
+            if (chassis_move_control->chassis_x_set - chassis_move_control->x_filter > MAX_X_ERR)
+            {
+                chassis_move_control->chassis_x_set = chassis_move_control->x_filter + MAX_X_ERR;
+            }
+            else if (chassis_move_control->chassis_x_set - chassis_move_control->x_filter < -MAX_X_ERR)
+            {
+                chassis_move_control->chassis_x_set = chassis_move_control->x_filter - MAX_X_ERR;
+            }
             chassis_move_control->chassis_yaw_set = chassis_yaw_set;
             chassis_move_control->chassis_yaw_err = shortest_angle_error(chassis_move_control->chassis_yaw_set,chassis_move_control->chassis_yaw);
             chassis_move_control->chassis_d_yaw_set = chassis_d_yaw_set;

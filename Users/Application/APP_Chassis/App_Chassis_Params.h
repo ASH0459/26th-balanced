@@ -18,7 +18,8 @@
 
 /* -------------------- 指令速度配置 -------------------- */
 // 行为层 v_set 目标的主限幅。
-#define CHASSIS_KEY_MAX_SPEED 2.0f
+#define CHASSIS_KEY_MAX_SPEED 2.3f
+#define CHASSIS_KEY_BACK_MAX_SPEED 1.5f
 
 /* -------------------- 腿长斜坡参数 -------------------- */
 // 跨步/状态切换时的通用腿长变化速率。
@@ -87,7 +88,7 @@
 #define CHASSIS_DIRECTION_VX_BRAKE_ACCEL 3.0f
 
 // v_set 加速阶段增益: 先急后缓（起步用 FAST，接近目标逐步过渡到 SLOW）。
-#define CHASSIS_DIRECTION_VX_ACCEL_FAST_GAIN 8.0f
+#define CHASSIS_DIRECTION_VX_ACCEL_FAST_GAIN 10.0f
 #define CHASSIS_DIRECTION_VX_ACCEL_SLOW_GAIN 0.5f
 
 /* -------------------- 兼容保留（当前代码未引用） -------------------- */
