@@ -212,7 +212,7 @@ static fp32 chassis_follow_yaw_control(const fp32 target_relative_yaw,
     const fp32 current_relative_yaw = chassis_move_rc_to_vector->chassis_gimbal_data->chassis_relative_angle;
     const fp32 body_yaw_err = shortest_angle_error(target_relative_yaw, current_relative_yaw);
 
-    return PID_Calc(&chassis_move_rc_to_vector->chassis_angle_pid, body_yaw_err, 0.0f);
+    return PID_Calc(&chassis_move_rc_to_vector->chassis_angle_pid, 0.0f, body_yaw_err);
 }
 
 static void chassis_action_hold_control(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set, fp32 *leg_set,

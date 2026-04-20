@@ -816,8 +816,7 @@ extern "C"
             chassis_move_control->chassis_v_set = chassis_v_set;
             chassis_move_control->chassis_x_set += chassis_move_control->chassis_v_set * chassis_move_control->dt;
             chassis_move_control->chassis_yaw_set = chassis_yaw_set;
-            chassis_move_control->chassis_yaw_err = shortest_angle_error(chassis_move_control->chassis_yaw_set,
-                                                                         chassis_move_control->chassis_yaw);
+            chassis_move_control->chassis_yaw_err = shortest_angle_error(chassis_move_control->chassis_yaw_set,chassis_move_control->chassis_yaw);
             chassis_move_control->chassis_d_yaw_set = chassis_d_yaw_set;
             chassis_move_control->chassis_leg_set = chassis_leg_set;
         }
@@ -1092,7 +1091,8 @@ extern "C"
         fp32 x_err = -chassis_move_control_loop->x_filter + chassis_move_control_loop->chassis_x_set;
         fp32 v_err = -chassis_move_control_loop->v_filter + chassis_move_control_loop->chassis_v_set;
         fp32 yaw_err = chassis_is_yaw_lqr_state(chassis_move_control_loop->state) ? chassis_move_control_loop->chassis_yaw_err : 0.0f;
-        fp32 dyaw_err = chassis_is_yaw_lqr_state(chassis_move_control_loop->state) ? chassis_move_control_loop->chassis_d_yaw - chassis_move_control_loop->chassis_d_yaw_set : 0.0f;
+        fp32 dyaw_err = chassis_is_yaw_lqr_state(chassis_move_control_loop->state) ? chassis_move_control_loop->chassis_d_yaw_set-
+        chassis_move_control_loop->chassis_d_yaw : 0.0f;
 
         // 2. 提取平动和旋转的控制分量
         fp32 U_speed = LQR_K[0][0] * x_err + LQR_K[0][1] * v_err;
@@ -1118,6 +1118,8 @@ extern "C"
 
         fp32 decay_Uspeed = WL_PowerManager.getDecayUspeed();
         fp32 decay_Uyaw = WL_PowerManager.getDecayUyaw();
+        // decay_Uspeed = 1.0f;
+        // decay_Uyaw = 1.0f;
 
         // 5. 重新合成最终的安全轮毂力矩
         chassis_move_control_loop->chassis_wheel[0].wheel_T = (U_speed * decay_Uspeed) + (U_yaw * decay_Uyaw) + U_else_L;
