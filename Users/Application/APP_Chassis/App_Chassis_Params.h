@@ -83,12 +83,12 @@
 #define CHASSIS_D_YAW_MAX 1000.0f
 
 // 行为层 v_set 滤波使用的线速度加速/制动斜坡。
-#define CHASSIS_DIRECTION_VX_ACCEL 1.0f
+#define CHASSIS_DIRECTION_VX_ACCEL 0.5f
 #define CHASSIS_DIRECTION_VX_BRAKE_ACCEL 3.0f
 
 // v_set 加速阶段增益: 先急后缓（起步用 FAST，接近目标逐步过渡到 SLOW）。
-#define CHASSIS_DIRECTION_VX_ACCEL_FAST_GAIN 2.5f
-#define CHASSIS_DIRECTION_VX_ACCEL_SLOW_GAIN 0.3f
+#define CHASSIS_DIRECTION_VX_ACCEL_FAST_GAIN 8.0f
+#define CHASSIS_DIRECTION_VX_ACCEL_SLOW_GAIN 0.5f
 
 /* -------------------- 兼容保留（当前代码未引用） -------------------- */
 // 以下参数在当前控制链路中未被代码直接使用，保留用于旧逻辑兼容或后续扩展。

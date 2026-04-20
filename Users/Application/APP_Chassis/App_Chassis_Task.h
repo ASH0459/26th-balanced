@@ -100,10 +100,10 @@
 #define CHASSIS_INIT_LEVEL_SYNC_MIN_RATIO 0.0f // 机体未水平时两条腿的同步旋转最小速度比例
 
 // yaw轴跟随PID
-#define YAW_PID_KP 10.0f
+#define YAW_PID_KP 30.0f
 #define YAW_PID_KI 0.0f
 #define YAW_PID_KD 10.0f
-#define YAW_PID_MAX_OUT 10.0f
+#define YAW_PID_MAX_OUT 30.0f
 #define YAW_PID_MAX_IOUT 0.0f
 
 // 左右腿roll轴PID
@@ -113,7 +113,7 @@
 #define ROLL_PID_MAX_OUT 200.0f
 #define ROLL_PID_MAX_IOUT 0.0f
 
-#define CHASSIS_X_BACK -0.1f
+#define CHASSIS_X_BACK 0.1f
 // 左右腿长度PID
 #define LEG_PID_KP 2500.0f
 #define LEG_PID_KI 0.0f
