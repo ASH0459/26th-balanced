@@ -199,6 +199,26 @@ static fp32 chassis_update_vx_ramp(fp32 target_vx, bool_t hard_reset)
     return vx_ramp.out;
 }
 
+static fp32 chassis_update_small_gyro_d_yaw(bool_t small_gyro_enable, bool_t hard_reset)
+{
+    static fp32 small_gyro_d_yaw = 0.0f;
+    const fp32 target_d_yaw = clamp_abs_fp32(CHASSIS_SMALL_GYRO_D_YAW_SET, CHASSIS_D_YAW_MAX);
+
+    if (hard_reset)
+    {
+        small_gyro_d_yaw = 0.0f;
+        return small_gyro_d_yaw;
+    }
+
+    const fp32 ramp_rate = fabsf(small_gyro_enable ? CHASSIS_SMALL_GYRO_RAMP_UP_RATE
+                                                   : CHASSIS_SMALL_GYRO_RAMP_DOWN_RATE);
+    const fp32 max_step = ramp_rate * CHASSIS_CONTROL_TIME;
+    const fp32 target = small_gyro_enable ? target_d_yaw : 0.0f;
+
+    small_gyro_d_yaw = chassis_ramp_to_target(small_gyro_d_yaw, target, max_step);
+    return small_gyro_d_yaw;
+}
+
 static void chassis_zero_force_control(fp32 *v_set, fp32 *d_yaw_set, fp32 *leg_set)
 {
     *v_set = 0.0f;
@@ -231,24 +251,38 @@ static void chassis_normal_control(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set,
 {
     fp32 target_vx = 0;
 
-    if (target_vx > 0.0f) {
+    if (target_vx > 0.0f)
+    {
         target_vx = clamp_abs_fp32(chassis_move_rc_to_vector->chassis_gimbal_data->v_tmp,
-                                          CHASSIS_KEY_MAX_SPEED);
+                                   CHASSIS_KEY_MAX_SPEED);
     }
-    else {
+    else
+    {
         target_vx = clamp_abs_fp32(chassis_move_rc_to_vector->chassis_gimbal_data->v_tmp,
-                                          CHASSIS_KEY_BACK_MAX_SPEED);
+                                   CHASSIS_KEY_BACK_MAX_SPEED);
     }
 
     //*vx_set = chassis_update_vx_ramp(target_vx, 0);
     *vx_set = target_vx;
 
-    const fp32 yaw_target = wrap_to_pi(chassis_move_rc_to_vector->chassis_gimbal_data->yaw_set);
-    const fp32 yaw_pid = chassis_follow_yaw_control(yaw_target, chassis_move_rc_to_vector);
-    const fp32 yaw_limit = CHASSIS_D_YAW_MAX;
+    const bool_t small_gyro_enable =
+        (chassis_move_rc_to_vector->chassis_gimbal_data != NULL) &&
+        (chassis_move_rc_to_vector->chassis_gimbal_data->gyro_enable != 0U);
+    const fp32 small_gyro_d_yaw = chassis_update_small_gyro_d_yaw(small_gyro_enable, 0);
 
-    *yaw_set = yaw_target;
-    *d_yaw_set = clamp_abs_fp32(yaw_pid, yaw_limit);
+    if (small_gyro_enable)
+    {
+        // 小陀螺模式：锁定当前相对角，使用斜坡后的角速度旋转。
+        *yaw_set = wrap_to_pi(chassis_move_rc_to_vector->chassis_gimbal_data->chassis_relative_angle);
+        *d_yaw_set = small_gyro_d_yaw;
+    }
+    else
+    {
+        const fp32 yaw_target = wrap_to_pi(chassis_move_rc_to_vector->chassis_gimbal_data->yaw_set);
+        const fp32 yaw_pid = chassis_follow_yaw_control(yaw_target, chassis_move_rc_to_vector);
+        *yaw_set = yaw_target;
+        *d_yaw_set = clamp_abs_fp32(yaw_pid + small_gyro_d_yaw, CHASSIS_D_YAW_MAX);
+    }
     *leg_set = chassis_ramp_leg_target(chassis_move_rc_to_vector, target_leg_length, CHASSIS_LEG_STEP_RAMP_SPEED);
 }
 
@@ -485,6 +519,7 @@ void chassis_behaviour_control_set(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set,
     case CHASSIS_STOP:
         chassis_zero_force_control(vx_set, d_yaw_set, leg_set);
         chassis_update_vx_ramp(0.0f, 1);
+        chassis_update_small_gyro_d_yaw(0, 1);
         break;
 
     case CHASSIS_FLIP:
@@ -494,11 +529,13 @@ void chassis_behaviour_control_set(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set,
                                            CHASSIS_LEG_MAX,
                                            CHASSIS_LEG_STEP_RAMP_SPEED);
         chassis_update_vx_ramp(0.0f, 1);
+        chassis_update_small_gyro_d_yaw(0, 1);
         break;
 
     case CHASSIS_INIT:
         chassis_init_control(vx_set, d_yaw_set, leg_set, chassis_move_rc_to_vector);
         chassis_update_vx_ramp(0.0f, 1);
+        chassis_update_small_gyro_d_yaw(0, 1);
         break;
 
     case CHASSIS_NORMAL:
@@ -509,6 +546,7 @@ void chassis_behaviour_control_set(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set,
         }
         else
         {
+            chassis_update_small_gyro_d_yaw(0, 1);
             chassis_action_hold_control(vx_set, yaw_set, d_yaw_set, leg_set,
                                         chassis_move_rc_to_vector, CHASSIS_NORMAL_LEG_TARGET);
         }
@@ -522,6 +560,7 @@ void chassis_behaviour_control_set(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set,
         }
         else
         {
+            chassis_update_small_gyro_d_yaw(0, 1);
             chassis_action_hold_control(vx_set, yaw_set, d_yaw_set, leg_set,
                                         chassis_move_rc_to_vector, CHASSIS_LEG_1_TARGET);
         }
@@ -535,17 +574,20 @@ void chassis_behaviour_control_set(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set,
         }
         else
         {
+            chassis_update_small_gyro_d_yaw(0, 1);
             chassis_action_hold_control(vx_set, yaw_set, d_yaw_set, leg_set,
                                         chassis_move_rc_to_vector, CHASSIS_LEG_2_TARGET);
         }
         break;
 
     case CHASSIS_JUMP:
+        chassis_update_small_gyro_d_yaw(0, 1);
         chassis_jump_control(vx_set, yaw_set, d_yaw_set, leg_set, chassis_move_rc_to_vector);
         break;
 
     default:
         chassis_zero_force_control(vx_set, d_yaw_set, leg_set);
+        chassis_update_small_gyro_d_yaw(0, 1);
         break;
     }
 }

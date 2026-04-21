@@ -393,7 +393,8 @@ inline void CAN_cmd_gimbal_receive(const uint8_t *received_data)
     frame.turn_set = static_cast<int16_t>((received_data[6] << 8) | received_data[7]);
 
     const bool_t mode_valid = chassis_mode_is_valid(frame.mode_byte);
-    gimbal_data.protocol_valid = static_cast<uint8_t>(mode_valid);
+    const bool_t gyro_valid = (frame.gyro_enable <= 1U);
+    gimbal_data.protocol_valid = static_cast<uint8_t>(mode_valid && gyro_valid);
 
     const Fric_State_e fric_state =
         (frame.fric_state == FRIC_OFF || frame.fric_state == FRIC_ON ||
@@ -413,11 +414,10 @@ inline void CAN_cmd_gimbal_receive(const uint8_t *received_data)
     {
         gimbal_data.yaw_set = -PI;
     }
-    gimbal_data.gyro_enable = 0U;
+    gimbal_data.gyro_enable = gyro_valid ? frame.gyro_enable : 0U;
     gimbal_data.chassis_behaviour_mode =
         mode_valid ? static_cast<chassis_mode_e>(frame.mode_byte) : CHASSIS_MODE_NO_FORCE;
     (void)frame.reserved;
-    (void)frame.gyro_enable;
 
     gimbal_data.fric_state = fric_state;
 
@@ -425,6 +425,7 @@ inline void CAN_cmd_gimbal_receive(const uint8_t *received_data)
     {
         gimbal_data.v_tmp = 0.0f;
         gimbal_data.yaw_set = gimbal_data.chassis_relative_angle;
+        gimbal_data.gyro_enable = 0U;
         gimbal_data.chassis_behaviour_mode = CHASSIS_MODE_NO_FORCE;
     }
 }

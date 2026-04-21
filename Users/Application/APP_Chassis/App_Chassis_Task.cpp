@@ -83,9 +83,9 @@ extern "C"
     // 调试用参数
     fp32 LQR_K[4][10] = {
         {-1.8494, -2.9785, -6.1156, -0.56997, -5.961, -0.87399, -5.6496, -0.79925, -17.196, -1.8607},
-{-1.8494, -2.9785, 6.1156, 0.56997, -5.6496, -0.79925, -5.961, -0.87399, -17.196, -1.8607},
-{8.1228, 13.873, -4.4553, -0.27176, 88.423, 15.371, -15.191, -2.3958, -220.02, -25.343},
-{8.1228, 13.873, 4.4553, 0.27176, -15.191, -2.3958, 88.423, 15.371, -220.02, -25.343},
+        {-1.8494, -2.9785, 6.1156, 0.56997, -5.6496, -0.79925, -5.961, -0.87399, -17.196, -1.8607},
+        {8.1228, 13.873, -4.4553, -0.27176, 88.423, 15.371, -15.191, -2.3958, -220.02, -25.343},
+        {8.1228, 13.873, 4.4553, 0.27176, -15.191, -2.3958, 88.423, 15.371, -220.02, -25.343},
     };
 
     // 最好的参数1
@@ -292,6 +292,103 @@ extern "C"
     static bool_t chassis_is_init_like_state(Chassis_State_e state)
     {
         return state == CHASSIS_INIT || state == CHASSIS_FLIP;
+    }
+
+    static bool_t chassis_should_reset_small_gyro_translation(const Chassis_Move *chassis_move_control)
+    {
+        if (chassis_move_control == NULL || chassis_move_control->chassis_gimbal_data == NULL)
+        {
+            return 0;
+        }
+
+        if (chassis_is_balancing_state(chassis_move_control->state) == 0)
+        {
+            return 0;
+        }
+
+        if (chassis_move_control->chassis_gimbal_data->gyro_enable == 0U)
+        {
+            return 0;
+        }
+
+        return (fabsf(chassis_move_control->chassis_gimbal_data->v_tmp) <= CHASSIS_SMALL_GYRO_ZERO_V_INPUT_EPS);
+    }
+
+    static bool_t chassis_is_small_gyro_active(const Chassis_Move *chassis_move_control)
+    {
+        if (chassis_move_control == NULL || chassis_move_control->chassis_gimbal_data == NULL)
+        {
+            return 0;
+        }
+
+        if (chassis_is_balancing_state(chassis_move_control->state) == 0)
+        {
+            return 0;
+        }
+
+        return (chassis_move_control->chassis_gimbal_data->gyro_enable != 0U);
+    }
+
+    static inline fp32 chassis_calc_small_gyro_v_compensation(const Chassis_Move *chassis_move_control)
+    {
+        if (chassis_move_control == NULL)
+        {
+            return 0.0f;
+        }
+
+        const fp32 relative_angle =
+            (chassis_move_control->chassis_gimbal_data != NULL)
+                ? chassis_move_control->chassis_gimbal_data->chassis_relative_angle
+                : 0.0f;
+        const fp32 angle_feedforward =
+            CHASSIS_SMALL_GYRO_V_ANGLE_FEEDFORWARD_GAIN *
+            arm_sin_f32(relative_angle + CHASSIS_SMALL_GYRO_V_ANGLE_FEEDFORWARD_PHASE);
+
+        fp32 compensation =
+            angle_feedforward -
+            chassis_move_control->v_filter * CHASSIS_SMALL_GYRO_V_COMPENSATION_GAIN;
+        const fp32 limit = fabsf(CHASSIS_SMALL_GYRO_V_COMPENSATION_MAX);
+
+        if (compensation > limit)
+        {
+            compensation = limit;
+        }
+        else if (compensation < -limit)
+        {
+            compensation = -limit;
+        }
+
+        return compensation;
+    }
+
+    static inline fp32 chassis_calc_small_gyro_move_v_set(const Chassis_Move *chassis_move_control, fp32 move_speed_cmd)
+    {
+        if (chassis_move_control == NULL || chassis_move_control->chassis_gimbal_data == NULL)
+        {
+            return move_speed_cmd;
+        }
+
+        const fp32 desired_move_direction = chassis_move_control->chassis_gimbal_data->yaw_set;
+        const fp32 relative_angle = chassis_move_control->chassis_gimbal_data->chassis_relative_angle;
+        const fp32 move_speed =
+            move_speed_cmd * CHASSIS_SMALL_GYRO_MOVE_GAIN * CHASSIS_SMALL_GYRO_MOVE_SPEED_SCALE;
+        const fp32 compensation = chassis_calc_small_gyro_v_compensation(chassis_move_control);
+        fp32 projected_v_set =
+            move_speed *
+            arm_cos_f32(relative_angle - desired_move_direction + CHASSIS_SMALL_GYRO_MOVE_PHASE);
+        fp32 v_set = projected_v_set + compensation;
+        const fp32 speed_limit = CHASSIS_KEY_MAX_SPEED * CHASSIS_SMALL_GYRO_MOVE_SPEED_SCALE;
+
+        if (v_set > speed_limit)
+        {
+            v_set = speed_limit;
+        }
+        else if (v_set < -speed_limit)
+        {
+            v_set = -speed_limit;
+        }
+
+        return v_set;
     }
 
     static void chassis_reset_jump_state(Chassis_Move *chassis_move_control_loop)
@@ -813,19 +910,44 @@ extern "C"
             chassis_move_control->chassis_d_yaw = chassis_select_d_yaw_feedback(chassis_move_control);
 
             chassis_move_control->chassis_yaw = chassis_move_control->chassis_gimbal_data->chassis_relative_angle;
-            chassis_move_control->chassis_v_set = chassis_v_set;
-            chassis_move_control->chassis_x_set += chassis_move_control->chassis_v_set * chassis_move_control->dt;
-            const fp32 MAX_X_ERR = 2.0f;
-            if (chassis_move_control->chassis_x_set - chassis_move_control->x_filter > MAX_X_ERR)
+            if (chassis_is_small_gyro_active(chassis_move_control) &&
+                chassis_should_reset_small_gyro_translation(chassis_move_control))
             {
-                chassis_move_control->chassis_x_set = chassis_move_control->x_filter + MAX_X_ERR;
+                // 小陀螺原地时，用 v_set 反向补偿当前 v_filter 扰动；x 保持当前位置。
+                chassis_move_control->chassis_v_set = chassis_calc_small_gyro_v_compensation(chassis_move_control);
+                chassis_move_control->chassis_x_set = chassis_move_control->x_filter;
             }
-            else if (chassis_move_control->chassis_x_set - chassis_move_control->x_filter < -MAX_X_ERR)
+            else if (chassis_is_small_gyro_active(chassis_move_control))
             {
-                chassis_move_control->chassis_x_set = chassis_move_control->x_filter - MAX_X_ERR;
+                // 小陀螺移动时，将标量 v_tmp 按期望平移方向投影为时变 v_set。
+                chassis_move_control->chassis_v_set = chassis_calc_small_gyro_move_v_set(chassis_move_control, chassis_v_set);
+                chassis_move_control->chassis_x_set += chassis_move_control->chassis_v_set * chassis_move_control->dt;
+                const fp32 MAX_X_ERR = 2.0f;
+                if (chassis_move_control->chassis_x_set - chassis_move_control->x_filter > MAX_X_ERR)
+                {
+                    chassis_move_control->chassis_x_set = chassis_move_control->x_filter + MAX_X_ERR;
+                }
+                else if (chassis_move_control->chassis_x_set - chassis_move_control->x_filter < -MAX_X_ERR)
+                {
+                    chassis_move_control->chassis_x_set = chassis_move_control->x_filter - MAX_X_ERR;
+                }
+            }
+            else
+            {
+                chassis_move_control->chassis_v_set = chassis_v_set;
+                chassis_move_control->chassis_x_set += chassis_move_control->chassis_v_set * chassis_move_control->dt;
+                const fp32 MAX_X_ERR = 2.0f;
+                if (chassis_move_control->chassis_x_set - chassis_move_control->x_filter > MAX_X_ERR)
+                {
+                    chassis_move_control->chassis_x_set = chassis_move_control->x_filter + MAX_X_ERR;
+                }
+                else if (chassis_move_control->chassis_x_set - chassis_move_control->x_filter < -MAX_X_ERR)
+                {
+                    chassis_move_control->chassis_x_set = chassis_move_control->x_filter - MAX_X_ERR;
+                }
             }
             chassis_move_control->chassis_yaw_set = chassis_yaw_set;
-            chassis_move_control->chassis_yaw_err = shortest_angle_error(chassis_move_control->chassis_yaw_set,chassis_move_control->chassis_yaw);
+            chassis_move_control->chassis_yaw_err = shortest_angle_error(chassis_move_control->chassis_yaw_set, chassis_move_control->chassis_yaw);
             chassis_move_control->chassis_d_yaw_set = chassis_d_yaw_set;
             chassis_move_control->chassis_leg_set = chassis_leg_set;
         }
@@ -1100,8 +1222,9 @@ extern "C"
         fp32 x_err = -chassis_move_control_loop->x_filter + chassis_move_control_loop->chassis_x_set;
         fp32 v_err = -chassis_move_control_loop->v_filter + chassis_move_control_loop->chassis_v_set;
         fp32 yaw_err = chassis_is_yaw_lqr_state(chassis_move_control_loop->state) ? chassis_move_control_loop->chassis_yaw_err : 0.0f;
-        fp32 dyaw_err = chassis_is_yaw_lqr_state(chassis_move_control_loop->state) ? chassis_move_control_loop->chassis_d_yaw_set-
-        chassis_move_control_loop->chassis_d_yaw : 0.0f;
+        fp32 dyaw_err = chassis_is_yaw_lqr_state(chassis_move_control_loop->state) ? chassis_move_control_loop->chassis_d_yaw_set -
+                                                                                         chassis_move_control_loop->chassis_d_yaw
+                                                                                   : 0.0f;
 
         // 2. 提取平动和旋转的控制分量
         fp32 U_speed = LQR_K[0][0] * x_err + LQR_K[0][1] * v_err;
