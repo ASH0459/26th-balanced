@@ -18,12 +18,14 @@
 
 /* -------------------- 指令速度配置 -------------------- */
 // 行为层 v_set 目标的主限幅。
-#define CHASSIS_KEY_MAX_SPEED 2.3f
+#define CHASSIS_KEY_MAX_SPEED 2.0f
 #define CHASSIS_KEY_BACK_MAX_SPEED 1.5f
+#define CHASSIS_LEG_MAX_SPEED 1.0f
+#define CHASSIS_STEP_UP_MAX_SPEED 0.6f
 
 /* -------------------- 腿长斜坡参数 -------------------- */
 // 跨步/状态切换时的通用腿长变化速率。
-#define CHASSIS_LEG_STEP_RAMP_SPEED 0.15f
+#define CHASSIS_LEG_STEP_RAMP_SPEED 0.25f
 
 // 跳跃空中/落地阶段的腿长恢复速率。
 #define CHASSIS_JUMP_AIRBORNE_LEG_RAMP_SPEED 0.80f

@@ -36,46 +36,47 @@ extern "C"
 #endif
 
     // 拟合矩阵K，A，B
-    fp32 fitted_matrix_K[40][6] = {{-1.5152, 1.1725, -2.4929, -1.6736, 0.52327, 3.1789},
-                                   {-2.2985, 1.9099, -3.1571, -2.6996, 0.21512, 4.076},
-                                   {-3.8392, -3.8823, 3.6946, 5.312, -0.29332, -4.748},
-                                   {-0.44367, -0.74096, 0.72537, 0.92273, -0.071706, -0.82195},
-                                   {-1.9139, -25.382, 3.3251, 13.45, 4.5296, 2.0547},
-                                   {-0.17922, -3.4137, 0.18969, 0.51918, 0.072841, 0.62664},
-                                   {-1.3792, 9.7159, -34.038, -10.099, 12.448, 20.713},
-                                   {-0.050932, 1.2709, -5.0042, -1.5081, 1.6577, 1.9099},
-                                   {-18.989, 35.032, 22.479, -22.633, -36.187, -3.1844},
-                                   {-2.2919, 4.4638, 2.9656, -2.9707, -4.7073, -0.58453},
-                                   {-1.5152, -2.4929, 1.1725, 3.1789, 0.52327, -1.6736},
-                                   {-2.2985, -3.1571, 1.9099, 4.076, 0.21512, -2.6996},
-                                   {3.8392, -3.6946, 3.8823, 4.748, 0.29332, -5.312},
-                                   {0.44367, -0.72537, 0.74096, 0.82195, 0.071706, -0.92273},
-                                   {-1.3792, -34.038, 9.7159, 20.713, 12.448, -10.099},
-                                   {-0.050932, -5.0042, 1.2709, 1.9099, 1.6577, -1.5081},
-                                   {-1.9139, 3.3251, -25.382, 2.0547, 4.5296, 13.45},
-                                   {-0.17922, 0.18969, -3.4137, 0.62664, 0.072841, 0.51918},
-                                   {-18.989, 22.479, 35.032, -3.1844, -36.187, -22.633},
-                                   {-2.2919, 2.9656, 4.4638, -0.58453, -4.7073, -2.9707},
-                                   {19.982, -55.688, -39.85, 29.484, 45.368, 41.225},
-                                   {30.175, -77.811, -62.972, 39.9, 69.463, 63.67},
-                                   {-10.654, 40.234, 7.0439, -54.754, 7.4723, -14.112},
-                                   {-1.3169, 6.2027, 0.90269, -9.2219, 4.0576, -2.4699},
-                                   {75.891, -72.361, -31.209, -32.591, 269.6, -14.301},
-                                   {15.875, -32.898, -2.177, 14.99, 35.637, -4.2622},
-                                   {25.537, -165.14, -58.402, 205.14, -247.05, 163.82},
-                                   {3.2824, -26.819, -4.1325, 33.848, -40.195, 26.297},
-                                   {-34.406, -834, 209.15, 921.73, 263.18, -327.81},
-                                   {-6.7723, -114.7, 34.288, 131.86, 31.778, -52.104},
-                                   {19.982, -39.85, -55.688, 41.225, 45.368, 29.484},
-                                   {30.175, -62.972, -77.811, 63.67, 69.463, 39.9},
-                                   {10.654, -7.0439, -40.234, 14.112, -7.4723, 54.754},
-                                   {1.3169, -0.90269, -6.2027, 2.4699, -4.0576, 9.2219},
-                                   {25.537, -58.402, -165.14, 163.82, -247.05, 205.14},
-                                   {3.2824, -4.1325, -26.819, 26.297, -40.195, 33.848},
-                                   {75.891, -31.209, -72.361, -14.301, 269.6, -32.591},
-                                   {15.875, -2.177, -32.898, -4.2622, 35.637, 14.99},
-                                   {-34.406, 209.15, -834, -327.81, 263.18, 921.73},
-                                   {-6.7723, 34.288, -114.7, -52.104, 31.778, 131.86}};
+    fp32 fitted_matrix_K[40][6] = {{
+        -1.6803, 0.56887, -2.096, -1.2984, 1.0284, 2.5882},
+{-2.9744, 1.903, -2.0786, -2.2104, -0.98175, 3.6878},
+{-6.0567, -4.2153, 3.8915, 6.2571, -0.11425, -5.6746},
+{-0.56676, -0.65309, 0.63491, 0.8721, -0.026287, -0.81669},
+{-3.0723, -30.225, 7.1043, 19.192, 3.7964, -1.0355},
+{-0.38372, -4.3757, 0.78489, 1.4987, -0.034365, 0.20218},
+{-2.0434, 13.091, -39.955, -12.058, 9.2867, 30.27},
+{-0.17317, 1.9047, -6.201, -1.8832, 1.0477, 3.6636},
+{-30.464, 62.014, 44.697, -42.96, -64.919, -15.798},
+{-3.3448, 6.9302, 5.0038, -4.8504, -7.2622, -1.8195},
+{-1.6803, -2.096, 0.56887, 2.5882, 1.0284, -1.2984},
+{-2.9744, -2.0786, 1.903, 3.6878, -0.98175, -2.2104},
+{6.0567, -3.8915, 4.2153, 5.6746, 0.11425, -6.2571},
+{0.56676, -0.63491, 0.65309, 0.81669, 0.026287, -0.8721},
+{-2.0434, -39.955, 13.091, 30.27, 9.2867, -12.058},
+{-0.17317, -6.201, 1.9047, 3.6636, 1.0477, -1.8832},
+{-3.0723, 7.1043, -30.225, -1.0355, 3.7964, 19.192},
+{-0.38372, 0.78489, -4.3757, 0.20218, -0.034365, 1.4987},
+{-30.464, 44.697, 62.014, -15.798, -64.919, -42.96},
+{-3.3448, 5.0038, 6.9302, -1.8195, -7.2622, -4.8504},
+{20.105, -44.972, -49.892, 27.386, 49.052, 42.452},
+{33.564, -72.339, -86.183, 42.784, 89.101, 71.006},
+{-15.272, 43.738, 12.539, -61.197, 4.6168, -21.918},
+{-1.4881, 5.2613, 1.3171, -7.705, 2.1476, -2.5338},
+{109.7, -183.99, -0.69629, 113.58, 262.51, -56.41},
+{21.235, -50.079, 2.314, 39.02, 35.337, -11.363},
+{25.668, -205.76, -92.411, 243.95, -196.35, 195.02},
+{3.84, -35.641, -10.249, 42.583, -29.948, 29.572},
+{-120.03, -1361.1, 476.61, 1615.8, 334.76, -708.64},
+{-14.197, -154.66, 55.894, 185.07, 36.636, -82.631},
+{20.105, -49.892, -44.972, 42.452, 49.052, 27.386},
+{33.564, -86.183, -72.339, 71.006, 89.101, 42.784},
+{15.272, -12.539, -43.738, 21.918, -4.6168, 61.197},
+{1.4881, -1.3171, -5.2613, 2.5338, -2.1476, 7.705},
+{25.668, -92.411, -205.76, 195.02, -196.35, 243.95},
+{3.84, -10.249, -35.641, 29.572, -29.948, 42.583},
+{109.7, -0.69629, -183.99, -56.41, 262.51, 113.58},
+{21.235, 2.314, -50.079, -11.363, 35.337, 39.02},
+{-120.03, 476.61, -1361.1, -708.64, 334.76, 1615.8},
+{-14.197, 55.894, -154.66, -82.631, 36.636, 185.07}};
 
     fp32 fitted_matrix_A[15][6];
     fp32 fitted_matrix_B[20][6];
@@ -281,7 +282,7 @@ extern "C"
 
     static bool_t chassis_is_balancing_state(Chassis_State_e state)
     {
-        return state == CHASSIS_NORMAL || state == CHASSIS_LEG_1 || state == CHASSIS_LEG_2;
+        return state == CHASSIS_NORMAL || state == CHASSIS_LEG_1 || state == CHASSIS_LEG_2 || state == CHASSIS_STEP_UP;
     }
 
     static bool_t chassis_is_yaw_lqr_state(Chassis_State_e state)
@@ -356,6 +357,8 @@ extern "C"
     static void chassis_limit_output(Chassis_Move *chassis_move_control_loop);
     static void chassis_save_last_feedback(Chassis_Move *chassis_move_control_loop);
     static void chassis_update_jump_phase(Chassis_Move *chassis_move_control_loop);
+    static void chassis_step_up_swing_control(Chassis_Move *chassis_move_control_loop);
+    static void chassis_update_step_up_phase(Chassis_Move *chassis_move_control_loop);
     static void chassis_reset_jump_state(Chassis_Move *chassis_move_control_loop);
     static bool_t chassis_is_balancing_state(Chassis_State_e state);
     static bool_t chassis_is_yaw_lqr_state(Chassis_State_e state);
@@ -1019,7 +1022,7 @@ extern "C"
         chassis_move_update->chassis_right_control.Fwn = chassis_move_update->chassis_right_control.wbr_control.Fbl_r * arm_cos_f32(chassis_move_update->chassis_right_control.wbr_control.theta_l) + MASS_OF_LEG * (GRAVITY_ACCELERATION + chassis_move_update->chassis_accel_n_z - (1 - chassis_move_update->chassis_right_control.eta) * chassis_move_update->chassis_right_control.dd_L_lowpass * arm_cos_f32(chassis_move_update->chassis_right_control.wbr_control.theta_l)) + right_leg_limit_fd;
 
         // 计算矩阵K，A，B
-        // decompose_fitted_matrix_to_K(&chassis_move_update->chassis_left_control.wbr_control, &chassis_move_update->chassis_right_control.wbr_control, fitted_matrix_K, LQR_K);
+        decompose_fitted_matrix_to_K(&chassis_move_update->chassis_left_control.wbr_control, &chassis_move_update->chassis_right_control.wbr_control, fitted_matrix_K, LQR_K);
         //    decompose_fitted_matrix_to_A(&chassis_move_update->chassis_left_control.wbr_control, &chassis_move_update->chassis_right_control.wbr_control, fitted_matrix_A, LQR_A);
         //    decompose_fitted_matrix_to_B(&chassis_move_update->chassis_left_control.wbr_control, &chassis_move_update->chassis_right_control.wbr_control, fitted_matrix_B, LQR_B);
 
@@ -1053,7 +1056,8 @@ extern "C"
     {
         if (chassis_move_prediction->state == CHASSIS_STOP ||
             chassis_move_prediction->state == CHASSIS_FLIP ||
-            chassis_move_prediction->state == CHASSIS_INIT)
+            chassis_move_prediction->state == CHASSIS_INIT ||
+            chassis_move_prediction->state == CHASSIS_STEP_UP )
         {
             chassis_move_prediction->chassis_left_control.chassis_off_ground_detection = CHASSIS_TOUCH_GROUND;
             chassis_move_prediction->chassis_right_control.chassis_off_ground_detection = CHASSIS_TOUCH_GROUND;
@@ -1195,11 +1199,22 @@ extern "C"
             return;
         }
 
+        chassis_update_step_up_phase(chassis_move_control_loop);
+
+        if (chassis_move_control_loop->state == CHASSIS_STEP_UP &&
+            chassis_move_control_loop->step_up_phase == STEP_UP_SWING)
+        {
+            chassis_step_up_swing_control(chassis_move_control_loop);
+            chassis_limit_output(chassis_move_control_loop);
+            chassis_save_last_feedback(chassis_move_control_loop);
+            return;
+        }
+
         /* 此函数已进行：功率控制+所有力矩计算 */
         /* 后方的所有函数和处理均是作为支持力计算和其他附加功能的实现 */
         chassis_lqr_power_control(chassis_move_control_loop);
 
-        chassis_update_jump_phase(chassis_move_control_loop);
+        //chassis_update_jump_phase(chassis_move_control_loop);
         chassis_init_standup(chassis_move_control_loop);
         chassis_calc_support_force(chassis_move_control_loop);
 
@@ -1312,6 +1327,60 @@ extern "C"
         chassis_move_control_loop->chassis_joint[1].joint_T = -left_torque + left_extend_torque_back;
         chassis_move_control_loop->chassis_joint[2].joint_T = right_torque + right_extend_torque_front;
         chassis_move_control_loop->chassis_joint[3].joint_T = right_torque + right_extend_torque_back;
+    }
+
+    static void chassis_update_step_up_phase(Chassis_Move *chassis_move_control_loop)
+    {
+        if (chassis_move_control_loop->state != CHASSIS_STEP_UP) return;
+
+        if (chassis_move_control_loop->step_up_phase == STEP_UP_EXTEND) {
+            // 腿长到位后切换到检测阶段
+            if (fabsf(chassis_move_control_loop->chassis_left_control.wbr_control.L - CHASSIS_LEG_2_TARGET) < 0.03f)
+                chassis_move_control_loop->step_up_phase = STEP_UP_DETECT;
+        }
+        else if (chassis_move_control_loop->step_up_phase == STEP_UP_DETECT) {
+            // 碰撞检测：角度被向后推 + 扭矩异常
+            if ((fabsf(chassis_move_control_loop->chassis_left_control.theta_l) > STEP_UP_ANGLE_THRESHOLD
+                && chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t > STEP_UP_TORQUE_THRESHOLD)
+                ||(fabsf(chassis_move_control_loop->chassis_right_control.theta_l) > STEP_UP_ANGLE_THRESHOLD
+                && chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t > STEP_UP_TORQUE_THRESHOLD))
+            {
+                chassis_move_control_loop->step_up_phase = STEP_UP_SWING;
+                // 记录当前角度准备摆腿
+                chassis_move_control_loop->chassis_left_control.init_angle_ramp.out = (chassis_move_control_loop->chassis_left_control.theta_l < 0) ? chassis_move_control_loop->chassis_left_control.theta_l + 2*PI : chassis_move_control_loop->chassis_left_control.theta_l;
+                chassis_move_control_loop->chassis_right_control.init_angle_ramp.out = (chassis_move_control_loop->chassis_right_control.theta_l < 0) ? chassis_move_control_loop->chassis_right_control.theta_l + 2*PI : chassis_move_control_loop->chassis_right_control.theta_l;
+            }
+        }
+    }
+
+    static void chassis_step_up_swing_control(Chassis_Move *chassis_move_control_loop)
+    {
+        // 强制关闭轮子动力
+        chassis_move_control_loop->chassis_wheel[0].wheel_T = chassis_move_control_loop->chassis_wheel[1].wheel_T = 0.0f;
+
+        fp32 target_360 = STEP_UP_SWING_TARGET_360;
+        chassis_move_control_loop->chassis_left_control.init_angle_ramp.min_value = target_360;
+        ramp_calc(&chassis_move_control_loop->chassis_left_control.init_angle_ramp, -STEP_UP_SWING_SPEED);
+        chassis_move_control_loop->chassis_right_control.init_angle_ramp.min_value = target_360;
+        ramp_calc(&chassis_move_control_loop->chassis_right_control.init_angle_ramp, -STEP_UP_SWING_SPEED);
+
+        // 计算关节力矩让腿向后甩 (逻辑参考自 chassis_init_standup)
+        fp32 left_theta_360 = (chassis_move_control_loop->chassis_left_control.theta_l < 0) ? chassis_move_control_loop->chassis_left_control.theta_l + 2*PI : chassis_move_control_loop->chassis_left_control.theta_l;
+        fp32 left_torque = PID_Calc(&chassis_move_control_loop->chassis_left_control.init_leg_angle_pid, left_theta_360, target_360);
+        fp32 right_theta_360 = (chassis_move_control_loop->chassis_right_control.theta_l < 0) ? chassis_move_control_loop->chassis_right_control.theta_l + 2*PI : chassis_move_control_loop->chassis_right_control.theta_l;
+        fp32 right_torque = PID_Calc(&chassis_move_control_loop->chassis_right_control.init_leg_angle_pid, right_theta_360, target_360);
+
+        // 将腿部甩到身后
+        chassis_move_control_loop->chassis_joint[0].joint_T = -left_torque;
+        chassis_move_control_loop->chassis_joint[1].joint_T = -left_torque;
+        chassis_move_control_loop->chassis_joint[2].joint_T = right_torque;
+        chassis_move_control_loop->chassis_joint[3].joint_T = right_torque;
+
+        // 到位检测：摆腿完成后直接进入原有的起身模式
+        if (fabsf(left_theta_360 - target_360) < 0.05f) {
+            chassis_move_control_loop->state = CHASSIS_INIT;
+            chassis_move_control_loop->init_phase = CHASSIS_INIT_RETRACT; // 复用原有的正常起身流程
+        }
     }
 
     static void chassis_update_jump_phase(Chassis_Move *chassis_move_control_loop)
@@ -1497,7 +1566,7 @@ extern "C"
         }
         else // 正常情况下支持力处理
         {
-            // Chassis_Landing_Admittance_Control(chassis_move_control_loop);
+            //Chassis_Landing_Admittance_Control(chassis_move_control_loop);
 
             if (chassis_move_control_loop->chassis_left_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND && chassis_move_control_loop->chassis_right_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND)
             {

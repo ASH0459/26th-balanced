@@ -36,7 +36,13 @@
 #define INIT_LQR_VAL 1.0f
 
 // 初始化腿旋转速度
-#define ROTATE_SPEED 0.7f
+#define ROTATE_SPEED 1.3f
+
+#define STEP_UP_ANGLE_THRESHOLD 0.4f    // 碰到台阶时，腿部被向后推直的角度阈值 (rad)，需实测微调
+#define STEP_UP_TORQUE_THRESHOLD 4.0f   // 碰到台阶导致堵转的虚拟水平扭矩 Tbl_t 阈值 (Nm)
+#define STEP_UP_SWING_TARGET_360 5.6f   // 向后摆腿的目标角度
+#define STEP_UP_SWING_SPEED -1.3f         // 摆腿速度
+
 
 // 重力加速度
 #define GRAVITY_ACCELERATION 9.81f
@@ -59,7 +65,7 @@
 #define JOINT_MIN_TORQUE -40.0f
 
 // 腿的最大最小长度
-#define CHASSIS_LEG_MAX 0.35f
+#define CHASSIS_LEG_MAX 0.38f
 #define CHASSIS_LEG_MIN 0.154f
 
 // 初始化收腿目标角度 (rad)，原始坐标系下为-1.26rad，换算到0~2π下为2π-1.26
@@ -100,9 +106,9 @@
 #define CHASSIS_INIT_LEVEL_SYNC_MIN_RATIO 0.0f // 机体未水平时两条腿的同步旋转最小速度比例
 
 // yaw轴跟随PID
-#define YAW_PID_KP 30.0f
+#define YAW_PID_KP 20.0f
 #define YAW_PID_KI 0.0f
-#define YAW_PID_KD 10.0f
+#define YAW_PID_KD 6.0f
 #define YAW_PID_MAX_OUT 30.0f
 #define YAW_PID_MAX_IOUT 0.0f
 
@@ -113,13 +119,13 @@
 #define ROLL_PID_MAX_OUT 200.0f
 #define ROLL_PID_MAX_IOUT 0.0f
 
-#define CHASSIS_X_BACK 0.1f
+#define CHASSIS_X_BACK 0.3f
 // 左右腿长度PID
 #define LEG_PID_KP 2500.0f
 #define LEG_PID_KI 0.0f
 #define LEG_PID_KD 100000.0f
-#define LEG_PID_MAX_OUT 200000.0f // 300
-#define LEG_PID_MAX_IOUT 40.0f
+#define LEG_PID_MAX_OUT 300.0f // 300
+#define LEG_PID_MAX_IOUT 30.0f
 
 /* 轮子相关数据 */
 // 轮子质量 KG
@@ -141,7 +147,7 @@
 
 /* 机体相关数据 */
 // 机体质量
-#define MASS_OF_BODY 20.0f
+#define MASS_OF_BODY 25.0f
 
 // 前后的遥控器通道号码
 #define CHASSIS_X_CHANNEL 1
@@ -271,7 +277,17 @@ typedef enum
     CHASSIS_LEG_1,
     CHASSIS_LEG_2,
     CHASSIS_JUMP,
+    CHASSIS_STEP_UP,
 } Chassis_State_e;
+
+
+typedef enum
+{
+    STEP_UP_EXTEND = 0,  // 第一阶段：伸长腿到 LEG_2
+    STEP_UP_DETECT,      // 第二阶段：保持腿长，检测是否撞击台阶
+    STEP_UP_SWING,       // 第三阶段：检测到撞击，脱离LQR，向后摆腿
+    STEP_UP_DONE,        // 第四阶段：摆腿到位，切入 INIT_RETRACT
+} Chassis_StepUp_Phase_e;
 
 /* 机体姿态 */
 typedef enum
@@ -374,6 +390,7 @@ public:
     Chassis_Posture_e last_posture = CHASSIS_POSTURE_DOWN;
     Chassis_Init_Phase_e init_phase = CHASSIS_INIT_FOLD;
     Chassis_Jump_Phase_e jump_phase = CHASSIS_JUMP_DONE;
+    Chassis_StepUp_Phase_e step_up_phase = STEP_UP_DONE;
     chassis_mode_e last_request_mode = CHASSIS_MODE_RESERVED;
     uint16_t jump_phase_ticks = 0;
     uint16_t posture_stable_ticks = 0;
