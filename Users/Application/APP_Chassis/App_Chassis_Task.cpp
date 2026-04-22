@@ -1250,8 +1250,8 @@ extern "C"
 
         fp32 decay_Uspeed = WL_PowerManager.getDecayUspeed();
         fp32 decay_Uyaw = WL_PowerManager.getDecayUyaw();
-        // decay_Uspeed = 1.0f;
-        // decay_Uyaw = 1.0f;
+        decay_Uspeed = 1.0f;
+        decay_Uyaw = 1.0f;
 
         // 5. 重新合成最终的安全轮毂力矩
         chassis_move_control_loop->chassis_wheel[0].wheel_T = (U_speed * decay_Uspeed) + (U_yaw * decay_Uyaw) + U_else_L;

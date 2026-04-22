@@ -88,8 +88,8 @@
 #define CHASSIS_SMALL_GYRO_D_YAW_SET 40.0f
 
 // 小陀螺启停斜坡速率（rad/s^2）。
-#define CHASSIS_SMALL_GYRO_RAMP_UP_RATE 90.0f
-#define CHASSIS_SMALL_GYRO_RAMP_DOWN_RATE 140.0f
+#define CHASSIS_SMALL_GYRO_RAMP_UP_RATE 20.0f
+#define CHASSIS_SMALL_GYRO_RAMP_DOWN_RATE 40.0f
 
 // 小陀螺模式下认为“无平移输入”的阈值（m/s）。
 #define CHASSIS_SMALL_GYRO_ZERO_V_INPUT_EPS 0.03f
@@ -99,7 +99,7 @@
 #define CHASSIS_SMALL_GYRO_V_COMPENSATION_MAX 1.0f
 
 // 小陀螺平移补偿前馈：按 relative_angle 生成正弦补偿，便于抵消固定方向漂移。
-#define CHASSIS_SMALL_GYRO_V_ANGLE_FEEDFORWARD_GAIN  0.04f
+#define CHASSIS_SMALL_GYRO_V_ANGLE_FEEDFORWARD_GAIN  0.0f
 #define CHASSIS_SMALL_GYRO_V_ANGLE_FEEDFORWARD_PHASE 0.7853982f
 
 // 小陀螺平移控制：将标量 v_tmp 按当前 relative_angle 投影到期望平移方向。
