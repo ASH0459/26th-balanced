@@ -40,7 +40,7 @@
 
 #define STEP_UP_ANGLE_THRESHOLD 0.4f    // 碰到台阶时，腿部被向后推直的角度阈值 (rad)，需实测微调
 #define STEP_UP_TORQUE_THRESHOLD 4.0f   // 碰到台阶导致堵转的虚拟水平扭矩 Tbl_t 阈值 (Nm)
-#define STEP_UP_SWING_TARGET_360 5.6f   // 向后摆腿的目标角度
+#define STEP_UP_SWING_TARGET_360 6.0f   // 向后摆腿的目标角度
 #define STEP_UP_SWING_SPEED -1.3f         // 摆腿速度
 
 
@@ -65,7 +65,7 @@
 #define JOINT_MIN_TORQUE -40.0f
 
 // 腿的最大最小长度
-#define CHASSIS_LEG_MAX 0.38f
+#define CHASSIS_LEG_MAX 0.35f
 #define CHASSIS_LEG_MIN 0.154f
 
 // 初始化收腿目标角度 (rad)，原始坐标系下为-1.26rad，换算到0~2π下为2π-1.26
