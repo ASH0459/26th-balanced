@@ -16,6 +16,8 @@
   */ 
   /** * @brief 头文件 */ 
 #include "APP_Buzzer.h"
+#include "App_Chassis_Behaviour.h"
+#include "App_Chassis_Task.h"
 #include "bsp_buzzer.h"
 #include "cmsis_os2.h"
 #include "main.h"
@@ -71,6 +73,10 @@ extern "C" {
       else
       {
         buzzer_off();
+      }
+
+      if((chassis_move.state == CHASSIS_STEP_UP)) {
+        buzzer_on(400, 1500);
       }
       osDelay(10);
     }
