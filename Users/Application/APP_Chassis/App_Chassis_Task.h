@@ -96,8 +96,8 @@
 #define CHASSIS_POSTURE_STABLE_TICKS 50U
 
 // 离地检测迟滞阈值：落地阈值需高于离地阈值
-#define CHASSIS_OFF_GROUND_FORCE_THRESHOLD 40.0f
-#define CHASSIS_TOUCH_GROUND_FORCE_THRESHOLD 100.0f
+#define CHASSIS_OFF_GROUND_FORCE_THRESHOLD 30.0f
+#define CHASSIS_TOUCH_GROUND_FORCE_THRESHOLD 80.0f
 
 // 初始化时机体未水平的自扶正腿部旋转参数
 #define CHASSIS_INIT_LEVEL_ANGLE_STEP 0.8f     // 机体未水平时腿部旋转角度 (rad/s)
@@ -263,7 +263,7 @@
 #define CHASSIS_DT7_Y_PID_MAX_OUT 10.0f
 #define CHASSIS_DT7_Y_PID_MAX_IOUT 2.0f
 
-#define LEG_NORMAL_SUPPORT_FORCE 115.0f // 正常站立时单腿的平均支持力 (N)
+#define LEG_NORMAL_SUPPORT_FORCE 110.0f // 正常站立时单腿的平均支持力 (N)
 #define ADMITTANCE_EXTEND_KP 0.00002f   // 导纳积分系数：控制空中伸腿和触地退让的快慢
 #define RAMP_RECOVERY_STEP 0.0005f      // 落地恢复斜坡步长：控制落地后恢复正常腿长的速度
 
@@ -394,6 +394,7 @@ public:
     chassis_mode_e last_request_mode = CHASSIS_MODE_RESERVED;
     uint16_t jump_phase_ticks = 0;
     uint16_t posture_stable_ticks = 0;
+    uint16_t normal_force_touch_ground_ticks = 0;
 
     const fp32 *chassis_INS_gyro;       // 机体角速度指针
     const fp32 *chassis_INS_angle;      // 获取陀螺仪解算出的欧拉角指针

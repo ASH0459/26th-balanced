@@ -27,6 +27,10 @@
 // 跨步/状态切换时的通用腿长变化速率。
 #define CHASSIS_LEG_STEP_RAMP_SPEED 0.25f
 
+/* -------------------- Normal切入触地保持 -------------------- */
+// 刚切入 CHASSIS_NORMAL 后，短时间内强制认为双腿触地，抑制支持力判定抖动。
+#define CHASSIS_NORMAL_FORCE_TOUCH_GROUND_TICKS 1500U
+
 // 跳跃空中/落地阶段的腿长恢复速率。
 #define CHASSIS_JUMP_AIRBORNE_LEG_RAMP_SPEED 0.80f
 
@@ -90,7 +94,7 @@
 #define CHASSIS_SMALL_GYRO_D_YAW_SET 40.0f
 
 // 小陀螺启停斜坡速率（rad/s^2）。
-#define CHASSIS_SMALL_GYRO_RAMP_UP_RATE 20.0f
+#define CHASSIS_SMALL_GYRO_RAMP_UP_RATE 40.0f
 #define CHASSIS_SMALL_GYRO_RAMP_DOWN_RATE 40.0f
 
 // 小陀螺模式下认为“无平移输入”的阈值（m/s）。

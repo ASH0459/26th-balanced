@@ -773,6 +773,7 @@ extern "C"
         chassis_move_init->last_request_mode = CHASSIS_MODE_RESERVED;
         chassis_move_init->chassis_leg_set = CHASSIS_NORMAL_LEG_TARGET;
         chassis_move_init->posture_stable_ticks = 0;
+        chassis_move_init->normal_force_touch_ground_ticks = 0;
         chassis_reset_jump_state(chassis_move_init);
 
         // 更新数据
@@ -810,6 +811,11 @@ extern "C"
         {
             return;
         }
+
+        chassis_move_transit->normal_force_touch_ground_ticks =
+            (chassis_move_transit->state == CHASSIS_NORMAL)
+                ? CHASSIS_NORMAL_FORCE_TOUCH_GROUND_TICKS
+                : 0U;
 
         if (chassis_is_balancing_state(chassis_move_transit->state) &&
             (chassis_move_transit->last_state == CHASSIS_STOP ||
@@ -917,8 +923,8 @@ extern "C"
                 chassis_should_reset_small_gyro_translation(chassis_move_control))
             {
                 // 小陀螺原地时，用 v_set 反向补偿当前 v_filter 扰动；x 保持当前位置。
-                chassis_move_control->chassis_v_set = chassis_calc_small_gyro_v_compensation(chassis_move_control);
-                chassis_move_control->chassis_x_set = chassis_move_control->x_filter;
+                // chassis_move_control->chassis_v_set = chassis_calc_small_gyro_v_compensation(chassis_move_control);
+                // chassis_move_control->chassis_x_set = chassis_move_control->x_filter;
             }
             else if (chassis_is_small_gyro_active(chassis_move_control))
             {
@@ -1179,8 +1185,17 @@ extern "C"
         if (chassis_move_prediction->state == CHASSIS_STOP ||
             chassis_move_prediction->state == CHASSIS_FLIP ||
             chassis_move_prediction->state == CHASSIS_INIT ||
-            chassis_move_prediction->state == CHASSIS_STEP_UP )
+            chassis_move_prediction->state == CHASSIS_STEP_UP)
         {
+            chassis_move_prediction->chassis_left_control.chassis_off_ground_detection = CHASSIS_TOUCH_GROUND;
+            chassis_move_prediction->chassis_right_control.chassis_off_ground_detection = CHASSIS_TOUCH_GROUND;
+            return;
+        }
+
+        if (chassis_move_prediction->state == CHASSIS_NORMAL &&
+            chassis_move_prediction->normal_force_touch_ground_ticks > 0U)
+        {
+            chassis_move_prediction->normal_force_touch_ground_ticks--;
             chassis_move_prediction->chassis_left_control.chassis_off_ground_detection = CHASSIS_TOUCH_GROUND;
             chassis_move_prediction->chassis_right_control.chassis_off_ground_detection = CHASSIS_TOUCH_GROUND;
             return;
@@ -1689,7 +1704,7 @@ extern "C"
         }
         else // 正常情况下支持力处理
         {
-            //Chassis_Landing_Admittance_Control(chassis_move_control_loop);
+            Chassis_Landing_Admittance_Control(chassis_move_control_loop);
 
             if (chassis_move_control_loop->chassis_left_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND && chassis_move_control_loop->chassis_right_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND)
             {
