@@ -65,7 +65,7 @@
 #define JOINT_MIN_TORQUE -40.0f
 
 // 腿的最大最小长度
-#define CHASSIS_LEG_MAX 0.35f
+#define CHASSIS_LEG_MAX 0.37f
 #define CHASSIS_LEG_MIN 0.154f
 
 // 初始化收腿目标角度 (rad)，原始坐标系下为-1.26rad，换算到0~2π下为2π-1.26

@@ -1068,18 +1068,6 @@ extern "C"
         wbr_jacobian_calc(&chassis_move_update->chassis_left_control.wbr_control);
         wbr_jacobian_calc(&chassis_move_update->chassis_right_control.wbr_control);
 
-        // test 使用雅可比矩阵计算dd_l
-        //  chassis_move_update->chassis_left_control.wbr_control.d_L = chassis_move_update->chassis_left_control.wbr_control.J[0][0] * chassis_move_update->chassis_joint[0].chassis_joint_measure->vel - chassis_move_update->chassis_left_control.wbr_control.J[0][1] * chassis_move_update->chassis_joint[1].chassis_joint_measure->vel;
-        //  chassis_move_update->chassis_right_control.wbr_control.d_L = -chassis_move_update->chassis_right_control.wbr_control.J[0][0] * chassis_move_update->chassis_joint[2].chassis_joint_measure->vel + chassis_move_update->chassis_right_control.wbr_control.J[0][1] * chassis_move_update->chassis_joint[3].chassis_joint_measure->vel;
-
-        // chassis_move_update->chassis_left_control.wbr_control.dd_L = (chassis_move_update->chassis_left_control.wbr_control.d_L - chassis_move_update->chassis_left_control.wbr_control.d_L_p) / chassis_move_update->dt;
-        // chassis_move_update->chassis_right_control.wbr_control.dd_L = (chassis_move_update->chassis_right_control.wbr_control.d_L - chassis_move_update->chassis_right_control.wbr_control.d_L_p) / chassis_move_update->dt;
-        // test end
-
-        // 计算腿部摆杆角速度和腿长变化速度
-        // chassis_move_update->chassis_left_control.wbr_control.d_theta_l = chassis_move_update->chassis_left_control.wbr_control.J[1][0] * chassis_move_update->chassis_joint[0].chassis_joint_measure->vel - chassis_move_update->chassis_left_control.wbr_control.J[1][1] * chassis_move_update->chassis_joint[1].chassis_joint_measure->vel - *(chassis_move_update->chassis_INS_gyro + INS_GYRO_X_ADDRESS_OFFSET);
-        // chassis_move_update->chassis_right_control.wbr_control.d_theta_l = -chassis_move_update->chassis_right_control.wbr_control.J[1][0] * chassis_move_update->chassis_joint[2].chassis_joint_measure->vel + chassis_move_update->chassis_right_control.wbr_control.J[1][1] * chassis_move_update->chassis_joint[3].chassis_joint_measure->vel - *(chassis_move_update->chassis_INS_gyro + INS_GYRO_X_ADDRESS_OFFSET);
-
         fp32 left_dd_L_raw = chassis_sanitize_dd_L(chassis_move_update->chassis_left_control.wbr_control.dd_L);
         fp32 right_dd_L_raw = chassis_sanitize_dd_L(chassis_move_update->chassis_right_control.wbr_control.dd_L);
 
@@ -1474,12 +1462,16 @@ extern "C"
     {
         if (chassis_move_control_loop->state != CHASSIS_STEP_UP) return;
 
-        if (chassis_move_control_loop->step_up_phase == STEP_UP_EXTEND) {
+        if (chassis_move_control_loop->step_up_phase == STEP_UP_EXTEND) 
+        {
             // 腿长到位后切换到检测阶段
-            if (fabsf(chassis_move_control_loop->chassis_left_control.wbr_control.L - CHASSIS_LEG_2_TARGET) < 0.1f)
+            if (fabsf(chassis_move_control_loop->chassis_left_control.wbr_control.L - CHASSIS_LEG_2_TARGET) < 0.1f && fabsf(chassis_move_control_loop->chassis_right_control.wbr_control.L - CHASSIS_LEG_2_TARGET) < 0.1f)
+            {
                 chassis_move_control_loop->step_up_phase = STEP_UP_DETECT;
+            }
         }
-        else if (chassis_move_control_loop->step_up_phase == STEP_UP_DETECT) {
+        else if (chassis_move_control_loop->step_up_phase == STEP_UP_DETECT) 
+        {
             // 碰撞检测：角度被向后推 + 扭矩异常
             if ((fabsf(chassis_move_control_loop->chassis_left_control.theta_l) >= STEP_UP_ANGLE_THRESHOLD
                 && chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_r >= STEP_UP_TORQUE_THRESHOLD)
@@ -1495,7 +1487,7 @@ extern "C"
         else if (chassis_move_control_loop->step_up_phase == STEP_UP_RETRACT) {
             // 收缩到位判断
             if (chassis_move_control_loop->chassis_left_control.wbr_control.L <= CHASSIS_NORMAL_LEG_TARGET + 0.02f &&
-                chassis_move_control_loop->chassis_right_control.wbr_control.L <= CHASSIS_NORMAL_LEG_TARGET + 0.02f)
+            chassis_move_control_loop->chassis_right_control.wbr_control.L <= CHASSIS_NORMAL_LEG_TARGET + 0.02f)
             {
                 chassis_move_control_loop->step_up_phase = STEP_UP_STAND;
             }
@@ -1550,7 +1542,8 @@ extern "C"
         chassis_move_control_loop->chassis_joint[3].joint_T = right_torque + right_extend_torque_back;
 
         // 到位检测：摆腿完成后直接进入原有的起身模式
-        if (fabsf(left_theta_360 - target_360) < 0.05f) {
+        if (fabsf(left_theta_360 - target_360) < 0.05f && fabsf(right_theta_360 - target_360) < 0.05f)
+        {
             chassis_move_control_loop->step_up_phase = STEP_UP_RETRACT; // 切换至独立收腿阶段
 
             // 将腿长低通滤波器的当前值设为实际腿长，保证收腿斜坡平滑
@@ -1697,8 +1690,8 @@ extern "C"
         }
 
         // 安全保护：限制积分后的期望腿长不超出物理机械极限
-        independent_leg_set_L = float_constrain(independent_leg_set_L, CHASSIS_LEG_MIN, 0.33);
-        independent_leg_set_R = float_constrain(independent_leg_set_R, CHASSIS_LEG_MIN, 0.33);
+        independent_leg_set_L = float_constrain(independent_leg_set_L, CHASSIS_LEG_MIN, CHASSIS_LEG_MAX);
+        independent_leg_set_R = float_constrain(independent_leg_set_R, CHASSIS_LEG_MIN, CHASSIS_LEG_MAX);
 
         // 计算底层腿长PID输出 (推力Fbl_t)
         control_loop->chassis_left_control.fd_leg = Leg_PID_Calc(&control_loop->chassis_left_control.leg_pid_control, control_loop->chassis_left_control.wbr_control.L, independent_leg_set_L);
