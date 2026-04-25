@@ -38,10 +38,10 @@
 // 初始化腿旋转速度
 #define ROTATE_SPEED 1.3f
 
-#define STEP_UP_ANGLE_THRESHOLD 0.4f    // 碰到台阶时，腿部被向后推直的角度阈值 (rad)，需实测微调
+#define STEP_UP_ANGLE_THRESHOLD 0.6f    // 碰到台阶时，腿部被向后推直的角度阈值 (rad)，需实测微调
 #define STEP_UP_TORQUE_THRESHOLD 4.0f   // 碰到台阶导致堵转的虚拟水平扭矩 Tbl_t 阈值 (Nm)
-#define STEP_UP_SWING_TARGET_360 6.0f   // 向后摆腿的目标角度
-#define STEP_UP_SWING_SPEED -1.3f         // 摆腿速度
+#define STEP_UP_SWING_TARGET_360 5.2f   // 向后摆腿的目标角度
+#define STEP_UP_SWING_SPEED -0.7f         // 摆腿速度
 
 
 // 重力加速度
@@ -101,7 +101,7 @@
 
 // 初始化时机体未水平的自扶正腿部旋转参数
 #define CHASSIS_INIT_LEVEL_ANGLE_STEP 0.8f     // 机体未水平时腿部旋转角度 (rad/s)
-#define CHASSIS_INIT_LEVEL_TORQUE_LIMIT 12.0f  // 机体未水平时腿部旋转力矩限制 (Nm)
+#define CHASSIS_INIT_LEVEL_TORQUE_LIMIT 15.0f  // 机体未水平时腿部旋转力矩限制 (Nm)
 #define CHASSIS_INIT_LEVEL_SYNC_ANGLE 0.5f     // 机体未水平时两条腿的同步旋转角度差阈值 (rad)
 #define CHASSIS_INIT_LEVEL_SYNC_MIN_RATIO 0.0f // 机体未水平时两条腿的同步旋转最小速度比例
 
@@ -265,7 +265,7 @@
 
 #define LEG_NORMAL_SUPPORT_FORCE 110.0f // 正常站立时单腿的平均支持力 (N)
 #define ADMITTANCE_EXTEND_KP 0.00002f   // 导纳积分系数：控制空中伸腿和触地退让的快慢
-#define RAMP_RECOVERY_STEP 0.0005f      // 落地恢复斜坡步长：控制落地后恢复正常腿长的速度
+#define RAMP_RECOVERY_STEP 0.001f      // 落地恢复斜坡步长：控制落地后恢复正常腿长的速度
 
 /* 底盘状态机 */
 typedef enum
@@ -286,7 +286,9 @@ typedef enum
     STEP_UP_EXTEND = 0,  // 第一阶段：伸长腿到 LEG_2
     STEP_UP_DETECT,      // 第二阶段：保持腿长，检测是否撞击台阶
     STEP_UP_SWING,       // 第三阶段：检测到撞击，脱离LQR，向后摆腿
-    STEP_UP_DONE,        // 第四阶段：摆腿到位，切入 INIT_RETRACT
+    STEP_UP_RETRACT,     // 第四阶段：独立收腿 (新增)
+    STEP_UP_STAND,       // 第五阶段：起立恢复 (新增)
+    STEP_UP_DONE,        // 第六阶段：摆腿到位，切入 NORMAL
 } Chassis_StepUp_Phase_e;
 
 /* 机体姿态 */

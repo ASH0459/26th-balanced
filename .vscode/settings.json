@@ -30,7 +30,21 @@
         "arm_math.h": "c",
         "wbr.h": "c",
         "ins_task.h": "c",
-        "complex": "cpp"
+        "complex": "cpp",
+        "math.h": "c",
+        "ratio": "cpp",
+        "functional": "cpp",
+        "optional": "cpp",
+        "istream": "cpp",
+        "ostream": "cpp",
+        "system_error": "cpp",
+        "array": "cpp",
+        "regex": "cpp",
+        "tuple": "cpp",
+        "type_traits": "cpp",
+        "utility": "cpp",
+        "variant": "cpp",
+        "chrono": "cpp"
     },
     "python-envs.defaultEnvManager": "ms-python.python:system",
     "stm32DebugHelper.chartSamplingMode": "live"

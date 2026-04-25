@@ -62,9 +62,9 @@ static fp32 clamp_leg_length(fp32 leg_set)
     {
         return CHASSIS_LEG_MAX;
     }
-    if (leg_set < 0.17f)
+    if (leg_set < CHASSIS_LEG_MIN)
     {
-        return 0.17f;
+        return CHASSIS_LEG_MIN;
     }
     return leg_set;
 }
@@ -321,9 +321,13 @@ static void chassis_init_control(fp32 *vx_set, fp32 *d_yaw_set, fp32 *leg_set, C
 
     if (chassis_move_rc_to_vector->init_phase == CHASSIS_INIT_RETRACT)
     {
-        chassis_move_rc_to_vector->chassis_leg_filter_set.num[0] = CHASSIS_INIT_RETRACT_LEG_NUM;
-        first_order_filter_cali(&chassis_move_rc_to_vector->chassis_leg_filter_set, CHASSIS_INIT_RETRACT_LEG_TARGET);
-        *leg_set = chassis_move_rc_to_vector->chassis_leg_filter_set.out;
+        // chassis_move_rc_to_vector->chassis_leg_filter_set.num[0] = CHASSIS_INIT_RETRACT_LEG_NUM;
+        // first_order_filter_cali(&chassis_move_rc_to_vector->chassis_leg_filter_set, CHASSIS_INIT_RETRACT_LEG_TARGET);
+        // *leg_set = chassis_move_rc_to_vector->chassis_leg_filter_set.out;
+
+        *leg_set = chassis_ramp_leg_target(chassis_move_rc_to_vector,
+                                               CHASSIS_INIT_RETRACT_LEG_TARGET,
+                                               CHASSIS_LEG_STEP_RAMP_SPEED);
     }
     else if (chassis_move_rc_to_vector->init_phase == CHASSIS_INIT_STAND)
     {
@@ -630,10 +634,40 @@ void chassis_behaviour_control_set(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set,
             chassis_normal_control(vx_set, yaw_set, d_yaw_set, leg_set,
                                    chassis_move_rc_to_vector, CHASSIS_LEG_2_TARGET);
         }
-        else
+        else if (chassis_move_rc_to_vector->step_up_phase == STEP_UP_SWING)
         {
             chassis_action_hold_control(vx_set, yaw_set, d_yaw_set, leg_set,
                                         chassis_move_rc_to_vector, CHASSIS_LEG_2_TARGET);
+        }
+        else if (chassis_move_rc_to_vector->step_up_phase == STEP_UP_RETRACT)
+        {
+            chassis_update_small_gyro_d_yaw(0, 1);
+            *vx_set = chassis_update_vx_ramp(0.0f, 0);
+            const fp32 yaw_target = wrap_to_pi(chassis_move_rc_to_vector->chassis_gimbal_data->yaw_set);
+            const fp32 yaw_pid = chassis_follow_yaw_control(yaw_target, chassis_move_rc_to_vector);
+            *yaw_set = yaw_target;
+            *d_yaw_set = clamp_abs_fp32(yaw_pid, CHASSIS_D_YAW_MAX);
+
+            // chassis_move_rc_to_vector->chassis_leg_filter_set.num[0] = CHASSIS_INIT_RETRACT_LEG_NUM;
+            // first_order_filter_cali(&chassis_move_rc_to_vector->chassis_leg_filter_set, CHASSIS_NORMAL_LEG_TARGET);
+            // *leg_set = chassis_move_rc_to_vector->chassis_leg_filter_set.out;
+            *leg_set = chassis_ramp_leg_target(chassis_move_rc_to_vector,
+                                               CHASSIS_NORMAL_LEG_TARGET,
+                                               CHASSIS_LEG_STEP_RAMP_SPEED);
+        }
+        else // STEP_UP_STAND 和 STEP_UP_DONE
+        {
+            // 起立阶段：准备切入NORMAL，将腿长滤波系数切回常规加速系数
+            chassis_update_small_gyro_d_yaw(0, 1);
+            *vx_set = chassis_update_vx_ramp(0.0f, 0);
+            const fp32 yaw_target = wrap_to_pi(chassis_move_rc_to_vector->chassis_gimbal_data->yaw_set);
+            const fp32 yaw_pid = chassis_follow_yaw_control(yaw_target, chassis_move_rc_to_vector);
+            *yaw_set = yaw_target;
+            *d_yaw_set = clamp_abs_fp32(yaw_pid, CHASSIS_D_YAW_MAX);
+
+            chassis_move_rc_to_vector->chassis_leg_filter_set.num[0] = CHASSIS_ACCEL_LEG_NUM;
+            first_order_filter_cali(&chassis_move_rc_to_vector->chassis_leg_filter_set, CHASSIS_NORMAL_LEG_TARGET);
+            *leg_set = chassis_move_rc_to_vector->chassis_leg_filter_set.out;
         }
         break;
 
