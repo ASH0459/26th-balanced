@@ -60,6 +60,7 @@ void PID_init(PidTypeDef_t *pid, uint8_t mode, const float PID[3], float max_out
     pid->max_iout = max_iout;
     pid->Dbuf[0] = pid->Dbuf[1] = pid->Dbuf[2] = 0.0f;
     pid->error[0] = pid->error[1] = pid->error[2] = pid->Pout = pid->Iout = pid->Dout = pid->out = 0.0f;
+    pid->last_fdb = pid->last_Dout = 0.0f;
 }
 
 /*---------------------------------------------------------------
@@ -275,6 +276,7 @@ void PID_clear(PidTypeDef_t *pid)
     pid->Dbuf[0] = pid->Dbuf[1] = pid->Dbuf[2] = 0.0f;
     pid->out = pid->Pout = pid->Iout = pid->Dout = 0.0f;
     pid->fdb = pid->set = 0.0f;
+    pid->last_fdb = pid->last_Dout = 0.0f;
 }
 
 //修改pid数值

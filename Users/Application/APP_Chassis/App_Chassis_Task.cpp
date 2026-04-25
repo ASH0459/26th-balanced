@@ -400,6 +400,46 @@ extern "C"
         chassis_move_control_loop->step_up_phase = STEP_UP_DONE;
 
     }
+
+    static void chassis_reset_leg_pid_state(Chassis_Move *chassis_move_control_loop)
+    {
+        if (chassis_move_control_loop == NULL)
+        {
+            return;
+        }
+
+        PID_clear(&chassis_move_control_loop->chassis_left_control.leg_pid_control);
+        PID_clear(&chassis_move_control_loop->chassis_right_control.leg_pid_control);
+
+        chassis_move_control_loop->chassis_left_control.fd_leg = 0.0f;
+        chassis_move_control_loop->chassis_right_control.fd_leg = 0.0f;
+
+        chassis_move_control_loop->chassis_left_control.leg_pid_control.last_fdb =
+            chassis_move_control_loop->chassis_left_control.wbr_control.L;
+        chassis_move_control_loop->chassis_right_control.leg_pid_control.last_fdb =
+            chassis_move_control_loop->chassis_right_control.wbr_control.L;
+        chassis_move_control_loop->chassis_left_control.leg_pid_control.last_Dout = 0.0f;
+        chassis_move_control_loop->chassis_right_control.leg_pid_control.last_Dout = 0.0f;
+    }
+
+    static void chassis_prepare_normal_entry(Chassis_Move *chassis_move_control_loop, bool_t sync_leg_filter)
+    {
+        if (chassis_move_control_loop == NULL)
+        {
+            return;
+        }
+
+        chassis_move_control_loop->state = CHASSIS_NORMAL;
+        chassis_move_control_loop->pending_state = CHASSIS_NORMAL;
+        chassis_move_control_loop->chassis_leg_set = CHASSIS_NORMAL_LEG_TARGET;
+        if (sync_leg_filter)
+        {
+            chassis_move_control_loop->chassis_leg_filter_set.out = CHASSIS_NORMAL_LEG_TARGET;
+        }
+
+        chassis_reset_leg_pid_state(chassis_move_control_loop);
+        chassis_move_control_loop->normal_force_touch_ground_ticks = CHASSIS_NORMAL_FORCE_TOUCH_GROUND_TICKS;
+    }
     /**
      * @brief          初始化"chassis_move"变量，包括pid初始化， 遥控器指针初始化，3508底盘电机指针初始化，云台电机初始化，陀螺仪角度指针初始化
      * @param[out]     chassis_move_init:"chassis_move"变量指针.
@@ -460,6 +500,8 @@ extern "C"
     static void chassis_step_up_swing_control(Chassis_Move *chassis_move_control_loop);
     static void chassis_update_step_up_phase(Chassis_Move *chassis_move_control_loop);
     static void chassis_reset_jump_state(Chassis_Move *chassis_move_control_loop);
+    static void chassis_reset_leg_pid_state(Chassis_Move *chassis_move_control_loop);
+    static void chassis_prepare_normal_entry(Chassis_Move *chassis_move_control_loop, bool_t sync_leg_filter);
     static bool_t chassis_is_balancing_state(Chassis_State_e state);
     static bool_t chassis_is_yaw_lqr_state(Chassis_State_e state);
     static bool_t chassis_is_init_like_state(Chassis_State_e state);
@@ -820,6 +862,17 @@ extern "C"
                 ? CHASSIS_NORMAL_FORCE_TOUCH_GROUND_TICKS
                 : 0U;
 
+        if (chassis_move_transit->state == CHASSIS_NORMAL)
+        {
+            chassis_prepare_normal_entry(chassis_move_transit, 0);
+        }
+        else if (chassis_move_transit->state == CHASSIS_LEG_1 ||
+                 chassis_move_transit->state == CHASSIS_LEG_2 ||
+                 chassis_move_transit->state == CHASSIS_STEP_UP)
+        {
+            chassis_reset_leg_pid_state(chassis_move_transit);
+        }
+
         if (chassis_is_balancing_state(chassis_move_transit->state) &&
             (chassis_move_transit->last_state == CHASSIS_STOP ||
              chassis_move_transit->last_state == CHASSIS_FLIP ||
@@ -844,6 +897,7 @@ extern "C"
             chassis_move_transit->chassis_leg_filter_set.out = CHASSIS_JUMP_TAKEOFF_TARGET;
             chassis_move_transit->jump_phase = CHASSIS_JUMP_TAKEOFF;
             chassis_move_transit->jump_phase_ticks = 0;
+            chassis_reset_leg_pid_state(chassis_move_transit);
         }
         else if (chassis_move_transit->state == CHASSIS_INIT || chassis_move_transit->state == CHASSIS_FLIP)
         {
@@ -861,8 +915,7 @@ extern "C"
 
             PID_clear(&chassis_move_transit->chassis_left_control.init_leg_angle_pid);
             PID_clear(&chassis_move_transit->chassis_right_control.init_leg_angle_pid);
-            PID_clear(&chassis_move_transit->chassis_left_control.leg_pid_control);
-            PID_clear(&chassis_move_transit->chassis_right_control.leg_pid_control);
+            chassis_reset_leg_pid_state(chassis_move_transit);
 
             chassis_move_transit->chassis_d_yaw = (WHEEL_RADIUS * (-chassis_move_transit->chassis_wheel[0].vel + chassis_move_transit->chassis_wheel[1].vel) - chassis_move_transit->chassis_left_control.wbr_control.L * arm_cos_f32(chassis_move_transit->chassis_left_control.wbr_control.theta_l) * chassis_move_transit->chassis_left_control.wbr_control.d_theta_l + chassis_move_transit->chassis_right_control.wbr_control.L * arm_cos_f32(chassis_move_transit->chassis_right_control.wbr_control.theta_l) * chassis_move_transit->chassis_right_control.wbr_control.d_theta_l) / (2 * DRIVE_WHEEL_DIS);
             chassis_move_transit->chassis_yaw = (WHEEL_RADIUS * (-chassis_move_transit->chassis_wheel[0].total_pos + chassis_move_transit->chassis_wheel[1].total_pos) - chassis_move_transit->chassis_left_control.wbr_control.L * arm_sin_f32(chassis_move_transit->chassis_left_control.wbr_control.theta_l) + chassis_move_transit->chassis_right_control.wbr_control.L * arm_sin_f32(chassis_move_transit->chassis_right_control.wbr_control.theta_l)) / (2 * DRIVE_WHEEL_DIS);
@@ -1500,11 +1553,7 @@ extern "C"
                     (fabs(chassis_move_control_loop->chassis_right_control.theta_l) < 0.2f))
                 {
                     chassis_move_control_loop->step_up_phase = STEP_UP_DONE;
-                    chassis_move_control_loop->state = CHASSIS_NORMAL;
-                    chassis_move_control_loop->pending_state = CHASSIS_NORMAL;
-
-                    // 防抖保护，进入常规模式时赋予防误判离地 Tick
-                    chassis_move_control_loop->normal_force_touch_ground_ticks = CHASSIS_NORMAL_FORCE_TOUCH_GROUND_TICKS;
+                    chassis_prepare_normal_entry(chassis_move_control_loop, 1);
                 }
             }
         }
@@ -1773,9 +1822,7 @@ extern "C"
 
     static void chassis_apply_joint_output(Chassis_Move *chassis_move_control_loop)
     {
-        if ((chassis_move_control_loop->state == CHASSIS_INIT &&
-             chassis_move_control_loop->init_phase == CHASSIS_INIT_STAND) ||
-            (chassis_move_control_loop->state == CHASSIS_STEP_UP &&
+        if ((chassis_move_control_loop->state == CHASSIS_STEP_UP &&
              chassis_move_control_loop->step_up_phase == STEP_UP_STAND)) // 兼容 STEP_UP_STAND
         {
 
@@ -2039,8 +2086,11 @@ extern "C"
             if (chassis_init_standup->chassis_left_control.wbr_control.L <= CHASSIS_INIT_RETRACT_LEG_TARGET + 0.005f &&
                 chassis_init_standup->chassis_right_control.wbr_control.L <= CHASSIS_INIT_RETRACT_LEG_TARGET + 0.005f)
             {
-                chassis_init_standup->init_phase = CHASSIS_INIT_STAND;
-                // chassis_init_standup->chassis_leg_filter_set.out = CHASSIS_INIT_RETRACT_LEG_TARGET;
+                chassis_init_standup->init_phase = CHASSIS_INIT_DONE;
+                chassis_init_standup->chassis_leg_set = CHASSIS_NORMAL_LEG_TARGET;
+                chassis_init_standup->chassis_leg_filter_set.out = CHASSIS_NORMAL_LEG_TARGET;
+                chassis_reset_leg_pid_state(chassis_init_standup);
+                chassis_zero_output(chassis_init_standup);
                 chassis_init_standup->posture_stable_ticks = 0;
             }
         }
