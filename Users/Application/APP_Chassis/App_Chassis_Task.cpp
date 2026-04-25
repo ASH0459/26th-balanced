@@ -218,6 +218,54 @@ extern "C"
 #endif
     }
 
+    static inline bool_t chassis_init_legs_retracted(const Chassis_Move *chassis_move_control_loop)
+    {
+        if (chassis_move_control_loop == NULL)
+        {
+            return 0;
+        }
+
+        return (chassis_move_control_loop->chassis_left_control.wbr_control.L <= CHASSIS_INIT_RETRACT_LEG_TARGET + 0.005f &&
+                chassis_move_control_loop->chassis_right_control.wbr_control.L <= CHASSIS_INIT_RETRACT_LEG_TARGET + 0.005f);
+    }
+
+    static inline fp32 chassis_calc_init_wheel_theta_scale(const Chassis_Move *chassis_move_control_loop)
+    {
+        const fp32 theta_l = chassis_select_theta_signal(&chassis_move_control_loop->chassis_left_control, CHASSIS_LEFT_THETA_FILTER_SOURCE);
+        const fp32 theta_r = chassis_select_theta_signal(&chassis_move_control_loop->chassis_right_control, CHASSIS_RIGHT_THETA_FILTER_SOURCE);
+        const fp32 theta_err_l = fabsf(theta_l - CHASSIS_INIT_WHEEL_TARGET_THETA);
+        const fp32 theta_err_r = fabsf(theta_r - CHASSIS_INIT_WHEEL_TARGET_THETA);
+        const fp32 theta_err = (theta_err_l > theta_err_r) ? theta_err_l : theta_err_r;
+        const fp32 span = CHASSIS_INIT_WHEEL_ZERO_OUTPUT_THETA_ERR - CHASSIS_INIT_WHEEL_FULL_OUTPUT_THETA_ERR;
+
+        if (span <= 1e-6f)
+        {
+            return (theta_err <= CHASSIS_INIT_WHEEL_FULL_OUTPUT_THETA_ERR) ? 1.0f : 0.0f;
+        }
+
+        return float_constrain((CHASSIS_INIT_WHEEL_ZERO_OUTPUT_THETA_ERR - theta_err) / span, 0.0f, 1.0f);
+    }
+
+    static inline void chassis_apply_init_wheel_theta_gate(Chassis_Move *chassis_move_control_loop)
+    {
+        if (chassis_move_control_loop->state != CHASSIS_INIT)
+        {
+            return;
+        }
+
+        if (chassis_move_control_loop->init_phase != CHASSIS_INIT_STAND ||
+            chassis_init_legs_retracted(chassis_move_control_loop) == 0)
+        {
+            chassis_move_control_loop->chassis_wheel[0].wheel_T = 0.0f;
+            chassis_move_control_loop->chassis_wheel[1].wheel_T = 0.0f;
+            return;
+        }
+
+        const fp32 theta_scale = chassis_calc_init_wheel_theta_scale(chassis_move_control_loop);
+        chassis_move_control_loop->chassis_wheel[0].wheel_T *= theta_scale;
+        chassis_move_control_loop->chassis_wheel[1].wheel_T *= theta_scale;
+    }
+
     static inline fp32 chassis_sanitize_dd_L(fp32 dd_L)
     {
         if ((dd_L != dd_L) || (dd_L > 1e5f) || (dd_L < -1e5f))
@@ -1335,8 +1383,9 @@ extern "C"
         chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t =
             (U_speed_leg_R * decay_Uspeed) + (U_yaw_leg_R * decay_Uyaw) + U_else_leg_R;
 
-        // INIT 起身站立阶段：摆杆角越大，增强腿水平输出并抑制轮子输出。
+        // INIT 仅在双腿收短后允许轮毂输出，并按腿部 theta 回正程度放大到全输出。
         chassis_apply_init_stand_drive_bias(chassis_move_control_loop);
+        chassis_apply_init_wheel_theta_gate(chassis_move_control_loop);
 
 #if CHASSIS_VERTICAL_SUPPORT_ONLY_MODE
         chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t = 0.0f;
@@ -2086,7 +2135,7 @@ extern "C"
             if (chassis_init_standup->chassis_left_control.wbr_control.L <= CHASSIS_INIT_RETRACT_LEG_TARGET + 0.005f &&
                 chassis_init_standup->chassis_right_control.wbr_control.L <= CHASSIS_INIT_RETRACT_LEG_TARGET + 0.005f)
             {
-                chassis_init_standup->init_phase = CHASSIS_INIT_DONE;
+                chassis_init_standup->init_phase = CHASSIS_INIT_STAND;
                 chassis_init_standup->chassis_leg_set = CHASSIS_NORMAL_LEG_TARGET;
                 chassis_init_standup->chassis_leg_filter_set.out = CHASSIS_NORMAL_LEG_TARGET;
                 chassis_reset_leg_pid_state(chassis_init_standup);

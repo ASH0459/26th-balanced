@@ -104,6 +104,9 @@
 #define CHASSIS_INIT_LEVEL_TORQUE_LIMIT 15.0f  // 机体未水平时腿部旋转力矩限制 (Nm)
 #define CHASSIS_INIT_LEVEL_SYNC_ANGLE 0.5f     // 机体未水平时两条腿的同步旋转角度差阈值 (rad)
 #define CHASSIS_INIT_LEVEL_SYNC_MIN_RATIO 0.0f // 机体未水平时两条腿的同步旋转最小速度比例
+#define CHASSIS_INIT_WHEEL_TARGET_THETA 0.20f          // INIT腿收短后，轮毂输出参考的正常站立theta
+#define CHASSIS_INIT_WHEEL_FULL_OUTPUT_THETA_ERR 0.08f // theta误差小于该值时轮毂全输出
+#define CHASSIS_INIT_WHEEL_ZERO_OUTPUT_THETA_ERR 0.60f // theta误差大于该值时轮毂不输出
 
 // yaw轴跟随PID
 #define YAW_PID_KP 20.0f
