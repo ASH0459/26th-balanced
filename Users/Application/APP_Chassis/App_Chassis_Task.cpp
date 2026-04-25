@@ -266,6 +266,19 @@ extern "C"
         chassis_move_control_loop->chassis_wheel[1].wheel_T *= theta_scale;
     }
 
+    static inline fp32 chassis_limit_init_leg_rotate_torque(fp32 torque, fp32 d_theta)
+    {
+        torque = float_constrain(torque, -CHASSIS_INIT_LEVEL_TORQUE_LIMIT, CHASSIS_INIT_LEVEL_TORQUE_LIMIT);
+
+        if (fabsf(d_theta) > CHASSIS_INIT_LEVEL_SPEED_LIMIT &&
+            torque * d_theta > 0.0f)
+        {
+            return 0.0f;
+        }
+
+        return torque;
+    }
+
     static inline fp32 chassis_sanitize_dd_L(fp32 dd_L)
     {
         if ((dd_L != dd_L) || (dd_L > 1e5f) || (dd_L < -1e5f))
@@ -850,7 +863,7 @@ extern "C"
         first_order_filter_init(&chassis_move_init->chassis_right_control.dd_L_lowpass_filter, CHASSIS_CONTROL_TIME, chassis_dd_L_lowpass_filter);
         chassis_move_init->chassis_left_control.dd_L_lowpass = 0.0f;
         chassis_move_init->chassis_right_control.dd_L_lowpass = 0.0f;
-        chassis_move_init->chassis_leg_filter_set.out = CHASSIS_LEG_MAX;
+        chassis_move_init->chassis_leg_filter_set.out = CHASSIS_NORMAL_LEG_TARGET;
 
         // 初始化斜坡函数，时间周期为 CHASSIS_CONTROL_TIME(0.001s)
         ramp_init(&chassis_move_init->chassis_left_control.init_angle_ramp, CHASSIS_CONTROL_TIME, 2.0f * PI + 1.0f, -1.0f);
@@ -985,8 +998,18 @@ extern "C"
         {
             chassis_move_transit->pending_state = CHASSIS_NORMAL;
             chassis_move_transit->init_phase = CHASSIS_INIT_FOLD;
-            chassis_move_transit->chassis_leg_set = CHASSIS_LEG_MAX;
-            chassis_move_transit->chassis_leg_filter_set.out = CHASSIS_LEG_MAX;
+            chassis_move_transit->chassis_v_set = 0.0f;
+            chassis_move_transit->chassis_d_yaw_set = 0.0f;
+            chassis_move_transit->chassis_yaw_err = 0.0f;
+            chassis_move_transit->chassis_leg_set = CHASSIS_NORMAL_LEG_TARGET;
+            chassis_move_transit->chassis_leg_filter_set.out = CHASSIS_NORMAL_LEG_TARGET;
+            chassis_move_transit->chassis_left_control.fd_roll = 0.0f;
+            chassis_move_transit->chassis_right_control.fd_roll = 0.0f;
+            chassis_move_transit->chassis_left_control.wbr_control.Fbl_t = 0.0f;
+            chassis_move_transit->chassis_right_control.wbr_control.Fbl_t = 0.0f;
+            chassis_move_transit->chassis_left_control.wbr_control.Tbl_t = 0.0f;
+            chassis_move_transit->chassis_right_control.wbr_control.Tbl_t = 0.0f;
+            chassis_reset_leg_pid_state(chassis_move_transit);
             chassis_move_transit->posture_stable_ticks = 0;
             chassis_reset_jump_state(chassis_move_transit);
         }
@@ -1515,8 +1538,8 @@ extern "C"
         fp32 right_torque = PID_Calc(&chassis_move_control_loop->chassis_right_control.init_leg_angle_pid,
                                      0.0f, right_error);
 
-        left_torque = float_constrain(left_torque, -CHASSIS_INIT_LEVEL_TORQUE_LIMIT, CHASSIS_INIT_LEVEL_TORQUE_LIMIT);
-        right_torque = float_constrain(right_torque, -CHASSIS_INIT_LEVEL_TORQUE_LIMIT, CHASSIS_INIT_LEVEL_TORQUE_LIMIT);
+        left_torque = chassis_limit_init_leg_rotate_torque(left_torque, left_d_theta_ctrl);
+        right_torque = chassis_limit_init_leg_rotate_torque(right_torque, right_d_theta_ctrl);
 
         fp32 leg_progress_error = direction * (left_theta_360 - right_theta_360);
         fp32 lead_torque_ratio = 1.0f - fabs(leg_progress_error) / CHASSIS_INIT_LEVEL_SYNC_ANGLE;
@@ -1528,18 +1551,6 @@ extern "C"
         else if (leg_progress_error < 0.0f)
         {
             right_torque *= lead_torque_ratio;
-        }
-
-        if (fabs(left_d_theta_ctrl) > CHASSIS_INIT_LEVEL_SPEED_LIMIT &&
-            left_torque * left_d_theta_ctrl > 0.0f)
-        {
-            left_torque = 0.0f;
-        }
-
-        if (fabs(right_d_theta_ctrl) > CHASSIS_INIT_LEVEL_SPEED_LIMIT &&
-            right_torque * right_d_theta_ctrl > 0.0f)
-        {
-            right_torque = 0.0f;
         }
 
         const fp32 leg_extend_target =
@@ -2105,6 +2116,9 @@ extern "C"
                                         0.0f, left_error);
             fp32 right_torque = PID_Calc(&chassis_init_standup->chassis_right_control.init_leg_angle_pid,
                                          0.0f, right_error);
+
+            left_torque = chassis_limit_init_leg_rotate_torque(left_torque, left_d_theta_ctrl);
+            right_torque = chassis_limit_init_leg_rotate_torque(right_torque, right_d_theta_ctrl);
 
             const fp32 leg_extend_target =
                 float_constrain(chassis_init_standup->chassis_leg_set, CHASSIS_LEG_MIN, CHASSIS_LEG_MAX);

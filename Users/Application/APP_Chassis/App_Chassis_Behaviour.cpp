@@ -223,7 +223,7 @@ static void chassis_zero_force_control(fp32 *v_set, fp32 *d_yaw_set, fp32 *leg_s
 {
     *v_set = 0.0f;
     *d_yaw_set = 0.0f;
-    *leg_set = CHASSIS_LEG_MAX;
+    *leg_set = CHASSIS_NORMAL_LEG_TARGET;
 }
 
 static fp32 chassis_follow_yaw_control(const fp32 target_relative_yaw,
