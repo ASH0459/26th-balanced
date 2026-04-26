@@ -208,9 +208,6 @@
 #define CHASSIS_RIGHT_THETA_FILTER_SOURCE CHASSIS_FILTER_LOWPASS
 #define CHASSIS_RIGHT_D_THETA_FILTER_SOURCE CHASSIS_FILTER_LOWPASS
 
-#define CHASSIS_D_YAW_SOURCE_KINEMATIC 0
-#define CHASSIS_D_YAW_SOURCE_IMU 1
-#define CHASSIS_D_YAW_SOURCE CHASSIS_D_YAW_SOURCE_IMU
 #define CHASSIS_D_YAW_IMU_SIGN -1.0f
 
 // 摇杆死区
@@ -428,12 +425,10 @@ public:
     fp32 chassis_pitch;   // 底盘pitch轴角度
     fp32 chassis_roll;    // 底盘roll轴角度
 
-    fp32 chassis_d_yaw;           // 底盘yaw轴角速度
-    fp32 chassis_d_yaw_kinematic; // 由轮速和腿角速度反推的yaw轴角速度
-    fp32 chassis_d_yaw_imu;       // IMU测得的yaw轴角速度
-    fp32 chassis_d_yaw_diff;      // IMU yaw角速度 - 运动学yaw角速度
-    fp32 chassis_d_pitch;         // 底盘pitch轴角速度
-    fp32 chassis_d_roll;          // 底盘roll轴角速度
+    fp32 chassis_d_yaw;     // 底盘yaw轴角速度
+    fp32 chassis_d_yaw_imu; // IMU测得的yaw轴角速度
+    fp32 chassis_d_pitch;   // 底盘pitch轴角速度
+    fp32 chassis_d_roll;    // 底盘roll轴角速度
 
     fp32 chassis_accel_n_x; // 绝对坐标下x方向加速度
     fp32 chassis_accel_n_y; // 绝对坐标下y方向加速度

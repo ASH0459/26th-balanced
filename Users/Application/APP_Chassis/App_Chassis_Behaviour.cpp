@@ -249,44 +249,26 @@ static void chassis_action_hold_control(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw
 static void chassis_normal_control(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set, fp32 *leg_set,
                                    Chassis_Move *chassis_move_rc_to_vector, fp32 target_leg_length)
 {
+    const fp32 raw_target_vx = chassis_move_rc_to_vector->chassis_gimbal_data->v_tmp;
     fp32 target_vx;
+
     if (chassis_move_rc_to_vector->state == CHASSIS_LEG_2 || chassis_move_rc_to_vector->state == CHASSIS_LEG_1)
     {
-        if (target_vx > 0.0f)
-        {
-            target_vx = clamp_abs_fp32(chassis_move_rc_to_vector->chassis_gimbal_data->v_tmp,
-                                       CHASSIS_LEG_MAX_SPEED);
-        }
-        else
-        {
-            target_vx = clamp_abs_fp32(chassis_move_rc_to_vector->chassis_gimbal_data->v_tmp,
-                                       CHASSIS_LEG_MAX_SPEED);
-        }
+        target_vx = clamp_abs_fp32(raw_target_vx, CHASSIS_LEG_MAX_SPEED);
     }
     else if (chassis_move_rc_to_vector->state == CHASSIS_STEP_UP)
     {
-        if (target_vx > 0.0f)
-        {
-            target_vx = clamp_abs_fp32(chassis_move_rc_to_vector->chassis_gimbal_data->v_tmp,
-                                       CHASSIS_STEP_UP_MAX_SPEED);
-        }
-        else
-        {
-            target_vx = clamp_abs_fp32(chassis_move_rc_to_vector->chassis_gimbal_data->v_tmp,
-                                       CHASSIS_STEP_UP_MAX_SPEED);
-        }
+        target_vx = clamp_abs_fp32(raw_target_vx, CHASSIS_STEP_UP_MAX_SPEED);
     }
     else
     {
-        if (target_vx > 0.0f)
+        if (raw_target_vx > 0.0f)
         {
-            target_vx = clamp_abs_fp32(chassis_move_rc_to_vector->chassis_gimbal_data->v_tmp,
-                                       CHASSIS_KEY_MAX_SPEED);
+            target_vx = clamp_abs_fp32(raw_target_vx, CHASSIS_KEY_MAX_SPEED);
         }
         else
         {
-            target_vx = clamp_abs_fp32(chassis_move_rc_to_vector->chassis_gimbal_data->v_tmp,
-                                       CHASSIS_KEY_BACK_MAX_SPEED);
+            target_vx = clamp_abs_fp32(raw_target_vx, CHASSIS_KEY_BACK_MAX_SPEED);
         }
     }
 
@@ -625,6 +607,7 @@ void chassis_behaviour_control_set(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set,
         }
         break;
 
+    // CHASSIS_JUMP is retained as legacy jump code. Current JUMP requests enter CHASSIS_STEP_UP.
     // case CHASSIS_JUMP:
     //     chassis_jump_control(vx_set, yaw_set, d_yaw_set, leg_set, chassis_move_rc_to_vector);
     //     break;
