@@ -459,6 +459,8 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
             {
                 chassis_move_mode->state = CHASSIS_STEP_UP;
                 chassis_move_mode->step_up_phase = STEP_UP_EXTEND;
+                chassis_move_mode->step_up_phase_ticks = 0;
+                chassis_move_mode->step_up_total_ticks = 0;
             }
             break;
 
@@ -467,6 +469,8 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
             {
                 chassis_move_mode->state = CHASSIS_STEP_UP;
                 chassis_move_mode->step_up_phase = STEP_UP_EXTEND;
+                chassis_move_mode->step_up_phase_ticks = 0;
+                chassis_move_mode->step_up_total_ticks = 0;
             }
             else if (step1_edge)
             {
@@ -483,6 +487,8 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
             {
                 chassis_move_mode->state = CHASSIS_STEP_UP;
                 chassis_move_mode->step_up_phase = STEP_UP_EXTEND;
+                chassis_move_mode->step_up_phase_ticks = 0;
+                chassis_move_mode->step_up_total_ticks = 0;
             }
             else if (step2_edge)
             {
@@ -622,6 +628,11 @@ void chassis_behaviour_control_set(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set,
             chassis_action_hold_control(vx_set, yaw_set, d_yaw_set, leg_set,
                                         chassis_move_rc_to_vector, CHASSIS_LEG_2_TARGET);
         }
+        else if (chassis_move_rc_to_vector->step_up_phase == STEP_UP_HOLD)
+        {
+            chassis_action_hold_control(vx_set, yaw_set, d_yaw_set, leg_set,
+                                        chassis_move_rc_to_vector, CHASSIS_LEG_2_TARGET);
+        }
         else if (chassis_move_rc_to_vector->step_up_phase == STEP_UP_RETRACT)
         {
             chassis_update_small_gyro_d_yaw(0, 1);
@@ -636,11 +647,11 @@ void chassis_behaviour_control_set(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set,
             // *leg_set = chassis_move_rc_to_vector->chassis_leg_filter_set.out;
             *leg_set = chassis_ramp_leg_target(chassis_move_rc_to_vector,
                                                CHASSIS_NORMAL_LEG_TARGET,
-                                               CHASSIS_LEG_STEP_RAMP_SPEED);
+                                               CHASSIS_STEP_UP_RETRACT_LEG_RAMP_SPEED);
         }
-        else // STEP_UP_STAND 和 STEP_UP_DONE
+        else // STEP_UP_DONE fallback
         {
-            // 起立阶段：准备切入NORMAL，将腿长滤波系数切回常规加速系数
+            // 兜底回 NORMAL 前保持静止和正常腿长目标。
             chassis_update_small_gyro_d_yaw(0, 1);
             *vx_set = chassis_update_vx_ramp(0.0f, 0);
             const fp32 yaw_target = wrap_to_pi(chassis_move_rc_to_vector->chassis_gimbal_data->yaw_set);

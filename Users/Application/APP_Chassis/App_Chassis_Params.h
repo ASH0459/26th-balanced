@@ -26,6 +26,8 @@
 /* -------------------- 腿长斜坡参数 -------------------- */
 // 跨步/状态切换时的通用腿长变化速率。
 #define CHASSIS_LEG_STEP_RAMP_SPEED 0.3f
+// 上台阶收腿阶段回到 normal 腿长的恢复速率。
+#define CHASSIS_STEP_UP_RETRACT_LEG_RAMP_SPEED 0.1f
 
 /* -------------------- Normal切入触地保持 -------------------- */
 // 刚切入 CHASSIS_NORMAL 后，短时间内强制认为双腿触地，抑制支持力判定抖动。
