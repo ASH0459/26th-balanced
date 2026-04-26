@@ -483,6 +483,27 @@ extern "C"
         chassis_move_control_loop->chassis_right_control.leg_pid_control.last_Dout = 0.0f;
     }
 
+    static void chassis_zero_leg_force_state(Chassis_Move *chassis_move_control_loop)
+    {
+        if (chassis_move_control_loop == NULL)
+        {
+            return;
+        }
+
+        chassis_move_control_loop->chassis_left_control.fd_roll = 0.0f;
+        chassis_move_control_loop->chassis_right_control.fd_roll = 0.0f;
+        chassis_move_control_loop->chassis_left_control.Fbl_gravity = 0.0f;
+        chassis_move_control_loop->chassis_right_control.Fbl_gravity = 0.0f;
+        chassis_move_control_loop->chassis_left_control.Fbl_inertial = 0.0f;
+        chassis_move_control_loop->chassis_right_control.Fbl_inertial = 0.0f;
+        chassis_move_control_loop->chassis_left_control.Fbl_spring = 0.0f;
+        chassis_move_control_loop->chassis_right_control.Fbl_spring = 0.0f;
+        chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t = 0.0f;
+        chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t = 0.0f;
+        chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t = 0.0f;
+        chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t = 0.0f;
+    }
+
     static void chassis_prepare_normal_entry(Chassis_Move *chassis_move_control_loop, bool_t sync_leg_filter)
     {
         if (chassis_move_control_loop == NULL)
@@ -1003,13 +1024,8 @@ extern "C"
             chassis_move_transit->chassis_yaw_err = 0.0f;
             chassis_move_transit->chassis_leg_set = CHASSIS_NORMAL_LEG_TARGET;
             chassis_move_transit->chassis_leg_filter_set.out = CHASSIS_NORMAL_LEG_TARGET;
-            chassis_move_transit->chassis_left_control.fd_roll = 0.0f;
-            chassis_move_transit->chassis_right_control.fd_roll = 0.0f;
-            chassis_move_transit->chassis_left_control.wbr_control.Fbl_t = 0.0f;
-            chassis_move_transit->chassis_right_control.wbr_control.Fbl_t = 0.0f;
-            chassis_move_transit->chassis_left_control.wbr_control.Tbl_t = 0.0f;
-            chassis_move_transit->chassis_right_control.wbr_control.Tbl_t = 0.0f;
             chassis_reset_leg_pid_state(chassis_move_transit);
+            chassis_zero_leg_force_state(chassis_move_transit);
             chassis_move_transit->posture_stable_ticks = 0;
             chassis_reset_jump_state(chassis_move_transit);
         }
@@ -1441,6 +1457,8 @@ extern "C"
         if (chassis_move_control_loop->state == CHASSIS_STOP)
         {
             chassis_zero_output(chassis_move_control_loop);
+            chassis_reset_leg_pid_state(chassis_move_control_loop);
+            chassis_zero_leg_force_state(chassis_move_control_loop);
             chassis_save_last_feedback(chassis_move_control_loop);
             return;
         }
