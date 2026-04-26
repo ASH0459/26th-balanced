@@ -1736,10 +1736,12 @@ extern "C"
     /**
      * @brief  轮腿落地导纳缓冲控制函数 (Admittance Landing Control)
      * @param  control_loop: 底盘控制主结构体指针
+     * @param  left_leg_set: 左腿导纳后的目标腿长
+     * @param  right_leg_set: 右腿导纳后的目标腿长
      * @retval None
      * @note   此函数内部包含静态变量，通过判断离地状态自动管理双腿的独立期望长度
      */
-    void Chassis_Landing_Admittance_Control(Chassis_Move *control_loop)
+    void Chassis_Landing_Admittance_Control(Chassis_Move *control_loop, fp32 *left_leg_set, fp32 *right_leg_set)
     {
         static fp32 independent_leg_set_L = 0.0f;
         static fp32 independent_leg_set_R = 0.0f;
@@ -1747,6 +1749,19 @@ extern "C"
 
         static Chassis_StepUp_Phase_e last_step_up_phase = STEP_UP_DONE;
         static Chassis_Init_Phase_e last_init_phase = CHASSIS_INIT_DONE;
+
+        if (control_loop == NULL || left_leg_set == NULL || right_leg_set == NULL)
+        {
+            return;
+        }
+
+        // 上电首次运行或从无力恢复时，独立腿长重新跟随统一腿长入口。
+        if (init_flag == 0 || control_loop->last_state == CHASSIS_STOP)
+        {
+            independent_leg_set_L = control_loop->chassis_leg_set;
+            independent_leg_set_R = control_loop->chassis_leg_set;
+            init_flag = 1;
+        }
 
         if (control_loop->state == CHASSIS_STEP_UP && control_loop->step_up_phase == STEP_UP_STAND && last_step_up_phase == STEP_UP_RETRACT) {
             independent_leg_set_L = control_loop->chassis_left_control.wbr_control.L;
@@ -1759,14 +1774,6 @@ extern "C"
             independent_leg_set_R = control_loop->chassis_right_control.wbr_control.L;
         }
         last_init_phase = control_loop->init_phase;
-
-        // 上电首次运行，初始化独立腿长等于全局腿长
-        if (init_flag == 0)
-        {
-            independent_leg_set_L = CHASSIS_LEG_MIN;
-            independent_leg_set_R = CHASSIS_LEG_MIN;
-            init_flag = 1;
-        }
 
         // 获取当前双腿的离地状态
         bool is_left_off = (control_loop->chassis_left_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND);
@@ -1820,9 +1827,8 @@ extern "C"
         independent_leg_set_L = float_constrain(independent_leg_set_L, CHASSIS_LEG_MIN, CHASSIS_LEG_MAX);
         independent_leg_set_R = float_constrain(independent_leg_set_R, CHASSIS_LEG_MIN, CHASSIS_LEG_MAX);
 
-        // 计算底层腿长PID输出 (推力Fbl_t)
-        control_loop->chassis_left_control.fd_leg = Leg_PID_Calc(&control_loop->chassis_left_control.leg_pid_control, control_loop->chassis_left_control.wbr_control.L, independent_leg_set_L);
-        control_loop->chassis_right_control.fd_leg = Leg_PID_Calc(&control_loop->chassis_right_control.leg_pid_control, control_loop->chassis_right_control.wbr_control.L, independent_leg_set_R);
+        *left_leg_set = independent_leg_set_L;
+        *right_leg_set = independent_leg_set_R;
     }
 
     static void chassis_calc_support_force(Chassis_Move *chassis_move_control_loop)
@@ -1831,9 +1837,29 @@ extern "C"
         chassis_move_control_loop->chassis_left_control.fd_roll = PID_Calc(&chassis_move_control_loop->chassis_left_control.roll_control, chassis_move_control_loop->chassis_roll, chassis_move_control_loop->chassis_roll_set);
         chassis_move_control_loop->chassis_right_control.fd_roll = PID_Calc(&chassis_move_control_loop->chassis_right_control.roll_control, chassis_move_control_loop->chassis_roll, chassis_move_control_loop->chassis_roll_set);
 
+        const bool_t init_retract_force =
+            (chassis_move_control_loop->state == CHASSIS_INIT &&
+             (chassis_move_control_loop->init_phase == CHASSIS_INIT_FOLD ||
+              chassis_move_control_loop->init_phase == CHASSIS_INIT_RETRACT)) ||
+            (chassis_move_control_loop->state == CHASSIS_STEP_UP &&
+             chassis_move_control_loop->step_up_phase == STEP_UP_RETRACT);
+        const bool_t jump_takeoff_force =
+            chassis_move_control_loop->state == CHASSIS_JUMP &&
+            chassis_move_control_loop->jump_phase == CHASSIS_JUMP_TAKEOFF;
+        const bool_t jump_readyland_force =
+            chassis_move_control_loop->state == CHASSIS_JUMP &&
+            chassis_move_control_loop->jump_phase == CHASSIS_JUMP_READYLAND;
+
+        fp32 left_leg_set = chassis_move_control_loop->chassis_leg_set;
+        fp32 right_leg_set = chassis_move_control_loop->chassis_leg_set;
+        if (init_retract_force == 0 && jump_takeoff_force == 0 && jump_readyland_force == 0)
+        {
+            // Chassis_Landing_Admittance_Control(chassis_move_control_loop, &left_leg_set, &right_leg_set);
+        }
+
         // 腿长PID
-        chassis_move_control_loop->chassis_left_control.fd_leg = Leg_PID_Calc(&chassis_move_control_loop->chassis_left_control.leg_pid_control, chassis_move_control_loop->chassis_left_control.wbr_control.L, chassis_move_control_loop->chassis_leg_set);
-        chassis_move_control_loop->chassis_right_control.fd_leg = Leg_PID_Calc(&chassis_move_control_loop->chassis_right_control.leg_pid_control, chassis_move_control_loop->chassis_right_control.wbr_control.L, chassis_move_control_loop->chassis_leg_set);
+        chassis_move_control_loop->chassis_left_control.fd_leg = Leg_PID_Calc(&chassis_move_control_loop->chassis_left_control.leg_pid_control, chassis_move_control_loop->chassis_left_control.wbr_control.L, left_leg_set);
+        chassis_move_control_loop->chassis_right_control.fd_leg = Leg_PID_Calc(&chassis_move_control_loop->chassis_right_control.leg_pid_control, chassis_move_control_loop->chassis_right_control.wbr_control.L, right_leg_set);
 
         // 重力补偿前馈
         chassis_move_control_loop->chassis_left_control.Fbl_gravity = (MASS_OF_BODY / 2 + chassis_move_control_loop->chassis_left_control.eta * MASS_OF_LEG) * GRAVITY_ACCELERATION;
@@ -1847,11 +1873,7 @@ extern "C"
         chassis_move_control_loop->chassis_left_control.Fbl_inertial = (MASS_OF_BODY / 2 + chassis_move_control_loop->chassis_left_control.eta * MASS_OF_LEG) * chassis_move_control_loop->chassis_left_control.wbr_control.L * chassis_move_control_loop->chassis_d_yaw * chassis_move_control_loop->v_filter / (2 * DRIVE_WHEEL_DIS);
         chassis_move_control_loop->chassis_right_control.Fbl_inertial = (MASS_OF_BODY / 2 + chassis_move_control_loop->chassis_right_control.eta * MASS_OF_LEG) * chassis_move_control_loop->chassis_right_control.wbr_control.L * chassis_move_control_loop->chassis_d_yaw * chassis_move_control_loop->v_filter / (2 * DRIVE_WHEEL_DIS);
 
-        if (chassis_move_control_loop->state == CHASSIS_INIT &&
-             (chassis_move_control_loop->init_phase == CHASSIS_INIT_FOLD ||
-             chassis_move_control_loop->init_phase == CHASSIS_INIT_RETRACT) ||
-             (chassis_move_control_loop->state == CHASSIS_STEP_UP &&
-             chassis_move_control_loop->step_up_phase == STEP_UP_RETRACT))
+        if (init_retract_force)
         {
             chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t = 0.0f;
             chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t = 0.0f;
@@ -1861,8 +1883,7 @@ extern "C"
             chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t = -chassis_move_control_loop->chassis_left_control.fd_leg + chassis_move_control_loop->chassis_left_control.Fbl_spring + 100;
             chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t = -chassis_move_control_loop->chassis_right_control.fd_leg + chassis_move_control_loop->chassis_right_control.Fbl_spring + 100;
         }
-        else if (chassis_move_control_loop->state == CHASSIS_JUMP &&
-                 chassis_move_control_loop->jump_phase == CHASSIS_JUMP_TAKEOFF)
+        else if (jump_takeoff_force)
         {
             // 重力补偿 + 侧向惯性力矩补偿 + 左腿腿长PID
             chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t = -chassis_move_control_loop->chassis_left_control.fd_leg - CHASSIS_JUMP_TAKEOFF_FORCE_BONUS;
@@ -1870,8 +1891,7 @@ extern "C"
             // 重力补偿 + 侧向惯性力矩补偿 + 右腿腿长PID
             chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t = -chassis_move_control_loop->chassis_right_control.fd_leg - CHASSIS_JUMP_TAKEOFF_FORCE_BONUS;
         }
-        else if (chassis_move_control_loop->state == CHASSIS_JUMP &&
-                 chassis_move_control_loop->jump_phase == CHASSIS_JUMP_READYLAND)
+        else if (jump_readyland_force)
         {
             // 重力补偿 + 侧向惯性力矩补偿 + 左腿腿长PID
             chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t = -chassis_move_control_loop->chassis_left_control.fd_leg + chassis_move_control_loop->chassis_left_control.Fbl_spring;
@@ -1881,8 +1901,6 @@ extern "C"
         }
         else // 正常情况下支持力处理
         {
-            Chassis_Landing_Admittance_Control(chassis_move_control_loop);
-
             if (chassis_move_control_loop->chassis_left_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND && chassis_move_control_loop->chassis_right_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND)
             {
                 chassis_move_control_loop->chassis_left_control.fd_roll = 0.0f;
