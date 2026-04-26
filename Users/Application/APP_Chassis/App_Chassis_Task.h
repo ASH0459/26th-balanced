@@ -460,6 +460,8 @@ public:
     fp32 chassis_d_yaw_set; // 目标角速度
     fp32 chassis_yaw_set;
     fp32 chassis_leg_set;                             // 腿部目标长度
+    fp32 chassis_left_leg_set;                        // 左腿最终目标长度
+    fp32 chassis_right_leg_set;                       // 右腿最终目标长度
     first_order_filter_type_t chassis_leg_filter_set; // 低通/斜坡后的腿部目标长度
     fp32 chassis_roll_set;                            // 底盘roll轴设定值
 
