@@ -124,7 +124,7 @@
 #define ROLL_PID_MAX_OUT 200.0f
 #define ROLL_PID_MAX_IOUT 0.0f
 
-#define CHASSIS_X_BACK 0.3f
+#define CHASSIS_X_BACK 0.7f
 // 左右腿长度PID
 #define LEG_PID_KP 2500.0f
 #define LEG_PID_KI 0.0f
@@ -290,6 +290,7 @@ typedef enum
     STEP_UP_SWING,       // 第三阶段：保持台阶腿长，被动摆到目标角度
     STEP_UP_HOLD,        // 第四阶段：进入后检查角度，达标或超时后切 RETRACT 起身
     STEP_UP_RETRACT,     // 第五阶段：独立收腿
+    STEP_UP_STAND,       // 第六阶段：收腿到底后等待腿摆正 (theta < 0.2)
     STEP_UP_DONE,        // 内部结束标记，实际会直接切回 NORMAL
 } Chassis_StepUp_Phase_e;
 

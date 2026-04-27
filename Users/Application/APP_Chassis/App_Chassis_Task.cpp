@@ -1044,6 +1044,10 @@ extern "C"
             chassis_move_transit->posture_stable_ticks = 0;
             chassis_reset_jump_state(chassis_move_transit);
         }
+
+        // if (chassis_move_transit->last_state == CHASSIS_STEP_UP && chassis_move_transit->state == CHASSIS_FLIP) {
+        //     chassis_move_transit->chassis_x_set += CHASSIS_X_BACK;
+        // }
     }
 
     /**

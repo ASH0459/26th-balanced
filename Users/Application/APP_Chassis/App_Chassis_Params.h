@@ -21,7 +21,7 @@
 #define CHASSIS_KEY_MAX_SPEED 2.0f
 #define CHASSIS_KEY_BACK_MAX_SPEED 1.5f
 #define CHASSIS_LEG_MAX_SPEED 1.5f
-#define CHASSIS_STEP_UP_MAX_SPEED 0.75f
+#define CHASSIS_STEP_UP_MAX_SPEED 0.9f
 
 /* -------------------- 腿长斜坡参数 -------------------- */
 // 跨步/状态切换时的通用腿长变化速率。
