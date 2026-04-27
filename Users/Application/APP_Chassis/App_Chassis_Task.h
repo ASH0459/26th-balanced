@@ -40,10 +40,10 @@
 
 #define STEP_UP_ANGLE_THRESHOLD 0.6f    // 碰到台阶时，腿部被向后推直的角度阈值 (rad)，需实测微调
 #define STEP_UP_TORQUE_THRESHOLD 4.0f   // 碰到台阶导致堵转的虚拟水平扭矩 Tbl_t 阈值 (Nm)
-#define STEP_UP_PASSIVE_SWING_TARGET -1.0f          // 被动摆腿目标角度，直接使用 theta_l 原始坐标
-#define STEP_UP_HOLD_TICKS 200U                    // 到目标角度后停留时间，控制周期 1ms 时约 200ms
-#define STEP_UP_TIMEOUT_TICKS 5000U                // 上台阶总超时退出，控制周期 1ms 时约 3s
-#define STEP_UP_PASSIVE_REVERSE_LEG_TBL -3.0f      // 被动摆腿/停留阶段腿部反向水平力矩，减小上台阶后前滑
+#define STEP_UP_PASSIVE_SWING_TARGET -0.8f          // 被动摆腿目标角度，直接使用 theta_l 原始坐标
+#define STEP_UP_HOLD_TICKS 300U                    // 被动摆腿后停留时间，控制周期 1ms 时约 500ms
+#define STEP_UP_TIMEOUT_TICKS 100000U                // 上台阶总超时退出，控制周期 1ms 时约 5s
+#define STEP_UP_PASSIVE_REVERSE_LEG_TBL -4.0f      // 被动摆腿/停留阶段腿部反向水平力矩，减小上台阶后前滑
 
 
 // 重力加速度
@@ -288,7 +288,7 @@ typedef enum
     STEP_UP_EXTEND = 0,  // 第一阶段：伸长腿到 LEG_2
     STEP_UP_DETECT,      // 第二阶段：保持腿长，检测是否撞击台阶
     STEP_UP_SWING,       // 第三阶段：保持台阶腿长，被动摆到目标角度
-    STEP_UP_HOLD,        // 第四阶段：开始收腿，在目标角度后停留
+    STEP_UP_HOLD,        // 第四阶段：进入后检查角度，达标或超时后切 RETRACT 起身
     STEP_UP_RETRACT,     // 第五阶段：独立收腿
     STEP_UP_DONE,        // 内部结束标记，实际会直接切回 NORMAL
 } Chassis_StepUp_Phase_e;

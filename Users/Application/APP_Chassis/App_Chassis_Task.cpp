@@ -527,6 +527,7 @@ extern "C"
         chassis_reset_leg_pid_state(chassis_move_control_loop);
         chassis_move_control_loop->normal_force_touch_ground_ticks = CHASSIS_NORMAL_FORCE_TOUCH_GROUND_TICKS;
     }
+
     /**
      * @brief          初始化"chassis_move"变量，包括pid初始化， 遥控器指针初始化，3508底盘电机指针初始化，云台电机初始化，陀螺仪角度指针初始化
      * @param[out]     chassis_move_init:"chassis_move"变量指针.
@@ -1634,10 +1635,12 @@ extern "C"
             chassis_move_control_loop->step_up_total_ticks++;
         }
 
-        if (chassis_move_control_loop->step_up_phase == STEP_UP_SWING &&
+        if (chassis_move_control_loop->step_up_phase == STEP_UP_HOLD &&
             chassis_move_control_loop->step_up_total_ticks >= STEP_UP_TIMEOUT_TICKS)
         {
-            chassis_prepare_normal_entry(chassis_move_control_loop, 1);
+            chassis_move_control_loop->step_up_phase = STEP_UP_RETRACT;
+            chassis_move_control_loop->step_up_phase_ticks = 0;
+            chassis_move_control_loop->chassis_leg_filter_set.out = chassis_move_control_loop->chassis_left_control.wbr_control.L;
             return;
         }
 
@@ -1670,6 +1673,30 @@ extern "C"
             {
                 chassis_move_control_loop->step_up_phase = STEP_UP_DONE;
                 chassis_prepare_normal_entry(chassis_move_control_loop, 1);
+            }
+        }
+        else if (chassis_move_control_loop->step_up_phase == STEP_UP_SWING)
+        {
+            chassis_move_control_loop->step_up_phase_ticks++;
+            if (chassis_move_control_loop->step_up_phase_ticks >= STEP_UP_HOLD_TICKS)
+            {
+                chassis_move_control_loop->step_up_phase_ticks = 0;
+                chassis_move_control_loop->step_up_phase = STEP_UP_HOLD;
+            }
+        }
+        else if (chassis_move_control_loop->step_up_phase == STEP_UP_HOLD)
+        {
+            // HOLD 阶段持续检查角度，达标则立刻收腿起身；未达标则等待总超时后也进入收腿起身。
+            const bool_t left_reached_target =
+                chassis_move_control_loop->chassis_left_control.theta_l <= STEP_UP_PASSIVE_SWING_TARGET + 0.05f;
+            const bool_t right_reached_target =
+                chassis_move_control_loop->chassis_right_control.theta_l <= STEP_UP_PASSIVE_SWING_TARGET + 0.05f;
+
+            if (left_reached_target && right_reached_target)
+            {
+                chassis_move_control_loop->step_up_phase = STEP_UP_RETRACT;
+                chassis_move_control_loop->step_up_phase_ticks = 0;
+                chassis_move_control_loop->chassis_leg_filter_set.out = chassis_move_control_loop->chassis_left_control.wbr_control.L;
             }
         }
     }
@@ -1709,24 +1736,6 @@ extern "C"
             chassis_move_control_loop->chassis_right_control.wbr_control.J[1][1] *
                 chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t;
 
-        // 到位检测：被动摆到或越过目标角度后，转入 HOLD 短暂停留。
-        if (chassis_move_control_loop->step_up_phase == STEP_UP_SWING &&
-            chassis_move_control_loop->chassis_left_control.theta_l <= STEP_UP_PASSIVE_SWING_TARGET &&
-            chassis_move_control_loop->chassis_right_control.theta_l <= STEP_UP_PASSIVE_SWING_TARGET)
-        {
-            chassis_move_control_loop->step_up_phase = STEP_UP_HOLD;
-            chassis_move_control_loop->step_up_phase_ticks = 0;
-        }
-        else if (chassis_move_control_loop->step_up_phase == STEP_UP_HOLD)
-        {
-            chassis_move_control_loop->step_up_phase_ticks++;
-            if (chassis_move_control_loop->step_up_phase_ticks >= STEP_UP_HOLD_TICKS)
-            {
-                chassis_move_control_loop->step_up_phase_ticks = 0;
-                chassis_move_control_loop->step_up_phase = STEP_UP_RETRACT;
-                chassis_move_control_loop->chassis_leg_filter_set.out = chassis_move_control_loop->chassis_left_control.wbr_control.L;
-            }
-        }
     }
 
     static void chassis_update_jump_phase(Chassis_Move *chassis_move_control_loop)
