@@ -75,7 +75,8 @@ extern "C" {
         buzzer_off();
       }
 
-      if((chassis_move.state == CHASSIS_STEP_UP)) {
+      if ((chassis_move.state == CHASSIS_LEG_1 || chassis_move.state == CHASSIS_LEG_2) &&
+          chassis_move.step_up_phase != STEP_UP_DONE) {
         buzzer_on(400, 1500);
       }
       osDelay(10);
