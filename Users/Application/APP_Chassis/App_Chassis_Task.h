@@ -124,7 +124,7 @@
 #define ROLL_PID_MAX_OUT 200.0f
 #define ROLL_PID_MAX_IOUT 0.0f
 
-#define CHASSIS_X_BACK 0.7f
+#define CHASSIS_X_BACK 0.5f
 // 左右腿长度PID
 #define LEG_PID_KP 2500.0f
 #define LEG_PID_KI 0.0f

@@ -346,7 +346,8 @@ extern "C"
 
         return (chassis_move_control->step_up_phase == STEP_UP_SWING ||
                 chassis_move_control->step_up_phase == STEP_UP_HOLD ||
-                chassis_move_control->step_up_phase == STEP_UP_RETRACT);
+                chassis_move_control->step_up_phase == STEP_UP_RETRACT ||
+                chassis_move_control->step_up_phase == STEP_UP_STAND);
     }
 
     static bool_t chassis_is_init_like_state(Chassis_State_e state)
@@ -1675,6 +1676,19 @@ extern "C"
                 fabsf(chassis_move_control_loop->chassis_right_control.wbr_control.L - CHASSIS_NORMAL_LEG_TARGET) <= 0.02f;
             if (legs_retracted)
             {
+                // 收腿完毕，不再直接恢复 NORMAL，而是进入等待摆正的 STAND 阶段
+                chassis_move_control_loop->step_up_phase = STEP_UP_STAND;
+                chassis_move_control_loop->step_up_phase_ticks = 0;
+            }
+        }
+        else if (chassis_move_control_loop->step_up_phase == STEP_UP_STAND) {
+            // 等待双腿的角度摆正到机体正下方 (小于 0.2 rad)
+            bool_t legs_straight =
+                fabsf(chassis_move_control_loop->chassis_left_control.theta_l) <= 0.15f &&
+                fabsf(chassis_move_control_loop->chassis_right_control.theta_l) <= 0.15f;
+
+            if (legs_straight)
+            {
                 chassis_move_control_loop->step_up_phase = STEP_UP_DONE;
                 chassis_prepare_normal_entry(chassis_move_control_loop, 1);
             }
@@ -2022,6 +2036,35 @@ extern "C"
                                            0.0f,
                                            chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t,
                                            0.0f);
+        }
+        else if (chassis_move_control_loop->state == CHASSIS_STEP_UP &&
+                 chassis_move_control_loop->step_up_phase == STEP_UP_STAND)
+        {
+            // 停止轮子输出
+            chassis_move_control_loop->chassis_wheel[0].wheel_T = 0.0f;
+            chassis_move_control_loop->chassis_wheel[1].wheel_T = 0.0f;
+
+            // 获取当前的角度/角速度反馈
+            fp32 left_theta = chassis_select_theta_signal(&chassis_move_control_loop->chassis_left_control, CHASSIS_LEFT_THETA_FILTER_SOURCE);
+            fp32 left_d_theta = chassis_select_d_theta_signal(&chassis_move_control_loop->chassis_left_control, CHASSIS_LEFT_D_THETA_FILTER_SOURCE);
+            fp32 right_theta = chassis_select_theta_signal(&chassis_move_control_loop->chassis_right_control, CHASSIS_RIGHT_THETA_FILTER_SOURCE);
+            fp32 right_d_theta = chassis_select_d_theta_signal(&chassis_move_control_loop->chassis_right_control, CHASSIS_RIGHT_D_THETA_FILTER_SOURCE);
+
+            // 腿部扭矩(Tbl_t)仅由LQR中与K24,K25,K26,K27(及右侧同理项)角度控制相关的项组成
+            chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t =
+                LQR_K[2][4] * left_theta + LQR_K[2][5] * left_d_theta +
+                LQR_K[2][6] * right_theta + LQR_K[2][7] * right_d_theta;
+
+            chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t =
+                LQR_K[3][4] * left_theta + LQR_K[3][5] * left_d_theta +
+                LQR_K[3][6] * right_theta + LQR_K[3][7] * right_d_theta;
+
+            // 结合正常的纵向支持力(Fbl_t)，映射输出给关节电机
+            chassis_apply_wbr_joint_output(chassis_move_control_loop,
+                                           chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t,
+                                           chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t * 0.35,
+                                           chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t,
+                                           chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t * 0.35);
         }
         else if (chassis_move_control_loop->state != CHASSIS_INIT)
         {

@@ -633,7 +633,8 @@ void chassis_behaviour_control_set(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set,
             chassis_action_hold_control(vx_set, yaw_set, d_yaw_set, leg_set,
                                         chassis_move_rc_to_vector, CHASSIS_LEG_2_TARGET);
         }
-        else if (chassis_move_rc_to_vector->step_up_phase == STEP_UP_RETRACT)
+        else if (chassis_move_rc_to_vector->step_up_phase == STEP_UP_RETRACT ||
+                 chassis_move_rc_to_vector->step_up_phase == STEP_UP_STAND)
         {
             chassis_update_small_gyro_d_yaw(0, 1);
             *vx_set = chassis_update_vx_ramp(0.0f, 0);
