@@ -75,12 +75,9 @@ typedef enum
     CHASSIS_MODE_NO_FORCE = 0,
     CHASSIS_MODE_RESERVED = 1,
     CHASSIS_MODE_NORMAL = 2,
-    CHASSIS_MODE_JUMP = 3,
+    CHASSIS_MODE_JUMP = 3, // 保留协议位，当前不作为底盘动作入口
     CHASSIS_MODE_STEP_1 = 4,
     CHASSIS_MODE_STEP_2 = 5,
-    CHASSIS_MODE_RESERVED_2 = 6,
-    CHASSIS_MODE_UI_RESET = 7,
-    CHASSIS_MODE_STEP_UP = 8,
 } chassis_mode_e;
 
 typedef enum
@@ -88,9 +85,21 @@ typedef enum
     FRIC_OFF = 0,
     FRIC_ON = 1,
     FRIC_ERROR = 2,
-    FRIC_AUTO_AIM_TARGET_NO_MANUAL_FIRE = 4,
-    FRIC_AUTO_AIM_TARGET_MANUAL_FIRE = 5,
 } Fric_State_e;
+
+typedef enum
+{
+    CHASSIS_AUTO_AIM_STATE_NO_TARGET = 0,
+    CHASSIS_AUTO_AIM_STATE_MANUAL_FIRE_TARGET = 1,
+    CHASSIS_AUTO_AIM_STATE_AUTO_FIRE_TARGET = 2,
+} chassis_auto_aim_state_e;
+
+typedef enum
+{
+    CHASSIS_FEATURE_FLAG_GYRO_ENABLE = 0x01,
+    CHASSIS_FEATURE_FLAG_STEP = 0x02,
+    CHASSIS_FEATURE_FLAG_UI_RESET = 0x04,
+} chassis_feature_flag_e;
 
 /** * @brief 变量外部声明 */
 
@@ -313,7 +322,10 @@ public:
     fp32 v_tmp;
     fp32 chassis_relative_angle;
     fp32 yaw_set;
+    uint8_t auto_aim_state;
+    uint8_t chassis_feature_flags;
     uint8_t gyro_enable;
+    uint8_t step_enable;
     uint8_t protocol_valid;
     Fric_State_e fric_state;
     chassis_mode_e chassis_behaviour_mode;
@@ -355,16 +367,16 @@ extern Gimbal_Data gimbal_data;
 typedef struct
 {
     int16_t v_set;
-    uint8_t reserved;
-    uint8_t gyro_enable;
-    uint8_t mode_byte;
+    uint8_t auto_aim_state;
+    uint8_t chassis_feature_flags;
+    uint8_t mode;
     uint8_t fric_state;
     int16_t turn_set;
 } gimbal_can_cmd_frame_t;
 
 inline bool_t chassis_mode_is_valid(const uint8_t mode_byte)
 {
-    return mode_byte <= CHASSIS_MODE_UI_RESET;
+    return mode_byte <= CHASSIS_MODE_STEP_2;
 }
 
 /**
@@ -372,11 +384,9 @@ inline bool_t chassis_mode_is_valid(const uint8_t mode_byte)
  * @param[in]      received_data: 云台发送的8字节CAN数据
  * @retval         none
  * @note           已在FDCAN中断中接入，新双板协议:
- *                 [0..1] v_set(int16), [2] reserved(uint8),
- *                 [3] gyro_enable(uint8), [4] mode_byte(uint8),
+ *                 [0..1] v_set(int16), [2] auto_aim_state(uint8),
+ *                 [3] chassis_feature_flags(bitmask), [4] mode(uint8),
  *                 [5] fric_state(uint8), [6..7] turn_set(int16, rad*1000).
- *                 若 mode 编码异常，则进入安全态:
- *                 mode=NO_FORCE, v_set=0.
  */
 inline void CAN_cmd_gimbal_receive(const uint8_t *received_data)
 {
@@ -387,21 +397,22 @@ inline void CAN_cmd_gimbal_receive(const uint8_t *received_data)
 
     gimbal_can_cmd_frame_t frame{};
     frame.v_set = static_cast<int16_t>((received_data[0] << 8) | received_data[1]);
-    frame.reserved = received_data[2];
-    frame.gyro_enable = received_data[3];
-    frame.mode_byte = received_data[4];
+    frame.auto_aim_state = received_data[2];
+    frame.chassis_feature_flags = received_data[3];
+    frame.mode = received_data[4];
     frame.fric_state = received_data[5];
     frame.turn_set = static_cast<int16_t>((received_data[6] << 8) | received_data[7]);
 
-    const bool_t mode_valid = chassis_mode_is_valid(frame.mode_byte);
-    const bool_t gyro_valid = (frame.gyro_enable <= 1U);
-    gimbal_data.protocol_valid = static_cast<uint8_t>(mode_valid && gyro_valid);
+    const bool_t mode_valid = chassis_mode_is_valid(frame.mode);
+    const bool_t auto_aim_valid =
+        (frame.auto_aim_state == CHASSIS_AUTO_AIM_STATE_NO_TARGET ||
+         frame.auto_aim_state == CHASSIS_AUTO_AIM_STATE_MANUAL_FIRE_TARGET ||
+         frame.auto_aim_state == CHASSIS_AUTO_AIM_STATE_AUTO_FIRE_TARGET);
+    gimbal_data.protocol_valid = static_cast<uint8_t>(mode_valid && auto_aim_valid);
 
     const Fric_State_e fric_state =
         (frame.fric_state == FRIC_OFF || frame.fric_state == FRIC_ON ||
-         frame.fric_state == FRIC_ERROR ||
-         frame.fric_state == FRIC_AUTO_AIM_TARGET_NO_MANUAL_FIRE ||
-         frame.fric_state == FRIC_AUTO_AIM_TARGET_MANUAL_FIRE)
+         frame.fric_state == FRIC_ERROR)
             ? static_cast<Fric_State_e>(frame.fric_state)
             : FRIC_ERROR;
 
@@ -415,18 +426,25 @@ inline void CAN_cmd_gimbal_receive(const uint8_t *received_data)
     {
         gimbal_data.yaw_set = -PI;
     }
-    gimbal_data.gyro_enable = gyro_valid ? frame.gyro_enable : 0U;
+    gimbal_data.auto_aim_state =
+        auto_aim_valid ? frame.auto_aim_state : CHASSIS_AUTO_AIM_STATE_NO_TARGET;
+    gimbal_data.chassis_feature_flags = frame.chassis_feature_flags;
+    gimbal_data.gyro_enable =
+        ((frame.chassis_feature_flags & CHASSIS_FEATURE_FLAG_GYRO_ENABLE) != 0U) ? 1U : 0U;
+    gimbal_data.step_enable =
+        ((frame.chassis_feature_flags & CHASSIS_FEATURE_FLAG_STEP) != 0U) ? 1U : 0U;
     gimbal_data.chassis_behaviour_mode =
-        mode_valid ? static_cast<chassis_mode_e>(frame.mode_byte) : CHASSIS_MODE_NO_FORCE;
-    (void)frame.reserved;
-
+        mode_valid ? static_cast<chassis_mode_e>(frame.mode) : CHASSIS_MODE_NO_FORCE;
     gimbal_data.fric_state = fric_state;
 
     if (gimbal_data.protocol_valid == 0U)
     {
         gimbal_data.v_tmp = 0.0f;
         gimbal_data.yaw_set = gimbal_data.chassis_relative_angle;
+        gimbal_data.auto_aim_state = CHASSIS_AUTO_AIM_STATE_NO_TARGET;
+        gimbal_data.chassis_feature_flags = 0U;
         gimbal_data.gyro_enable = 0U;
+        gimbal_data.step_enable = 0U;
         gimbal_data.chassis_behaviour_mode = CHASSIS_MODE_NO_FORCE;
     }
 }

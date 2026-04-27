@@ -74,15 +74,23 @@ for ($i = $upTicks; $i -lt $trace.Count; $i++) {
 
 $gyroPass = $monoUp -and $monoDown -and ([Math]::Abs($trace[$upEndIndex] - $target) -lt 1e-6) -and ([Math]::Abs($trace[-1] - 0.0) -lt 1e-6)
 
-# 2) Static source checks for mode=6 no-action and VT timeout safe-stop
+# 2) Static source checks for new 0x302 protocol parsing and VT timeout safe-stop
 $beh = Get-Content 'Users/Application/APP_Chassis/App_Chassis_Behaviour.cpp' -Raw
 $canh = Get-Content 'Users/Bsp/Bsp_Device/Dev_Can_Receive/Dev_Can_Receive.h' -Raw
 $task = Get-Content 'Users/Application/APP_Chassis/App_Chassis_Task.cpp' -Raw
+$ui = Get-Content 'Users/Application/App_UI/App_UI_Task.cpp' -Raw
 
-$mode6Reserved = $canh -match 'CHASSIS_MODE_RESERVED_2\s*=\s*6'
+$featureFlagsParsed = $canh -match 'frame\.chassis_feature_flags\s*=\s*received_data\[3\]'
+$autoAimParsed = $canh -match 'frame\.auto_aim_state\s*=\s*received_data\[2\]'
+$gyroFlagDecoded = $canh -match 'CHASSIS_FEATURE_FLAG_GYRO_ENABLE'
+$stepFlagDecoded = $canh -match 'CHASSIS_FEATURE_FLAG_STEP'
 $normalGate = $beh -match 'requested_mode\s*==\s*CHASSIS_MODE_NORMAL\s*&&\s*protocol_valid'
 $nonNormalHold = $beh -match 'chassis_action_hold_control\('
-$mode6Pass = $mode6Reserved -and $normalGate -and $nonNormalHold
+$stepUpNoJumpEntry = -not ($beh -match 'jump_edge')
+$stepUpFromLegDetect = $task -match 'chassis_move_control_loop->chassis_gimbal_data->step_enable'
+$uiResetFromFlags = $ui -match 'CHASSIS_FEATURE_FLAG_UI_RESET'
+$protocolPass = $featureFlagsParsed -and $autoAimParsed -and $gyroFlagDecoded -and $stepFlagDecoded -and
+                $normalGate -and $nonNormalHold -and $stepUpNoJumpEntry -and $stepUpFromLegDetect -and $uiResetFromFlags
 
 $timeoutBranch = $task -match 'toe_is_error\(VT_TOE\)'
 $jointZero = $task -match 'chassis_move\.chassis_joint\[i\]\.joint_T\s*=\s*0\.0f'
@@ -93,7 +101,7 @@ $timeoutPass = $timeoutBranch -and $jointZero -and $wheelZeroL -and $wheelZeroR
 $summary = [PSCustomObject]@{
   ControlTimeConsistencyPass = $true
   GyroRampSmoothPass = $gyroPass
-  Mode6NoActionPass = $mode6Pass
+  NewProtocolStaticPass = $protocolPass
   TimeoutSafeStopPass = $timeoutPass
   GyroRampUpFinal = [Math]::Round($trace[$upEndIndex], 3)
   GyroRampDownFinal = [Math]::Round($trace[-1], 3)

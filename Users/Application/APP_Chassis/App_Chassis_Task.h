@@ -279,19 +279,18 @@ typedef enum
     CHASSIS_LEG_1,
     CHASSIS_LEG_2,
     CHASSIS_JUMP,
-    CHASSIS_STEP_UP,
 } Chassis_State_e;
 
 
 typedef enum
 {
-    STEP_UP_EXTEND = 0,  // 第一阶段：伸长腿到 LEG_2
+    STEP_UP_EXTEND = 0,  // 第一阶段：伸长腿
     STEP_UP_DETECT,      // 第二阶段：保持腿长，检测是否撞击台阶
     STEP_UP_SWING,       // 第三阶段：保持台阶腿长，被动摆到目标角度
     STEP_UP_HOLD,        // 第四阶段：进入后检查角度，达标或超时后切 RETRACT 起身
     STEP_UP_RETRACT,     // 第五阶段：独立收腿
     STEP_UP_STAND,       // 第六阶段：收腿到底后等待腿摆正 (theta < 0.2)
-    STEP_UP_DONE,        // 内部结束标记，实际会直接切回 NORMAL
+    STEP_UP_DONE,        // 内部结束标记，结束后回到 NORMAL
 } Chassis_StepUp_Phase_e;
 
 /* 机体姿态 */
@@ -402,6 +401,7 @@ public:
     uint16_t step_up_total_ticks = 0;
     uint16_t posture_stable_ticks = 0;
     uint16_t normal_force_touch_ground_ticks = 0;
+    fp32 step_up_leg_target = CHASSIS_LEG_2_TARGET;
 
     const fp32 *chassis_INS_gyro;       // 机体角速度指针
     const fp32 *chassis_INS_angle;      // 获取陀螺仪解算出的欧拉角指针

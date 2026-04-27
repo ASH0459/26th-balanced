@@ -139,8 +139,8 @@ static void UI_updata(void)
 }
 
 /**
- * @brief 检查云台下发的UI重置模式并在上升沿重新初始化UI。
- * @note 仅在从非UI_Reset切换到UI_Reset时触发一次，避免持续重入初始化。
+ * @brief 检查云台下发的UI重置标志并在上升沿重新初始化UI。
+ * @note 仅在 feature_flags.bit2 从0切到1时触发一次，避免持续重入初始化。
  */
 static void UI_Handle_Reset_Request(void)
 {
@@ -148,10 +148,10 @@ static void UI_Handle_Reset_Request(void)
   uint8_t reset_request = 0U;
 
   if (chassis_move != nullptr &&
-      chassis_move->chassis_gimbal_data != nullptr &&
-      chassis_move->chassis_gimbal_data->chassis_behaviour_mode == CHASSIS_MODE_UI_RESET)
+      chassis_move->chassis_gimbal_data != nullptr)
   {
-    reset_request = 1U;
+    reset_request =
+        ((chassis_move->chassis_gimbal_data->chassis_feature_flags & CHASSIS_FEATURE_FLAG_UI_RESET) != 0U) ? 1U : 0U;
   }
 
   if (reset_request != 0U && g_ui_reset_mode_latched == 0U)
@@ -307,6 +307,28 @@ static void UI_Move_Rect_To_Text(ui_interface_rect_t *rect, const ui_interface_s
   rect->end_y = text->start_y + padding_bottom;
 }
 
+static uint8_t UI_Get_Step_Mode_Rect_Color(const Chassis_Move *chassis_move)
+{
+  static const uint8_t k_step_cycle_colors[] = {
+      PINK_COLOR,
+      CYAN_COLOR,
+      GREEN_COLOR,
+      YELLOW_COLOR,
+      ORANGE_COLOR,
+      PURPLE_COLOR,
+  };
+
+  if (chassis_move == nullptr || chassis_move->chassis_gimbal_data == nullptr ||
+      chassis_move->chassis_gimbal_data->step_enable == 0U)
+  {
+    return PINK_COLOR;
+  }
+
+  const uint32_t color_index =
+      (HAL_GetTick() / 120U) % (sizeof(k_step_cycle_colors) / sizeof(k_step_cycle_colors[0]));
+  return k_step_cycle_colors[color_index];
+}
+
 /**
  * @brief 根据底盘状态移动底盘状态框。
  * @note NORMAL、STEP1、STEP2、JUMP分别映射到对应文字，其它状态归为STOP显示。
@@ -347,12 +369,13 @@ static void Chassis_State_Rect_Update(void)
     break;
   }
 
+  ui_normal_DynamicGroup1_ChassisStateRect->color = UI_Get_Step_Mode_Rect_Color(chassis_move);
   UI_Move_Rect_To_Text(ui_normal_DynamicGroup1_ChassisStateRect, target_text);
 }
 
 /**
  * @brief 根据摩擦轮状态移动右侧摩擦轮状态框。
- * @note fric_state为4/5时表示自瞄附加状态，不改变右侧摩擦轮模式框。
+ * @note 新协议下自瞄状态由 auto_aim_state 独立承载，摩擦轮状态框仅显示 OFF/ON/ERROR。
  */
 static void Fric_State_Rect_Update(void)
 {
@@ -374,11 +397,6 @@ static void Fric_State_Rect_Update(void)
     target_text = ui_normal_StaticTextGroup1_FricOnText;
     break;
 
-  // 4/5表示视觉锁定目标时的附加状态，不改变右侧摩擦轮状态框的位置。
-  case FRIC_AUTO_AIM_TARGET_NO_MANUAL_FIRE:
-  case FRIC_AUTO_AIM_TARGET_MANUAL_FIRE:
-    return;
-
   case FRIC_ERROR:
   default:
     target_text = ui_normal_StaticTextGroup1_FricErrorText;
@@ -390,7 +408,7 @@ static void Fric_State_Rect_Update(void)
 
 /**
  * @brief 根据自瞄目标状态更新中间自瞄框颜色。
- * @note 4表示识别到目标但禁止手动开火，显示紫红色；5表示允许手动开火，显示蓝色；普通状态显示白色。
+ * @note 无目标显示白色，手动开火目标显示青色，自动开火目标显示粉色。
  */
 static void Fric_Target_Color_Update(void)
 {
@@ -401,19 +419,17 @@ static void Fric_Target_Color_Update(void)
     return;
   }
 
-  switch (chassis_move->chassis_gimbal_data->fric_state)
+  switch (chassis_move->chassis_gimbal_data->auto_aim_state)
   {
-  // 自瞄识别到目标但禁止手动开火：中间自瞄框显示紫红色。
-  case FRIC_AUTO_AIM_TARGET_NO_MANUAL_FIRE:
-    ui_normal_DynamicGroup1_FricOrNot->color = PINK_COLOR;
-    break;
-
-  // 自瞄识别到目标且允许手动开火：中间自瞄框显示蓝色。
-  case FRIC_AUTO_AIM_TARGET_MANUAL_FIRE:
+  case CHASSIS_AUTO_AIM_STATE_MANUAL_FIRE_TARGET:
     ui_normal_DynamicGroup1_FricOrNot->color = CYAN_COLOR;
     break;
 
-  // 普通摩擦轮状态下不强调自瞄框。
+  case CHASSIS_AUTO_AIM_STATE_AUTO_FIRE_TARGET:
+    ui_normal_DynamicGroup1_FricOrNot->color = PINK_COLOR;
+    break;
+
+  case CHASSIS_AUTO_AIM_STATE_NO_TARGET:
   default:
     ui_normal_DynamicGroup1_FricOrNot->color = WHITE_COLOR;
     break;

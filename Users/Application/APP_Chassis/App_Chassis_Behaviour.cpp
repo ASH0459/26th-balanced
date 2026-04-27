@@ -99,6 +99,18 @@ static bool_t chassis_is_request_rising_edge(const Chassis_Move *chassis_move_mo
            chassis_move_mode->last_request_mode != target_mode;
 }
 
+static bool_t chassis_is_step_up_active(const Chassis_Move *chassis_move)
+{
+    if (chassis_move == NULL)
+    {
+        return 0;
+    }
+
+    return (chassis_move->state == CHASSIS_LEG_1 ||
+            chassis_move->state == CHASSIS_LEG_2) &&
+           chassis_move->step_up_phase != STEP_UP_DONE;
+}
+
 static Chassis_State_e chassis_requested_mode_to_pending_state(chassis_mode_e requested_mode)
 {
     switch (requested_mode)
@@ -107,9 +119,6 @@ static Chassis_State_e chassis_requested_mode_to_pending_state(chassis_mode_e re
         return CHASSIS_LEG_1;
     case CHASSIS_MODE_STEP_2:
         return CHASSIS_LEG_2;
-    case CHASSIS_MODE_JUMP:
-        return CHASSIS_JUMP;
-    case CHASSIS_MODE_UI_RESET:
     case CHASSIS_MODE_NORMAL:
     default:
         return CHASSIS_NORMAL;
@@ -254,11 +263,10 @@ static void chassis_normal_control(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set,
 
     if (chassis_move_rc_to_vector->state == CHASSIS_LEG_2 || chassis_move_rc_to_vector->state == CHASSIS_LEG_1)
     {
-        target_vx = clamp_abs_fp32(raw_target_vx, CHASSIS_LEG_MAX_SPEED);
-    }
-    else if (chassis_move_rc_to_vector->state == CHASSIS_STEP_UP)
-    {
-        target_vx = clamp_abs_fp32(raw_target_vx, CHASSIS_STEP_UP_MAX_SPEED);
+        const fp32 speed_limit = chassis_is_step_up_active(chassis_move_rc_to_vector)
+                                     ? CHASSIS_STEP_UP_MAX_SPEED
+                                     : CHASSIS_LEG_MAX_SPEED;
+        target_vx = clamp_abs_fp32(raw_target_vx, speed_limit);
     }
     else
     {
@@ -372,11 +380,9 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
     const chassis_mode_e requested_mode = chassis_move_mode->chassis_gimbal_data->chassis_behaviour_mode;
     const bool_t step1_edge = chassis_is_request_rising_edge(chassis_move_mode, CHASSIS_MODE_STEP_1);
     const bool_t step2_edge = chassis_is_request_rising_edge(chassis_move_mode, CHASSIS_MODE_STEP_2);
-    const bool_t jump_edge = chassis_is_request_rising_edge(chassis_move_mode, CHASSIS_MODE_JUMP);
 
     if (requested_mode == CHASSIS_MODE_NO_FORCE ||
-        requested_mode == CHASSIS_MODE_RESERVED ||
-        requested_mode == CHASSIS_MODE_RESERVED_2)
+        requested_mode == CHASSIS_MODE_RESERVED)
     {
         chassis_move_mode->pending_state = CHASSIS_NORMAL;
         chassis_move_mode->state = CHASSIS_STOP;
@@ -388,8 +394,7 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
         switch (chassis_move_mode->state)
         {
         case CHASSIS_STOP:
-            if (requested_mode == CHASSIS_MODE_NORMAL ||
-                requested_mode == CHASSIS_MODE_UI_RESET)
+            if (requested_mode == CHASSIS_MODE_NORMAL)
             {
                 chassis_move_mode->pending_state = chassis_requested_mode_to_pending_state(requested_mode);
 #if CHASSIS_BYPASS_INIT_MODE
@@ -455,24 +460,14 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
             {
                 chassis_move_mode->state = CHASSIS_LEG_2;
             }
-            else if (jump_edge)
-            {
-                chassis_move_mode->state = CHASSIS_STEP_UP;
-                chassis_move_mode->step_up_phase = STEP_UP_EXTEND;
-                chassis_move_mode->step_up_phase_ticks = 0;
-                chassis_move_mode->step_up_total_ticks = 0;
-            }
             break;
 
         case CHASSIS_LEG_1:
-            if (jump_edge)
+            if (chassis_is_step_up_active(chassis_move_mode))
             {
-                chassis_move_mode->state = CHASSIS_STEP_UP;
-                chassis_move_mode->step_up_phase = STEP_UP_EXTEND;
-                chassis_move_mode->step_up_phase_ticks = 0;
-                chassis_move_mode->step_up_total_ticks = 0;
+                break;
             }
-            else if (step1_edge)
+            if (step1_edge)
             {
                 chassis_move_mode->state = CHASSIS_NORMAL;
             }
@@ -483,30 +478,17 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
             break;
 
         case CHASSIS_LEG_2:
-            if (jump_edge)
+            if (chassis_is_step_up_active(chassis_move_mode))
             {
-                chassis_move_mode->state = CHASSIS_STEP_UP;
-                chassis_move_mode->step_up_phase = STEP_UP_EXTEND;
-                chassis_move_mode->step_up_phase_ticks = 0;
-                chassis_move_mode->step_up_total_ticks = 0;
+                break;
             }
-            else if (step2_edge)
+            if (step2_edge)
             {
                 chassis_move_mode->state = CHASSIS_NORMAL;
             }
             else if (step1_edge)
             {
                 chassis_move_mode->state = CHASSIS_LEG_1;
-            }
-            break;
-
-        case CHASSIS_STEP_UP:
-            if (chassis_move_mode->step_up_phase <= STEP_UP_DETECT)
-            {
-                if (step2_edge)
-                {
-                    chassis_move_mode->state = CHASSIS_NORMAL;
-                }
             }
             break;
 
@@ -586,7 +568,34 @@ void chassis_behaviour_control_set(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set,
         break;
 
     case CHASSIS_LEG_1:
-        if (protocol_valid)
+        if (chassis_is_step_up_active(chassis_move_rc_to_vector) &&
+            chassis_move_rc_to_vector->step_up_phase <= STEP_UP_DETECT)
+        {
+            chassis_normal_control(vx_set, yaw_set, d_yaw_set, leg_set,
+                                   chassis_move_rc_to_vector, chassis_move_rc_to_vector->step_up_leg_target);
+        }
+        else if (chassis_is_step_up_active(chassis_move_rc_to_vector) &&
+                 (chassis_move_rc_to_vector->step_up_phase == STEP_UP_SWING ||
+                  chassis_move_rc_to_vector->step_up_phase == STEP_UP_HOLD))
+        {
+            chassis_action_hold_control(vx_set, yaw_set, d_yaw_set, leg_set,
+                                        chassis_move_rc_to_vector, chassis_move_rc_to_vector->step_up_leg_target);
+        }
+        else if (chassis_is_step_up_active(chassis_move_rc_to_vector) &&
+                 (chassis_move_rc_to_vector->step_up_phase == STEP_UP_RETRACT ||
+                  chassis_move_rc_to_vector->step_up_phase == STEP_UP_STAND))
+        {
+            chassis_update_small_gyro_d_yaw(0, 1);
+            *vx_set = chassis_update_vx_ramp(0.0f, 0);
+            const fp32 yaw_target = wrap_to_pi(chassis_move_rc_to_vector->chassis_gimbal_data->yaw_set);
+            const fp32 yaw_pid = chassis_follow_yaw_control(yaw_target, chassis_move_rc_to_vector);
+            *yaw_set = yaw_target;
+            *d_yaw_set = clamp_abs_fp32(yaw_pid, CHASSIS_D_YAW_MAX);
+            *leg_set = chassis_ramp_leg_target(chassis_move_rc_to_vector,
+                                               CHASSIS_NORMAL_LEG_TARGET,
+                                               CHASSIS_STEP_UP_RETRACT_LEG_RAMP_SPEED);
+        }
+        else if (protocol_valid)
         {
             chassis_normal_control(vx_set, yaw_set, d_yaw_set, leg_set,
                                    chassis_move_rc_to_vector, CHASSIS_LEG_1_TARGET);
@@ -600,7 +609,34 @@ void chassis_behaviour_control_set(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set,
         break;
 
     case CHASSIS_LEG_2:
-        if (protocol_valid)
+        if (chassis_is_step_up_active(chassis_move_rc_to_vector) &&
+            chassis_move_rc_to_vector->step_up_phase <= STEP_UP_DETECT)
+        {
+            chassis_normal_control(vx_set, yaw_set, d_yaw_set, leg_set,
+                                   chassis_move_rc_to_vector, chassis_move_rc_to_vector->step_up_leg_target);
+        }
+        else if (chassis_is_step_up_active(chassis_move_rc_to_vector) &&
+                 (chassis_move_rc_to_vector->step_up_phase == STEP_UP_SWING ||
+                  chassis_move_rc_to_vector->step_up_phase == STEP_UP_HOLD))
+        {
+            chassis_action_hold_control(vx_set, yaw_set, d_yaw_set, leg_set,
+                                        chassis_move_rc_to_vector, chassis_move_rc_to_vector->step_up_leg_target);
+        }
+        else if (chassis_is_step_up_active(chassis_move_rc_to_vector) &&
+                 (chassis_move_rc_to_vector->step_up_phase == STEP_UP_RETRACT ||
+                  chassis_move_rc_to_vector->step_up_phase == STEP_UP_STAND))
+        {
+            chassis_update_small_gyro_d_yaw(0, 1);
+            *vx_set = chassis_update_vx_ramp(0.0f, 0);
+            const fp32 yaw_target = wrap_to_pi(chassis_move_rc_to_vector->chassis_gimbal_data->yaw_set);
+            const fp32 yaw_pid = chassis_follow_yaw_control(yaw_target, chassis_move_rc_to_vector);
+            *yaw_set = yaw_target;
+            *d_yaw_set = clamp_abs_fp32(yaw_pid, CHASSIS_D_YAW_MAX);
+            *leg_set = chassis_ramp_leg_target(chassis_move_rc_to_vector,
+                                               CHASSIS_NORMAL_LEG_TARGET,
+                                               CHASSIS_STEP_UP_RETRACT_LEG_RAMP_SPEED);
+        }
+        else if (protocol_valid)
         {
             chassis_normal_control(vx_set, yaw_set, d_yaw_set, leg_set,
                                    chassis_move_rc_to_vector, CHASSIS_LEG_2_TARGET);
@@ -613,59 +649,10 @@ void chassis_behaviour_control_set(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set,
         }
         break;
 
-    // CHASSIS_JUMP is retained as legacy jump code. Current JUMP requests enter CHASSIS_STEP_UP.
+    // CHASSIS_JUMP is retained as legacy enum space only. STEP_UP 子流程已收敛到 LEG_1 / LEG_2 内部。
     // case CHASSIS_JUMP:
     //     chassis_jump_control(vx_set, yaw_set, d_yaw_set, leg_set, chassis_move_rc_to_vector);
     //     break;
-    case CHASSIS_STEP_UP:
-        if (chassis_move_rc_to_vector->step_up_phase <= STEP_UP_DETECT)
-        {
-            chassis_normal_control(vx_set, yaw_set, d_yaw_set, leg_set,
-                                   chassis_move_rc_to_vector, CHASSIS_LEG_2_TARGET);
-        }
-        else if (chassis_move_rc_to_vector->step_up_phase == STEP_UP_SWING)
-        {
-            chassis_action_hold_control(vx_set, yaw_set, d_yaw_set, leg_set,
-                                        chassis_move_rc_to_vector, CHASSIS_LEG_2_TARGET);
-        }
-        else if (chassis_move_rc_to_vector->step_up_phase == STEP_UP_HOLD)
-        {
-            chassis_action_hold_control(vx_set, yaw_set, d_yaw_set, leg_set,
-                                        chassis_move_rc_to_vector, CHASSIS_LEG_2_TARGET);
-        }
-        else if (chassis_move_rc_to_vector->step_up_phase == STEP_UP_RETRACT ||
-                 chassis_move_rc_to_vector->step_up_phase == STEP_UP_STAND)
-        {
-            chassis_update_small_gyro_d_yaw(0, 1);
-            *vx_set = chassis_update_vx_ramp(0.0f, 0);
-            const fp32 yaw_target = wrap_to_pi(chassis_move_rc_to_vector->chassis_gimbal_data->yaw_set);
-            const fp32 yaw_pid = chassis_follow_yaw_control(yaw_target, chassis_move_rc_to_vector);
-            *yaw_set = yaw_target;
-            *d_yaw_set = clamp_abs_fp32(yaw_pid, CHASSIS_D_YAW_MAX);
-
-            // chassis_move_rc_to_vector->chassis_leg_filter_set.num[0] = CHASSIS_INIT_RETRACT_LEG_NUM;
-            // first_order_filter_cali(&chassis_move_rc_to_vector->chassis_leg_filter_set, CHASSIS_NORMAL_LEG_TARGET);
-            // *leg_set = chassis_move_rc_to_vector->chassis_leg_filter_set.out;
-            *leg_set = chassis_ramp_leg_target(chassis_move_rc_to_vector,
-                                               CHASSIS_NORMAL_LEG_TARGET,
-                                               CHASSIS_STEP_UP_RETRACT_LEG_RAMP_SPEED);
-        }
-        else // STEP_UP_DONE fallback
-        {
-            // 兜底回 NORMAL 前保持静止和正常腿长目标。
-            chassis_update_small_gyro_d_yaw(0, 1);
-            *vx_set = chassis_update_vx_ramp(0.0f, 0);
-            const fp32 yaw_target = wrap_to_pi(chassis_move_rc_to_vector->chassis_gimbal_data->yaw_set);
-            const fp32 yaw_pid = chassis_follow_yaw_control(yaw_target, chassis_move_rc_to_vector);
-            *yaw_set = yaw_target;
-            *d_yaw_set = clamp_abs_fp32(yaw_pid, CHASSIS_D_YAW_MAX);
-
-            chassis_move_rc_to_vector->chassis_leg_filter_set.num[0] = CHASSIS_ACCEL_LEG_NUM;
-            first_order_filter_cali(&chassis_move_rc_to_vector->chassis_leg_filter_set, CHASSIS_NORMAL_LEG_TARGET);
-            *leg_set = chassis_move_rc_to_vector->chassis_leg_filter_set.out;
-        }
-        break;
-
     default:
         chassis_zero_force_control(vx_set, d_yaw_set, leg_set);
         chassis_update_small_gyro_d_yaw(0, 1);
