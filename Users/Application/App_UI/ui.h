@@ -30,9 +30,27 @@ void ui_update_normal_StaticTextGroup1();
 void ui_remove_normal_StaticTextGroup1();
 #include "ui_start.h"
 
-void ui_init_start_start_group();
-void ui_update_start_start_group();
-void ui_remove_start_start_group();
+void ui_init_start_RobotZ_G1_7();
+void ui_update_start_RobotZ_G1_7();
+void ui_remove_start_RobotZ_G1_7();
+void ui_init_start_RobotZ_G2_5();
+void ui_update_start_RobotZ_G2_5();
+void ui_remove_start_RobotZ_G2_5();
+void ui_init_start_RobotZ_G3_5();
+void ui_update_start_RobotZ_G3_5();
+void ui_remove_start_RobotZ_G3_5();
+void ui_init_start_RobotZ_G4_5();
+void ui_update_start_RobotZ_G4_5();
+void ui_remove_start_RobotZ_G4_5();
+void ui_init_start_RobotZ_G5_7();
+void ui_update_start_RobotZ_G5_7();
+void ui_remove_start_RobotZ_G5_7();
+void ui_init_start_RobotZ_G6_5();
+void ui_update_start_RobotZ_G6_5();
+void ui_remove_start_RobotZ_G6_5();
+void ui_init_start_RobotZ_G7_7();
+void ui_update_start_RobotZ_G7_7();
+void ui_remove_start_RobotZ_G7_7();
 
 #ifdef __cplusplus
 }

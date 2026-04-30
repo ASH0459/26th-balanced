@@ -104,7 +104,7 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* 创建检测任务 */
-  xTaskCreate(Detect_Task, "Detect_Task", 512, NULL, osPriorityNormal, NULL);
+  // xTaskCreate(Detect_Task, "Detect_Task", 512, NULL, osPriorityNormal, NULL);
 
   /* 创建底盘任务 */
   xTaskCreate(Chassis_Task, "Chassis_Task", 2048, NULL, osPriorityNormal, NULL);

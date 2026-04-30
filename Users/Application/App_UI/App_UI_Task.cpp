@@ -14,6 +14,9 @@
 #include <math.h>
 
 #define LOW_AMMO_THRESHOLD 10 // 17mm剩余弹量低于该值时显示LOW AMMO告警
+#define UI_TEXT_GROUP_INTERVAL_MS 200U
+#define UI_START_FRAME_GROUP_INTERVAL_MS 200U
+#define UI_START_FRAME_HOLD_MS 2000U
 
 // ui_normal.c由UI工具生成，头文件只暴露整组接口；这里单独调用某个字符串的新增/删除接口显示告警。
 extern "C" void _ui_init_normal_DynamicTextGroup1_0(void);
@@ -32,26 +35,137 @@ extern "C" void _ui_init_normal_DynamicTextGroup1_6(void);
 extern "C" void _ui_remove_normal_DynamicTextGroup1_6(void);
 extern "C" void _ui_init_normal_DynamicTextGroup1_7(void);
 extern "C" void _ui_remove_normal_DynamicTextGroup1_7(void);
+extern "C" void _ui_init_normal_StaticTextGroup1_0(void);
+extern "C" void _ui_init_normal_StaticTextGroup1_1(void);
+extern "C" void _ui_init_normal_StaticTextGroup1_2(void);
+extern "C" void _ui_init_normal_StaticTextGroup1_3(void);
+extern "C" void _ui_init_normal_StaticTextGroup1_4(void);
+extern "C" void _ui_init_normal_StaticTextGroup1_5(void);
+extern "C" void _ui_init_normal_StaticTextGroup1_6(void);
+extern "C" void _ui_remove_normal_StaticTextGroup1_0(void);
+extern "C" void _ui_remove_normal_StaticTextGroup1_1(void);
+extern "C" void _ui_remove_normal_StaticTextGroup1_2(void);
+extern "C" void _ui_remove_normal_StaticTextGroup1_3(void);
+extern "C" void _ui_remove_normal_StaticTextGroup1_4(void);
+extern "C" void _ui_remove_normal_StaticTextGroup1_5(void);
+extern "C" void _ui_remove_normal_StaticTextGroup1_6(void);
+extern "C" void _ui_init_start_RobotZ_G7_7_0(void);
+extern "C" void _ui_init_start_RobotZ_G7_7_1(void);
+extern "C" void _ui_init_start_RobotZ_G7_7_2(void);
+extern "C" void _ui_init_start_RobotZ_G7_7_3(void);
+extern "C" void _ui_init_start_RobotZ_G7_7_4(void);
+extern "C" void _ui_init_start_RobotZ_G7_7_5(void);
+extern "C" void _ui_init_start_RobotZ_G7_7_6(void);
+extern "C" void _ui_remove_start_RobotZ_G7_7_0(void);
+extern "C" void _ui_remove_start_RobotZ_G7_7_1(void);
+extern "C" void _ui_remove_start_RobotZ_G7_7_2(void);
+extern "C" void _ui_remove_start_RobotZ_G7_7_3(void);
+extern "C" void _ui_remove_start_RobotZ_G7_7_4(void);
+extern "C" void _ui_remove_start_RobotZ_G7_7_5(void);
+extern "C" void _ui_remove_start_RobotZ_G7_7_6(void);
 
-typedef void (*UI_Warning_Func)(void);
+typedef void (*UI_Action)(void);
 
 typedef struct
 {
   uint8_t toe;          // detect模块里的设备编号
-  UI_Warning_Func show; // 发送该设备掉线文字
-  UI_Warning_Func hide; // 删除该设备掉线文字
+  UI_Action show; // 发送该设备掉线文字
+  UI_Action hide; // 删除该设备掉线文字
 } UI_Offline_Warning_t;
+
+static const UI_Action k_ui_remove_normal_dynamic_text_group1_actions[] = {
+    _ui_remove_normal_DynamicTextGroup1_0,
+    _ui_remove_normal_DynamicTextGroup1_1,
+    _ui_remove_normal_DynamicTextGroup1_2,
+    _ui_remove_normal_DynamicTextGroup1_3,
+    _ui_remove_normal_DynamicTextGroup1_4,
+    _ui_remove_normal_DynamicTextGroup1_5,
+    _ui_remove_normal_DynamicTextGroup1_6,
+    _ui_remove_normal_DynamicTextGroup1_7,
+};
+
+static const UI_Action k_ui_init_normal_static_text_group1_actions[] = {
+    _ui_init_normal_StaticTextGroup1_0,
+    _ui_init_normal_StaticTextGroup1_1,
+    _ui_init_normal_StaticTextGroup1_2,
+    _ui_init_normal_StaticTextGroup1_3,
+    _ui_init_normal_StaticTextGroup1_4,
+    _ui_init_normal_StaticTextGroup1_5,
+    _ui_init_normal_StaticTextGroup1_6,
+};
+
+static const UI_Action k_ui_remove_normal_static_text_group1_actions[] = {
+    _ui_remove_normal_StaticTextGroup1_6,
+    _ui_remove_normal_StaticTextGroup1_5,
+    _ui_remove_normal_StaticTextGroup1_4,
+    _ui_remove_normal_StaticTextGroup1_3,
+    _ui_remove_normal_StaticTextGroup1_2,
+    _ui_remove_normal_StaticTextGroup1_1,
+    _ui_remove_normal_StaticTextGroup1_0,
+};
+
+static const UI_Action k_ui_init_start_graphic_actions[] = {
+    ui_init_start_RobotZ_G1_7,
+    ui_init_start_RobotZ_G2_5,
+    ui_init_start_RobotZ_G3_5,
+    ui_init_start_RobotZ_G4_5,
+    ui_init_start_RobotZ_G5_7,
+    ui_init_start_RobotZ_G6_5,
+};
+
+static const UI_Action k_ui_remove_start_graphic_actions[] = {
+    ui_remove_start_RobotZ_G6_5,
+    ui_remove_start_RobotZ_G5_7,
+    ui_remove_start_RobotZ_G4_5,
+    ui_remove_start_RobotZ_G3_5,
+    ui_remove_start_RobotZ_G2_5,
+    ui_remove_start_RobotZ_G1_7,
+};
+
+static const UI_Action k_ui_init_start_text_actions[] = {
+    _ui_init_start_RobotZ_G7_7_0,
+    _ui_init_start_RobotZ_G7_7_1,
+    _ui_init_start_RobotZ_G7_7_2,
+    _ui_init_start_RobotZ_G7_7_3,
+    _ui_init_start_RobotZ_G7_7_4,
+    _ui_init_start_RobotZ_G7_7_5,
+    _ui_init_start_RobotZ_G7_7_6,
+};
+
+static const UI_Action k_ui_remove_start_text_actions[] = {
+    _ui_remove_start_RobotZ_G7_7_6,
+    _ui_remove_start_RobotZ_G7_7_5,
+    _ui_remove_start_RobotZ_G7_7_4,
+    _ui_remove_start_RobotZ_G7_7_3,
+    _ui_remove_start_RobotZ_G7_7_2,
+    _ui_remove_start_RobotZ_G7_7_1,
+    _ui_remove_start_RobotZ_G7_7_0,
+};
 
 static uint8_t g_ui_low_ammo_warning_visible = 0U;
 static uint8_t g_ui_offline_warning_visible = 0U;
 static uint8_t g_ui_offline_active_index = 0xFFU;
 static uint8_t g_ui_reset_mode_latched = 0U;
+static uint32_t g_ui_text_next_send_tick = 0U;
 
+static void UI_Run_Startup_Sequence(void);
+static void UI_Play_Start_Frame(void);
 static void UI_Init(void);
 static void UI_data_update(void);
 static void UI_updata(void);
 static void UI_Handle_Reset_Request(void);
+static void UI_Clear_All(void);
 static void UI_Reset_Dynamic_Warnings(void);
+static void UI_Run_Action_Sequence(const UI_Action *actions,
+                                   uint32_t action_count,
+                                   uint32_t interval_ms);
+static void UI_Run_Text_Action(UI_Action action);
+static void UI_Run_Text_Actions(const UI_Action *actions, uint32_t action_count);
+static void UI_Init_Start_Text(void);
+static void UI_Remove_Start_Text(void);
+static void UI_Init_Normal_StaticTextGroup1(void);
+static void UI_Remove_Normal_StaticTextGroup1(void);
+static void UI_Remove_Normal_DynamicTextGroup1(void);
 static void cap_energy_Update(void);
 static void Gimbal_Chassis_Relative_Angle_Update(void);
 static void Chassis_State_Rect_Update(void);
@@ -64,8 +178,8 @@ static uint32_t UI_Limit_Coord(fp32 value);
 static uint32_t UI_Normalize_Angle_Deg(fp32 angle);
 static void UI_Move_Rect_To_Text(ui_interface_rect_t *rect, const ui_interface_string_t *text);
 static void UI_Set_Warning_Text(uint8_t warning_active,
-                                UI_Warning_Func show,
-                                UI_Warning_Func hide,
+                                UI_Action show,
+                                UI_Action hide,
                                 uint8_t *warning_visible);
 static void UI_Update_Leg(ui_interface_line_t *upper_line,
                           ui_interface_line_t *lower_line,
@@ -82,8 +196,7 @@ static void UI_Update_Chassis_Pitch_Line(ui_interface_line_t *pitch_line, fp32 p
 void UI_Task(void *argument)
 {
   osDelay(2000);
-  UI_Init();
-  osDelay(2000);
+  UI_Run_Startup_Sequence();
 
   while (1)
   {
@@ -91,6 +204,41 @@ void UI_Task(void *argument)
     UI_data_update();
     UI_updata();
   }
+}
+
+/**
+ * @brief 执行一次完整的UI启动序列：播放start，删除start，再初始化normal。
+ * @note reset时也复用该流程，保证时序和开机一致。
+ */
+static void UI_Run_Startup_Sequence(void)
+{
+  UI_Play_Start_Frame();
+  osDelay(500);
+  UI_Init();
+  osDelay(2000);
+}
+
+/**
+ * @brief 播放开机start画面，停留2000ms后删除，再进入正式UI。
+ * @note 图形组按固定节奏播放；start 的下划线和每个字符都按文字节流规则逐个发送。
+ */
+static void UI_Play_Start_Frame(void)
+{
+  UI_Run_Action_Sequence(k_ui_init_start_graphic_actions,
+                         sizeof(k_ui_init_start_graphic_actions) /
+                             sizeof(k_ui_init_start_graphic_actions[0]),
+                         UI_START_FRAME_GROUP_INTERVAL_MS);
+  // start 的首条文字需要和上一组图形留出间隔，否则第一条容易被裁判系统吞掉。
+  osDelay(UI_START_FRAME_GROUP_INTERVAL_MS);
+  UI_Init_Start_Text();
+  osDelay(UI_START_FRAME_HOLD_MS);
+  UI_Remove_Start_Text();
+  // 文字删除后再切回图形删除，同样需要留出组间空隙，避免残留未清。
+  osDelay(UI_START_FRAME_GROUP_INTERVAL_MS);
+  UI_Run_Action_Sequence(k_ui_remove_start_graphic_actions,
+                         sizeof(k_ui_remove_start_graphic_actions) /
+                             sizeof(k_ui_remove_start_graphic_actions[0]),
+                         UI_START_FRAME_GROUP_INTERVAL_MS);
 }
 
 /**
@@ -104,10 +252,114 @@ static void UI_Init(void)
   osDelay(500);
   ui_init_normal_StaticGroup1();
   osDelay(500);
-  ui_init_normal_StaticTextGroup1();
+  UI_Init_Normal_StaticTextGroup1();
   osDelay(500);
   ui_init_normal_LegDynamicGroup();
   osDelay(500);
+}
+
+/**
+ * @brief 以固定间隔顺序执行一组无参动作。
+ * @param actions 动作数组。
+ * @param action_count 动作数量。
+ * @param interval_ms 相邻动作之间的延时。
+ */
+static void UI_Run_Action_Sequence(const UI_Action *actions,
+                                   uint32_t action_count,
+                                   uint32_t interval_ms)
+{
+  if (actions == nullptr)
+  {
+    return;
+  }
+
+  for (uint32_t i = 0U; i < action_count; ++i)
+  {
+    if (actions[i] != nullptr)
+    {
+      actions[i]();
+    }
+
+    if (interval_ms > 0U && (i + 1U) < action_count)
+    {
+      osDelay(interval_ms);
+    }
+  }
+}
+
+/**
+ * @brief 按200ms节流发送单个文字UI帧，避免连续文字消息挤占裁判系统带宽。
+ * @param action 实际执行发送的生成函数。
+ */
+static void UI_Run_Text_Action(UI_Action action)
+{
+  if (action == nullptr)
+  {
+    return;
+  }
+
+  const uint32_t now = HAL_GetTick();
+  const int32_t wait_ms = (int32_t)(g_ui_text_next_send_tick - now);
+  if (wait_ms > 0)
+  {
+    osDelay((uint32_t)wait_ms);
+  }
+
+  action();
+  g_ui_text_next_send_tick = HAL_GetTick() + UI_TEXT_GROUP_INTERVAL_MS;
+}
+
+/**
+ * @brief 顺序发送一组文字UI动作，并在相邻动作间自动插入200ms节流。
+ * @param actions 文字动作数组。
+ * @param action_count 数组中的动作数量。
+ */
+static void UI_Run_Text_Actions(const UI_Action *actions, uint32_t action_count)
+{
+  if (actions == nullptr)
+  {
+    return;
+  }
+
+  for (uint32_t i = 0U; i < action_count; ++i)
+  {
+    UI_Run_Text_Action(actions[i]);
+  }
+}
+
+static void UI_Init_Start_Text(void)
+{
+  UI_Run_Text_Actions(k_ui_init_start_text_actions,
+                      sizeof(k_ui_init_start_text_actions) /
+                          sizeof(k_ui_init_start_text_actions[0]));
+}
+
+static void UI_Remove_Start_Text(void)
+{
+  UI_Run_Text_Actions(k_ui_remove_start_text_actions,
+                      sizeof(k_ui_remove_start_text_actions) /
+                          sizeof(k_ui_remove_start_text_actions[0]));
+}
+
+static void UI_Init_Normal_StaticTextGroup1(void)
+{
+  UI_Run_Text_Actions(k_ui_init_normal_static_text_group1_actions,
+                      sizeof(k_ui_init_normal_static_text_group1_actions) /
+                          sizeof(k_ui_init_normal_static_text_group1_actions[0]));
+}
+
+static void UI_Remove_Normal_StaticTextGroup1(void)
+{
+  UI_Run_Text_Actions(k_ui_remove_normal_static_text_group1_actions,
+                      sizeof(k_ui_remove_normal_static_text_group1_actions) /
+                          sizeof(k_ui_remove_normal_static_text_group1_actions[0]));
+}
+
+static void UI_Remove_Normal_DynamicTextGroup1(void)
+{
+  UI_Run_Text_Actions(k_ui_remove_normal_dynamic_text_group1_actions,
+                      sizeof(k_ui_remove_normal_dynamic_text_group1_actions) /
+                          sizeof(k_ui_remove_normal_dynamic_text_group1_actions[0]));
 }
 
 /**
@@ -133,9 +385,9 @@ static void UI_data_update(void)
 static void UI_updata(void)
 {
   ui_update_normal_DynamicGroup1();
-  osDelay(20);
+  osDelay(50);
   ui_update_normal_LegDynamicGroup();
-  osDelay(20);
+  osDelay(50);
 }
 
 /**
@@ -156,11 +408,33 @@ static void UI_Handle_Reset_Request(void)
 
   if (reset_request != 0U && g_ui_reset_mode_latched == 0U)
   {
-    UI_Reset_Dynamic_Warnings();
-    UI_Init();
+    UI_Clear_All();
+    UI_Run_Startup_Sequence();
   }
 
   g_ui_reset_mode_latched = reset_request;
+}
+
+/**
+ * @brief 清除当前可能显示的normal/start UI，并重置本地UI状态。
+ * @note reset后从干净状态重新播放开机动画，避免残影和状态错乱。
+ */
+static void UI_Clear_All(void)
+{
+  UI_Reset_Dynamic_Warnings();
+  UI_Remove_Normal_StaticTextGroup1();
+  ui_remove_normal_LegDynamicGroup();
+  ui_remove_normal_DynamicGroup1();
+  ui_remove_normal_StaticGroup1();
+
+  // 若reset发生在start序列中途，顺手清掉可能残留的start元素。
+  UI_Remove_Start_Text();
+  UI_Run_Action_Sequence(k_ui_remove_start_graphic_actions,
+                         sizeof(k_ui_remove_start_graphic_actions) /
+                             sizeof(k_ui_remove_start_graphic_actions[0]),
+                         UI_START_FRAME_GROUP_INTERVAL_MS);
+
+  g_ui_text_next_send_tick = HAL_GetTick();
 }
 
 /**
@@ -169,14 +443,7 @@ static void UI_Handle_Reset_Request(void)
  */
 static void UI_Reset_Dynamic_Warnings(void)
 {
-  _ui_remove_normal_DynamicTextGroup1_0();
-  _ui_remove_normal_DynamicTextGroup1_1();
-  _ui_remove_normal_DynamicTextGroup1_2();
-  _ui_remove_normal_DynamicTextGroup1_3();
-  _ui_remove_normal_DynamicTextGroup1_4();
-  _ui_remove_normal_DynamicTextGroup1_5();
-  _ui_remove_normal_DynamicTextGroup1_6();
-  _ui_remove_normal_DynamicTextGroup1_7();
+  UI_Remove_Normal_DynamicTextGroup1();
 
   g_ui_low_ammo_warning_visible = 0U;
   g_ui_offline_warning_visible = 0U;
@@ -445,8 +712,8 @@ static void Fric_Target_Color_Update(void)
  * @note 告警保持期间不重复发送，只有状态变化时才占用裁判系统带宽。
  */
 static void UI_Set_Warning_Text(uint8_t warning_active,
-                                UI_Warning_Func show,
-                                UI_Warning_Func hide,
+                                UI_Action show,
+                                UI_Action hide,
                                 uint8_t *warning_visible)
 {
   if (show == nullptr || hide == nullptr || warning_visible == nullptr)
@@ -458,7 +725,7 @@ static void UI_Set_Warning_Text(uint8_t warning_active,
   {
     if (*warning_visible != 0U)
     {
-      hide();
+      UI_Run_Text_Action(hide);
       *warning_visible = 0U;
     }
 
@@ -467,7 +734,7 @@ static void UI_Set_Warning_Text(uint8_t warning_active,
 
   if (*warning_visible == 0U)
   {
-    show();
+    UI_Run_Text_Action(show);
     *warning_visible = 1U;
   }
 }

@@ -18,14 +18,14 @@ void ui_init_normal_DynamicGroup1();
 void ui_update_normal_DynamicGroup1();
 void ui_remove_normal_DynamicGroup1();
 
+extern ui_interface_string_t *ui_normal_DynamicTextGroup1_Joint4Err;
+extern ui_interface_string_t *ui_normal_DynamicTextGroup1_Wheel1;
+extern ui_interface_string_t *ui_normal_DynamicTextGroup1_Wheel2;
 extern ui_interface_string_t *ui_normal_DynamicTextGroup1_LowAmmoText;
 extern ui_interface_string_t *ui_normal_DynamicTextGroup1_VTErr;
 extern ui_interface_string_t *ui_normal_DynamicTextGroup1_Joint1Err;
 extern ui_interface_string_t *ui_normal_DynamicTextGroup1_Joint2Err;
 extern ui_interface_string_t *ui_normal_DynamicTextGroup1_Joint3Err;
-extern ui_interface_string_t *ui_normal_DynamicTextGroup1_Joint4Err;
-extern ui_interface_string_t *ui_normal_DynamicTextGroup1_Wheel1;
-extern ui_interface_string_t *ui_normal_DynamicTextGroup1_Wheel2;
 
 void ui_init_normal_DynamicTextGroup1();
 void ui_update_normal_DynamicTextGroup1();
