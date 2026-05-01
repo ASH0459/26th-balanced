@@ -121,6 +121,41 @@ fp32 LQR_B[10][4] = {
     {-1.2642, -1.2642, -4.0638, -4.0638},
 };
 
+/* ---- 简化用参数宏 ---- */
+#define CLAMP_FILTER_NAN(x)   do { if ((x) != (x)) { (x) = 0.0f; } } while(0)
+#define KF_INIT_PARAMS(kf, src, suffix)                                                            \
+    do {                                                                                           \
+        memcpy((kf).F_data, (src).vaEstimateKF_F_##suffix, sizeof((src).vaEstimateKF_F_##suffix)); \
+        memcpy((kf).P_data, (src).vaEstimateKF_P_##suffix, sizeof((src).vaEstimateKF_P_##suffix)); \
+        memcpy((kf).Q_data, (src).vaEstimateKF_Q_##suffix, sizeof((src).vaEstimateKF_Q_##suffix)); \
+        memcpy((kf).R_data, (src).vaEstimateKF_R_##suffix, sizeof((src).vaEstimateKF_R_##suffix)); \
+        memcpy((kf).H_data, (src).vaEstimateKF_H_##suffix, sizeof((src).vaEstimateKF_H_##suffix)); \
+    } while(0)
+#define CLAMP_X_ERR(ptr)                                                                       \
+    do {                                                                                       \
+        const fp32 _max = 2.0f;                                                                \
+        if ((ptr)->chassis_x_set - (ptr)->x_filter > _max) {                                   \
+            (ptr)->chassis_x_set = (ptr)->x_filter + _max;                                      \
+        } else if ((ptr)->chassis_x_set - (ptr)->x_filter < -_max) {                           \
+            (ptr)->chassis_x_set = (ptr)->x_filter - _max;                                      \
+        }                                                                                      \
+    } while(0)
+#define APPLY_WBR_JOINT_OUTPUT(ptr, left_fbl, left_tbl, right_fbl, right_tbl) \
+    do {                                                                        \
+        (ptr)->chassis_joint[0].joint_T =                                       \
+            -(ptr)->chassis_left_control.wbr_control.J[0][0] * (left_fbl)       \
+            -(ptr)->chassis_left_control.wbr_control.J[0][1] * (left_tbl);      \
+        (ptr)->chassis_joint[1].joint_T =                                       \
+            (ptr)->chassis_left_control.wbr_control.J[1][0] * (left_fbl)        \
+            +(ptr)->chassis_left_control.wbr_control.J[1][1] * (left_tbl);      \
+        (ptr)->chassis_joint[2].joint_T =                                       \
+            (ptr)->chassis_right_control.wbr_control.J[0][0] * (right_fbl)      \
+            +(ptr)->chassis_right_control.wbr_control.J[0][1] * (right_tbl);    \
+        (ptr)->chassis_joint[3].joint_T =                                       \
+            -(ptr)->chassis_right_control.wbr_control.J[1][0] * (right_fbl)     \
+            -(ptr)->chassis_right_control.wbr_control.J[1][1] * (right_tbl);    \
+    } while(0)
+
 /* 记录堆栈最高值 */
 #if INCLUDE_uxTaskGetStackHighWaterMark
 uint32_t chassis_high_water;
@@ -138,9 +173,6 @@ static void chassis_reset_jump_state(Chassis_Move *chassis_move_control_loop) {
 }
 
 static void chassis_reset_leg_pid_state(Chassis_Move *chassis_move_control_loop) {
-    if (chassis_move_control_loop == NULL) {
-        return;
-    }
 
     PID_clear(&chassis_move_control_loop->chassis_left_control.leg_pid_control);
     PID_clear(&chassis_move_control_loop->chassis_right_control.leg_pid_control);
@@ -157,9 +189,6 @@ static void chassis_reset_leg_pid_state(Chassis_Move *chassis_move_control_loop)
 }
 
 static void chassis_zero_leg_force_state(Chassis_Move *chassis_move_control_loop) {
-    if (chassis_move_control_loop == NULL) {
-        return;
-    }
 
     chassis_move_control_loop->chassis_left_control.fd_roll            = 0.0f;
     chassis_move_control_loop->chassis_right_control.fd_roll           = 0.0f;
@@ -176,9 +205,6 @@ static void chassis_zero_leg_force_state(Chassis_Move *chassis_move_control_loop
 }
 
 static void chassis_prepare_normal_entry(Chassis_Move *chassis_move_control_loop, bool_t sync_leg_filter) {
-    if (chassis_move_control_loop == NULL) {
-        return;
-    }
 
     chassis_move_control_loop->state                 = CHASSIS_NORMAL;
     chassis_move_control_loop->pending_state         = CHASSIS_NORMAL;
@@ -304,7 +330,7 @@ static void chassis_reset_leg_pid_state(Chassis_Move *chassis_move_control_loop)
 /**
      * @brief          离地落地阶段的腿长导纳调节
      */
-static void Chassis_Landing_Admittance_Control(Chassis_Move *control_loop,
+static void chassis_landing_admittance_control(Chassis_Move *control_loop,
                                                fp32         *left_leg_set,
                                                fp32         *right_leg_set);
 
@@ -423,10 +449,6 @@ void Chassis_Task(void *pvParameters) {
      * @retval         none
      */
 static void chassis_init(Chassis_Move *chassis_move_init) {
-    if (chassis_move_init == NULL) {
-        return;
-    }
-    // 特定腿长下写死的常量
     chassis_move_init->chassis_left_control.l_b = chassis_move_init->chassis_right_control.l_b = 0.087f;
     chassis_move_init->chassis_left_control.i_l = chassis_move_init->chassis_right_control.i_l = 0.01993708;
 
@@ -435,28 +457,10 @@ static void chassis_init(Chassis_Move *chassis_move_init) {
     Kalman_Filter_Init(&chassis_move_init->chassis_left_control.chassis_vaestimatekf_theta, 2, 0, 2);  // 状态向量2维 没有控制量 测量向量2维
     Kalman_Filter_Init(&chassis_move_init->chassis_right_control.chassis_vaestimatekf_theta, 2, 0, 2); // 状态向量2维 没有控制量 测量向量2维
 
-    memcpy(chassis_move_init->chassis_vaestimatekf_xv.F_data, chassis_move_init->vaEstimateKF_F_VX, sizeof(chassis_move_init->vaEstimateKF_F_VX));
-    memcpy(chassis_move_init->chassis_vaestimatekf_xv.P_data, chassis_move_init->vaEstimateKF_P_VX, sizeof(chassis_move_init->vaEstimateKF_P_VX));
-    memcpy(chassis_move_init->chassis_vaestimatekf_xv.Q_data, chassis_move_init->vaEstimateKF_Q_VX, sizeof(chassis_move_init->vaEstimateKF_Q_VX));
-    memcpy(chassis_move_init->chassis_vaestimatekf_xv.R_data, chassis_move_init->vaEstimateKF_R_VX, sizeof(chassis_move_init->vaEstimateKF_R_VX));
-    memcpy(chassis_move_init->chassis_vaestimatekf_xv.H_data, chassis_move_init->vaEstimateKF_H_VX, sizeof(chassis_move_init->vaEstimateKF_H_VX));
-
-    memcpy(chassis_move_init->chassis_vaestimatekf_va.F_data, chassis_move_init->vaEstimateKF_F_VA, sizeof(chassis_move_init->vaEstimateKF_F_VA));
-    memcpy(chassis_move_init->chassis_vaestimatekf_va.P_data, chassis_move_init->vaEstimateKF_P_VA, sizeof(chassis_move_init->vaEstimateKF_P_VA));
-    memcpy(chassis_move_init->chassis_vaestimatekf_va.Q_data, chassis_move_init->vaEstimateKF_Q_VA, sizeof(chassis_move_init->vaEstimateKF_Q_VA));
-    memcpy(chassis_move_init->chassis_vaestimatekf_va.R_data, chassis_move_init->vaEstimateKF_R_VA, sizeof(chassis_move_init->vaEstimateKF_R_VA));
-    memcpy(chassis_move_init->chassis_vaestimatekf_va.H_data, chassis_move_init->vaEstimateKF_H_VA, sizeof(chassis_move_init->vaEstimateKF_H_VA));
-
-    memcpy(chassis_move_init->chassis_left_control.chassis_vaestimatekf_theta.F_data, chassis_move_init->vaEstimateKF_F_theta, sizeof(chassis_move_init->vaEstimateKF_F_theta));
-    memcpy(chassis_move_init->chassis_left_control.chassis_vaestimatekf_theta.P_data, chassis_move_init->vaEstimateKF_P_theta, sizeof(chassis_move_init->vaEstimateKF_P_theta));
-    memcpy(chassis_move_init->chassis_left_control.chassis_vaestimatekf_theta.Q_data, chassis_move_init->vaEstimateKF_Q_theta, sizeof(chassis_move_init->vaEstimateKF_Q_theta));
-    memcpy(chassis_move_init->chassis_left_control.chassis_vaestimatekf_theta.R_data, chassis_move_init->vaEstimateKF_R_theta, sizeof(chassis_move_init->vaEstimateKF_R_theta));
-    memcpy(chassis_move_init->chassis_left_control.chassis_vaestimatekf_theta.H_data, chassis_move_init->vaEstimateKF_H_theta, sizeof(chassis_move_init->vaEstimateKF_H_theta));
-    memcpy(chassis_move_init->chassis_right_control.chassis_vaestimatekf_theta.F_data, chassis_move_init->vaEstimateKF_F_theta, sizeof(chassis_move_init->vaEstimateKF_F_theta));
-    memcpy(chassis_move_init->chassis_right_control.chassis_vaestimatekf_theta.P_data, chassis_move_init->vaEstimateKF_P_theta, sizeof(chassis_move_init->vaEstimateKF_P_theta));
-    memcpy(chassis_move_init->chassis_right_control.chassis_vaestimatekf_theta.Q_data, chassis_move_init->vaEstimateKF_Q_theta, sizeof(chassis_move_init->vaEstimateKF_Q_theta));
-    memcpy(chassis_move_init->chassis_right_control.chassis_vaestimatekf_theta.R_data, chassis_move_init->vaEstimateKF_R_theta, sizeof(chassis_move_init->vaEstimateKF_R_theta));
-    memcpy(chassis_move_init->chassis_right_control.chassis_vaestimatekf_theta.H_data, chassis_move_init->vaEstimateKF_H_theta, sizeof(chassis_move_init->vaEstimateKF_H_theta));
+    KF_INIT_PARAMS(chassis_move_init->chassis_vaestimatekf_xv, *chassis_move_init, VX);
+    KF_INIT_PARAMS(chassis_move_init->chassis_vaestimatekf_va, *chassis_move_init, VA);
+    KF_INIT_PARAMS(chassis_move_init->chassis_left_control.chassis_vaestimatekf_theta, *chassis_move_init, theta);
+    KF_INIT_PARAMS(chassis_move_init->chassis_right_control.chassis_vaestimatekf_theta, *chassis_move_init, theta);
 
     /* 陀螺仪姿态角数据指针 */
     chassis_move_init->chassis_INS_angle      = get_INS_angle_point();
@@ -547,9 +551,6 @@ static void chassis_init(Chassis_Move *chassis_move_init) {
  * @retval         none
  */
 static void chassis_set_mode(Chassis_Move *chassis_move_mode) {
-    if (chassis_move_mode == NULL) {
-        return;
-    }
 
     Chassis_Behaviour_Mode_Set(chassis_move_mode); // in file "App_Chassis_Behaviour.c"
 }
@@ -560,9 +561,6 @@ static void chassis_set_mode(Chassis_Move *chassis_move_mode) {
  * @retval         none
  */
 static void chassis_mode_change_control_transit(Chassis_Move *chassis_move_transit) {
-    if (chassis_move_transit == NULL) {
-        return;
-    }
 
     if (chassis_move_transit->last_state == chassis_move_transit->state) {
         return;
@@ -666,9 +664,6 @@ static void chassis_mode_change_control_transit(Chassis_Move *chassis_move_trans
  * @retval         none
  */
 static void chassis_set_contorl(Chassis_Move *chassis_move_control) {
-    if (chassis_move_control == NULL) {
-        return;
-    }
 
     /**
      * PART1.  本部分代码获取控制设定值，并根据当前行为状态计算机器人速度/角速度/腿长目标
@@ -697,38 +692,19 @@ static void chassis_set_contorl(Chassis_Move *chassis_move_control) {
             // 小陀螺移动时，将标量 v_tmp 按期望平移方向投影为时变 v_set。
             chassis_move_control->chassis_v_set = chassis_calc_small_gyro_move_v_set(chassis_move_control, chassis_v_set);
             chassis_move_control->chassis_x_set += chassis_move_control->chassis_v_set * chassis_move_control->dt;
-            const fp32 MAX_X_ERR = 2.0f;
-            if (chassis_move_control->chassis_x_set - chassis_move_control->x_filter > MAX_X_ERR) {
-                chassis_move_control->chassis_x_set = chassis_move_control->x_filter + MAX_X_ERR;
-            } else if (chassis_move_control->chassis_x_set - chassis_move_control->x_filter < -MAX_X_ERR) {
-                chassis_move_control->chassis_x_set = chassis_move_control->x_filter - MAX_X_ERR;
-            }
+            CLAMP_X_ERR(chassis_move_control);
         } else {
             chassis_move_control->chassis_v_set = chassis_v_set;
             chassis_move_control->chassis_x_set += chassis_move_control->chassis_v_set * chassis_move_control->dt;
-            const fp32 MAX_X_ERR = 2.0f;
-            if (chassis_move_control->chassis_x_set - chassis_move_control->x_filter > MAX_X_ERR) {
-                chassis_move_control->chassis_x_set = chassis_move_control->x_filter + MAX_X_ERR;
-            } else if (chassis_move_control->chassis_x_set - chassis_move_control->x_filter < -MAX_X_ERR) {
-                chassis_move_control->chassis_x_set = chassis_move_control->x_filter - MAX_X_ERR;
-            }
+            CLAMP_X_ERR(chassis_move_control);
         }
         chassis_move_control->chassis_yaw_set   = chassis_yaw_set;
         chassis_move_control->chassis_yaw_err   = shortest_angle_error(chassis_move_control->chassis_yaw_set, chassis_move_control->chassis_yaw);
         chassis_move_control->chassis_d_yaw_set = chassis_d_yaw_set;
         chassis_move_control->chassis_leg_set   = chassis_leg_set;
-    } else if (chassis_is_init_like_state(chassis_move_control->state)) {
+    } else if (chassis_is_init_like_state(chassis_move_control->state) ||
+               chassis_move_control->state == CHASSIS_STOP) {
 
-        chassis_move_control->chassis_d_yaw = chassis_move_control->chassis_d_yaw_imu;
-        chassis_move_control->chassis_yaw   = chassis_move_control->chassis_gimbal_data->chassis_relative_angle;
-
-        chassis_move_control->chassis_v_set     = 0.0f;
-        chassis_move_control->chassis_x_set     = chassis_move_control->x_filter;
-        chassis_move_control->chassis_d_yaw_set = 0.0f;
-        chassis_move_control->chassis_yaw_set   = chassis_move_control->chassis_yaw;
-        chassis_move_control->chassis_yaw_err   = 0.0f;
-        chassis_move_control->chassis_leg_set   = chassis_leg_set;
-    } else if (chassis_move_control->state == CHASSIS_STOP) {
         chassis_move_control->chassis_d_yaw = chassis_move_control->chassis_d_yaw_imu;
         chassis_move_control->chassis_yaw   = chassis_move_control->chassis_gimbal_data->chassis_relative_angle;
 
@@ -749,7 +725,7 @@ static void chassis_set_contorl(Chassis_Move *chassis_move_control) {
         leg_off_ground &&
         !(chassis_is_step_up_active(chassis_move_control) &&
           chassis_move_control->step_up_phase == STEP_UP_RETRACT)) {
-        Chassis_Landing_Admittance_Control(chassis_move_control,
+        chassis_landing_admittance_control(chassis_move_control,
                                            &chassis_move_control->chassis_left_leg_set,
                                            &chassis_move_control->chassis_right_leg_set);
     }
@@ -761,9 +737,6 @@ static void chassis_set_contorl(Chassis_Move *chassis_move_control) {
  * @retval         none
  */
 static void chassis_feedback_update(Chassis_Move *chassis_move_update) {
-    if (chassis_move_update == NULL) {
-        return;
-    }
 
     // dwt计时器更新
     chassis_move_update->dt = DWT_GetDeltaT(&chassis_move_update->chassis_dwt_count);
@@ -833,12 +806,8 @@ static void chassis_feedback_update(Chassis_Move *chassis_move_update) {
     fp32 left_dd_L_raw  = chassis_sanitize_dd_L(chassis_move_update->chassis_left_control.wbr_control.dd_L);
     fp32 right_dd_L_raw = chassis_sanitize_dd_L(chassis_move_update->chassis_right_control.wbr_control.dd_L);
 
-    if (chassis_move_update->chassis_left_control.dd_L_lowpass_filter.out != chassis_move_update->chassis_left_control.dd_L_lowpass_filter.out) {
-        chassis_move_update->chassis_left_control.dd_L_lowpass_filter.out = 0.0f;
-    }
-    if (chassis_move_update->chassis_right_control.dd_L_lowpass_filter.out != chassis_move_update->chassis_right_control.dd_L_lowpass_filter.out) {
-        chassis_move_update->chassis_right_control.dd_L_lowpass_filter.out = 0.0f;
-    }
+    CLAMP_FILTER_NAN(chassis_move_update->chassis_left_control.dd_L_lowpass_filter.out);
+    CLAMP_FILTER_NAN(chassis_move_update->chassis_right_control.dd_L_lowpass_filter.out);
 
     first_order_filter_cali(&chassis_move_update->chassis_left_control.dd_L_lowpass_filter, left_dd_L_raw);
     first_order_filter_cali(&chassis_move_update->chassis_right_control.dd_L_lowpass_filter, right_dd_L_raw);
@@ -970,9 +939,6 @@ static void chassis_interference_prevention(Chassis_Move *chassis_move_predictio
  * @retval         none
  */
 static void chassis_lqr_power_control(Chassis_Move *chassis_move_control_loop) {
-    if (chassis_move_control_loop == NULL) {
-        return;
-    }
 
     // ------------------- LQR 力矩拆解与功率分配 -------------------
 
@@ -1054,10 +1020,6 @@ static void chassis_control_loop(Chassis_Move *chassis_move_control_loop) {
      * 4. 输出限幅和历史反馈保存
      * */
 
-    if (chassis_move_control_loop == NULL) {
-        return;
-    }
-
     if (chassis_move_control_loop->state == CHASSIS_STOP) {
         chassis_zero_output(chassis_move_control_loop);
         chassis_reset_leg_pid_state(chassis_move_control_loop);
@@ -1124,10 +1086,9 @@ static void chassis_control_loop(Chassis_Move *chassis_move_control_loop) {
 }
 
 static void chassis_zero_output(Chassis_Move *chassis_move_control_loop) {
-    chassis_move_control_loop->chassis_joint[0].joint_T = 0.0f;
-    chassis_move_control_loop->chassis_joint[1].joint_T = 0.0f;
-    chassis_move_control_loop->chassis_joint[2].joint_T = 0.0f;
-    chassis_move_control_loop->chassis_joint[3].joint_T = 0.0f;
+    for (uint8_t i = 0; i < 4; i++) {
+        chassis_move_control_loop->chassis_joint[i].joint_T = 0.0f;
+    }
     chassis_move_control_loop->chassis_wheel[0].wheel_T = 0.0f;
     chassis_move_control_loop->chassis_wheel[1].wheel_T = 0.0f;
 }
@@ -1360,18 +1321,13 @@ static void chassis_update_jump_phase(Chassis_Move *chassis_move_control_loop) {
  * @retval None
  * @note   此函数内部包含静态变量，通过判断离地状态自动管理双腿的独立期望长度
  */
-static void Chassis_Landing_Admittance_Control(Chassis_Move *control_loop, fp32 *left_leg_set, fp32 *right_leg_set) {
+static void chassis_landing_admittance_control(Chassis_Move *control_loop, fp32 *left_leg_set, fp32 *right_leg_set) {
     static fp32    independent_leg_set_L = 0.0f;
     static fp32    independent_leg_set_R = 0.0f;
     static uint8_t init_flag             = 0;
 
     static Chassis_Init_Phase_e last_init_phase = CHASSIS_INIT_DONE;
 
-    if (control_loop == NULL || left_leg_set == NULL || right_leg_set == NULL) {
-        return;
-    }
-
-    // 上电首次运行或从无力恢复时，独立腿长重新跟随统一腿长入口。
     if (init_flag == 0 || control_loop->last_state == CHASSIS_STOP) {
         independent_leg_set_L = control_loop->chassis_leg_set;
         independent_leg_set_R = control_loop->chassis_leg_set;
@@ -1500,30 +1456,6 @@ static void chassis_calc_support_force(Chassis_Move *chassis_move_control_loop) 
     }
 }
 
-static inline void chassis_apply_wbr_joint_output(Chassis_Move *chassis_move_control_loop,
-                                                  fp32 left_fbl, fp32 left_tbl,
-                                                  fp32 right_fbl, fp32 right_tbl) {
-    chassis_move_control_loop->chassis_joint[0].joint_T =
-        -chassis_move_control_loop->chassis_left_control.wbr_control.J[0][0] *
-            left_fbl -
-        chassis_move_control_loop->chassis_left_control.wbr_control.J[0][1] *
-            left_tbl;
-    chassis_move_control_loop->chassis_joint[1].joint_T =
-        chassis_move_control_loop->chassis_left_control.wbr_control.J[1][0] *
-            left_fbl +
-        chassis_move_control_loop->chassis_left_control.wbr_control.J[1][1] *
-            left_tbl;
-    chassis_move_control_loop->chassis_joint[2].joint_T =
-        chassis_move_control_loop->chassis_right_control.wbr_control.J[0][0] *
-            right_fbl +
-        chassis_move_control_loop->chassis_right_control.wbr_control.J[0][1] *
-            right_tbl;
-    chassis_move_control_loop->chassis_joint[3].joint_T =
-        -chassis_move_control_loop->chassis_right_control.wbr_control.J[1][0] *
-            right_fbl -
-        chassis_move_control_loop->chassis_right_control.wbr_control.J[1][1] *
-            right_tbl;
-}
 
 static void chassis_apply_joint_output(Chassis_Move *chassis_move_control_loop) {
     /*
@@ -1536,18 +1468,13 @@ static void chassis_apply_joint_output(Chassis_Move *chassis_move_control_loop) 
      * INIT_STAND / 瞬态 INIT_DONE 显式使用标准 WBR 关节映射。
      * CHASSIS_JUMP 仅保留旧代码，当前没有重新接入。
      */
-    if (chassis_move_control_loop->state == CHASSIS_INIT &&
-        chassis_move_control_loop->init_phase == CHASSIS_INIT_RETRACT) {
-        // INIT 倒地自起纯收腿，不加角度约束，靠重力自然下垂
-        chassis_apply_wbr_joint_output(chassis_move_control_loop,
-                                       chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t,
-                                       0.0f,
-                                       chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t,
-                                       0.0f);
-    } else if (chassis_is_step_up_active(chassis_move_control_loop) &&
-               chassis_move_control_loop->step_up_phase == STEP_UP_RETRACT) {
-        // 上台阶收腿阶段参考 INIT_RETRACT：纯收腿，不加角度约束，靠重力自然下垂。
-        chassis_apply_wbr_joint_output(chassis_move_control_loop,
+    const bool_t is_retract =
+        (chassis_move_control_loop->state == CHASSIS_INIT &&
+         chassis_move_control_loop->init_phase == CHASSIS_INIT_RETRACT) ||
+        (chassis_is_step_up_active(chassis_move_control_loop) &&
+         chassis_move_control_loop->step_up_phase == STEP_UP_RETRACT);
+    if (is_retract) {
+        APPLY_WBR_JOINT_OUTPUT(chassis_move_control_loop,
                                        chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t,
                                        0.0f,
                                        chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t,
@@ -1574,7 +1501,7 @@ static void chassis_apply_joint_output(Chassis_Move *chassis_move_control_loop) 
             LQR_K[3][6] * right_theta + LQR_K[3][7] * right_d_theta;
 
         // 结合正常的纵向支持力(Fbl_t)，映射输出给关节电机
-        chassis_apply_wbr_joint_output(chassis_move_control_loop,
+        APPLY_WBR_JOINT_OUTPUT(chassis_move_control_loop,
                                        chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t,
                                        chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t * 0.35,
                                        chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t,
@@ -1612,7 +1539,7 @@ static void chassis_apply_joint_output(Chassis_Move *chassis_move_control_loop) 
         }
 
         chassis_apply_leg_tbl_angle_attenuation(chassis_move_control_loop);
-        chassis_apply_wbr_joint_output(chassis_move_control_loop,
+        APPLY_WBR_JOINT_OUTPUT(chassis_move_control_loop,
                                        chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t,
                                        chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t,
                                        chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t,
@@ -1620,7 +1547,7 @@ static void chassis_apply_joint_output(Chassis_Move *chassis_move_control_loop) 
     } else if (chassis_move_control_loop->state == CHASSIS_INIT &&
                (chassis_move_control_loop->init_phase == CHASSIS_INIT_STAND ||
                 chassis_move_control_loop->init_phase == CHASSIS_INIT_DONE)) {
-        chassis_apply_wbr_joint_output(chassis_move_control_loop,
+        APPLY_WBR_JOINT_OUTPUT(chassis_move_control_loop,
                                        chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t,
                                        chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t,
                                        chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t,
@@ -1629,13 +1556,11 @@ static void chassis_apply_joint_output(Chassis_Move *chassis_move_control_loop) 
 }
 
 static void chassis_limit_output(Chassis_Move *chassis_move_control_loop) {
-    // 关节点击力矩限幅，最大值按照关节电机最大扭矩限制
     chassis_move_control_loop->chassis_wheel[0].wheel_T = float_constrain(chassis_move_control_loop->chassis_wheel[0].wheel_T, -6.3f, 6.3f);
     chassis_move_control_loop->chassis_wheel[1].wheel_T = float_constrain(chassis_move_control_loop->chassis_wheel[1].wheel_T, -6.3f, 6.3f);
-    chassis_move_control_loop->chassis_joint[0].joint_T = float_constrain(chassis_move_control_loop->chassis_joint[0].joint_T, JOINT_MIN_TORQUE, JOINT_MAX_TORQUE);
-    chassis_move_control_loop->chassis_joint[1].joint_T = float_constrain(chassis_move_control_loop->chassis_joint[1].joint_T, JOINT_MIN_TORQUE, JOINT_MAX_TORQUE);
-    chassis_move_control_loop->chassis_joint[2].joint_T = float_constrain(chassis_move_control_loop->chassis_joint[2].joint_T, JOINT_MIN_TORQUE, JOINT_MAX_TORQUE);
-    chassis_move_control_loop->chassis_joint[3].joint_T = float_constrain(chassis_move_control_loop->chassis_joint[3].joint_T, JOINT_MIN_TORQUE, JOINT_MAX_TORQUE);
+    for (uint8_t i = 0; i < 4; i++) {
+        chassis_move_control_loop->chassis_joint[i].joint_T = float_constrain(chassis_move_control_loop->chassis_joint[i].joint_T, JOINT_MIN_TORQUE, JOINT_MAX_TORQUE);
+    }
 }
 
 static void chassis_save_last_feedback(Chassis_Move *chassis_move_control_loop) {
@@ -1667,10 +1592,6 @@ fp32 Get_FeedForward_Force(fp32 leg_length_m) {
 
 /*底盘正常状态下初始化起身过程*/
 static void chassis_init_standup(Chassis_Move *chassis_init_standup) {
-    if (chassis_init_standup == NULL) {
-        return;
-    }
-
     if (chassis_init_standup->state != CHASSIS_INIT) {
         return;
     }
