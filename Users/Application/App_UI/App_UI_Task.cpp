@@ -13,10 +13,29 @@
 #include "wbr.h"
 #include <math.h>
 
+#define CAP_ENERGY_LOW_THRESHOLD 20.0f
+#define CAP_ENERGY_MEDIUM_THRESHOLD 60.0f
 #define LOW_AMMO_THRESHOLD 10 // 17mm剩余弹量低于该值时显示LOW AMMO告警
 #define UI_TEXT_GROUP_INTERVAL_MS 200U
 #define UI_START_FRAME_GROUP_INTERVAL_MS 200U
 #define UI_START_FRAME_HOLD_MS 2000U
+
+static inline uint32_t UI_SuperCap_Bar_Start_X(void)
+{
+  return ui_normal_DynamicGroup1_SuperCapPercentage->start_x;
+}
+
+static inline uint32_t UI_SuperCap_Bar_Start_Y(void)
+{
+  return ui_normal_DynamicGroup1_SuperCapPercentage->start_y;
+}
+
+static inline uint32_t UI_SuperCap_Bar_End_X(void)
+{
+  return ui_normal_StaticGroup1_SuperCapRect->end_x;
+}
+
+
 
 // ui_normal.c由UI工具生成，头文件只暴露整组接口；这里单独调用某个字符串的新增/删除接口显示告警。
 extern "C" void _ui_init_normal_DynamicTextGroup1_0(void);
