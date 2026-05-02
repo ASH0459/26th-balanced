@@ -170,6 +170,7 @@ static uint32_t g_ui_text_next_send_tick = 0U;
 static void UI_Run_Startup_Sequence(void);
 static void UI_Play_Start_Frame(void);
 static void UI_Init(void);
+static void UI_Sync_Self_Id_From_Referee(void);
 static void UI_data_update(void);
 static void UI_updata(void);
 static void UI_Handle_Reset_Request(void);
@@ -215,10 +216,12 @@ static void UI_Update_Chassis_Pitch_Line(ui_interface_line_t *pitch_line, fp32 p
 void UI_Task(void *argument)
 {
   osDelay(2000);
+  UI_Sync_Self_Id_From_Referee();
   UI_Run_Startup_Sequence();
 
   while (1)
   {
+    UI_Sync_Self_Id_From_Referee();
     UI_Handle_Reset_Request();
     UI_data_update();
     UI_updata();
@@ -275,6 +278,22 @@ static void UI_Init(void)
   osDelay(500);
   ui_init_normal_LegDynamicGroup();
   osDelay(500);
+}
+
+/**
+ * @brief 用裁判系统下发的机器人 ID 同步 UI 发送/接收 ID。
+ * @note 只有在裁判系统已经解析出非零 robot_id 时才覆盖 ui_self_id，
+ *       避免开机早期裁判数据尚未到达时把 ID 刷成无效值。
+ */
+static void UI_Sync_Self_Id_From_Referee(void)
+{
+  uint16_t referee_robot_id = 0U;
+  robot_id(&referee_robot_id);
+
+  if (referee_robot_id != 0U)
+  {
+    ui_self_id = referee_robot_id;
+  }
 }
 
 /**
