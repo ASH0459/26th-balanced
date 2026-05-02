@@ -66,8 +66,8 @@
 #define JOINT_MIN_TORQUE -40.0f
 
 // 腿的最大最小长度
-#define CHASSIS_LEG_MAX 0.37f
-#define CHASSIS_LEG_MIN 0.154f
+#define CHASSIS_LEG_MAX 0.36f
+#define CHASSIS_LEG_MIN 0.15f
 
 // 初始化收腿目标角度 (rad)，原始坐标系下为-1.26rad，换算到0~2π下为2π-1.26
 #define CHASSIS_INIT_LEG_ANGLE_TARGET_RAW (-1.26f)
@@ -126,10 +126,10 @@
 #define CHASSIS_X_BACK 0.5f
 // 左右腿长度PID
 #define LEG_PID_KP 2500.0f
-#define LEG_PID_KI 0.0f
+#define LEG_PID_KI 4.8f
 #define LEG_PID_KD 100000.0f
 #define LEG_PID_MAX_OUT 300.0f // 300
-#define LEG_PID_MAX_IOUT 30.0f
+#define LEG_PID_MAX_IOUT 60.0f
 
 /* 轮子相关数据 */
 // 轮子质量 KG
@@ -141,7 +141,7 @@
 
 /* 腿部相关数据 */
 // 腿部质量
-#define MASS_OF_LEG 2.109f
+#define MASS_OF_LEG 2.809f
 // 机体到腿部质心距离拟合直线斜率和截距
 #define L_BI_SLOPE 0.85532f
 #define L_BI_INTERCEPT -0.027935f
@@ -151,7 +151,7 @@
 
 /* 机体相关数据 */
 // 机体质量
-#define MASS_OF_BODY 25.0f
+#define MASS_OF_BODY 28.0f
 
 #define CHASSIS_ACCEL_LEG_NUM 0.3333333333f
 #define CHASSIS_THETA_L_LOWPASS_NUM 0.01f
@@ -303,6 +303,7 @@ class leg_control {
     fp32                   theta_l_lowpass;   // 腿低通后角度
     fp32                   d_theta_l_lowpass; // 腿低通后角速度
     fp32                   dd_L_lowpass;      // 腿长加速度低通后值
+    fp32                   d_L;
     fp32                   d_theta_l_set;     // 腿角速度设置
 };
 

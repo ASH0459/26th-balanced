@@ -55,11 +55,11 @@ extern "C" {
          buzzer_off();
          osDelay(2000);
        }
-       else if (toe_is_error(CHASSIS_WHEEL1_TOE) || toe_is_error(CHASSIS_WHEEL2_TOE)) {
-         buzzer_on(100, 1500);
-         osDelay(2000);
-         buzzer_off();
-       }
+       // else if (toe_is_error(CHASSIS_WHEEL1_TOE) || toe_is_error(CHASSIS_WHEEL2_TOE)) {
+       //   buzzer_on(100, 1500);
+       //   osDelay(2000);
+       //   buzzer_off();
+       // }
       else if (toe_is_error(VT_TOE)) {
         buzzer_on(100, 1500);
         osDelay(300);
