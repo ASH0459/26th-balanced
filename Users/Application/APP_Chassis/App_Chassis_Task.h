@@ -42,7 +42,7 @@
 #define STEP_UP_TORQUE_THRESHOLD 4.0f         // 碰到台阶导致堵转的虚拟水平扭矩 Tbl_t 阈值 (Nm)
 #define STEP_UP_PASSIVE_SWING_TARGET -0.8f    // 被动摆腿目标角度，直接使用 theta_l 原始坐标
 #define STEP_UP_HOLD_TICKS 300U               // 被动摆腿后停留时间，控制周期 1ms 时约 500ms
-#define STEP_UP_TIMEOUT_TICKS 100000U         // 上台阶总超时退出，控制周期 1ms 时约 5s
+#define STEP_UP_TIMEOUT_TICKS 5000U         // 上台阶总超时退出，控制周期 1ms 时约 5s
 #define STEP_UP_PASSIVE_REVERSE_LEG_TBL -4.0f // 被动摆腿/停留阶段腿部反向水平力矩，减小上台阶后前滑
 
 // 重力加速度
@@ -203,7 +203,8 @@
 #define RAMP_RECOVERY_STEP 0.001f       // 落地恢复斜坡步长：控制落地后恢复正常腿长的速度
 
 /* 底盘状态机 */
-typedef enum {
+typedef enum
+{
     CHASSIS_STOP = 0,
     CHASSIS_FLIP,
     CHASSIS_INIT,
@@ -213,7 +214,8 @@ typedef enum {
     CHASSIS_JUMP,
 } Chassis_State_e;
 
-typedef enum {
+typedef enum
+{
     STEP_UP_EXTEND = 0, // 第一阶段：伸长腿
     STEP_UP_DETECT,     // 第二阶段：保持腿长，检测是否撞击台阶
     STEP_UP_SWING,      // 第三阶段：保持台阶腿长，被动摆到目标角度
@@ -224,24 +226,28 @@ typedef enum {
 } Chassis_StepUp_Phase_e;
 
 /* 机体姿态 */
-typedef enum {
+typedef enum
+{
     CHASSIS_POSTURE_UP = 0,
     CHASSIS_POSTURE_DOWN,
 } Chassis_Posture_e;
 
-typedef enum {
+typedef enum
+{
     CHASSIS_OFF_GROUND,  // 离地
     CHASSIS_TOUCH_GROUND // 触底
 } chassis_off_ground_detection_e;
 
-typedef enum {
+typedef enum
+{
     CHASSIS_INIT_FOLD = 0,
     CHASSIS_INIT_RETRACT,
     CHASSIS_INIT_STAND,
     CHASSIS_INIT_DONE,
 } Chassis_Init_Phase_e;
 
-typedef enum {
+typedef enum
+{
     CHASSIS_JUMP_PRELOAD = 0,
     CHASSIS_JUMP_TAKEOFF,
     CHASSIS_JUMP_READYLAND,
@@ -251,81 +257,85 @@ typedef enum {
 #ifdef __cplusplus
 
 /* 底盘关节电机数据 */
-class Chassis_Joint_Motor {
-  public:
+class Chassis_Joint_Motor
+{
+public:
     const Joint_Motor_Measure *chassis_joint_measure; // 关节数据
-    fp32                       joint_T;               // 关节扭矩
+    fp32 joint_T;                                     // 关节扭矩
 };
 
 /*底盘轮电机数据*/
-class Chassis_Wheel_Motor {
-  public:
+class Chassis_Wheel_Motor
+{
+public:
     const Wheel_Motor_Measure *chassis_wheel_measure;
-    fp32                       vel;
-    fp32                       total_pos;
-    fp32                       tor;
-    fp32                       wheel_T;
+    fp32 vel;
+    fp32 total_pos;
+    fp32 tor;
+    fp32 wheel_T;
 };
 
 /* 腿部控制类 */
-class leg_control {
-  public:
-    KalmanFilter_t                 chassis_vaestimatekf_theta;   // 卡尔曼滤波观测器
-    first_order_filter_type_t      theta_l_lowpass_filter;       // 腿角度一阶低通
-    first_order_filter_type_t      d_theta_l_lowpass_filter;     // 腿角速度一阶低通
-    first_order_filter_type_t      dd_L_lowpass_filter;          // 腿长加速度一阶低通
+class leg_control
+{
+public:
+    KalmanFilter_t chassis_vaestimatekf_theta;                   // 卡尔曼滤波观测器
+    first_order_filter_type_t theta_l_lowpass_filter;            // 腿角度一阶低通
+    first_order_filter_type_t d_theta_l_lowpass_filter;          // 腿角速度一阶低通
+    first_order_filter_type_t dd_L_lowpass_filter;               // 腿长加速度一阶低通
     chassis_off_ground_detection_e chassis_off_ground_detection; // 离地检测枚举
 
-    ramp_function_source_t init_angle_ramp;    // 用于倒地自启的斜坡函数
-    PidTypeDef_t           roll_control;       // roll轴PID
-    fp32                   fd_roll;            // roll轴PID输出值
-    PidTypeDef_t           leg_pid_control;    // 腿长PID
-    fp32                   fd_leg;             // 腿长PID输出值
-    PidTypeDef_t           init_leg_angle_pid; // 初始化收腿角度PID
-    fp32                   Fbl_gravity;        // 重力补偿前馈
-    fp32                   Fbl_inertial;       // 侧向惯性力矩补偿前馈
-    fp32                   Fbl_spring;         // 腿部弹力补偿前馈
-    wbr_leg_t              wbr_control;        // wbr连杆解算
-    fp32                   eta;                // 腿部质心位置系数
-    fp32                   l_b = L_B;          // 机体到腿部质心的距离
-    fp32                   i_l = I_L;          // 腿部转动惯量
-    fp32                   Fwn;                // 驱动轮支持力
-    fp32                   Fwn_test;
-    fp32                   v_real_n;          // 速度预测
-    fp32                   chassis_d_yaw_n;   // yaw轴角速度预测
-    fp32                   d_theta_w_n;       // 驱动轮角速度预测
-    fp32                   Tw_adapt;          // 驱动轮力矩补偿
-    fp32                   theta_l;           // 腿原始角度
-    fp32                   theta_l_set;       // 腿角度设置
-    fp32                   d_theta_l;         // 腿原始角速度
-    fp32                   theta_l_filter;    // 腿滤波后角度
-    fp32                   d_theta_l_filter;  // 腿滤波后角速度
-    fp32                   theta_l_lowpass;   // 腿低通后角度
-    fp32                   d_theta_l_lowpass; // 腿低通后角速度
-    fp32                   theta_l_ctrl;      // 本周期控制实际使用的腿角度
-    fp32                   d_theta_l_ctrl;    // 本周期控制实际使用的腿角速度
-    fp32                   dd_L_lowpass;      // 腿长加速度低通后值
-    fp32                   d_theta_l_set;     // 腿角速度设置
+    ramp_function_source_t init_angle_ramp; // 用于倒地自启的斜坡函数
+    PidTypeDef_t roll_control;              // roll轴PID
+    fp32 fd_roll;                           // roll轴PID输出值
+    PidTypeDef_t leg_pid_control;           // 腿长PID
+    fp32 fd_leg;                            // 腿长PID输出值
+    PidTypeDef_t init_leg_angle_pid;        // 初始化收腿角度PID
+    fp32 Fbl_gravity;                       // 重力补偿前馈
+    fp32 Fbl_inertial;                      // 侧向惯性力矩补偿前馈
+    fp32 Fbl_spring;                        // 腿部弹力补偿前馈
+    wbr_leg_t wbr_control;                  // wbr连杆解算
+    fp32 eta;                               // 腿部质心位置系数
+    fp32 l_b = L_B;                         // 机体到腿部质心的距离
+    fp32 i_l = I_L;                         // 腿部转动惯量
+    fp32 Fwn;                               // 驱动轮支持力
+    fp32 Fwn_test;
+    fp32 v_real_n;          // 速度预测
+    fp32 chassis_d_yaw_n;   // yaw轴角速度预测
+    fp32 d_theta_w_n;       // 驱动轮角速度预测
+    fp32 Tw_adapt;          // 驱动轮力矩补偿
+    fp32 theta_l;           // 腿原始角度
+    fp32 theta_l_set;       // 腿角度设置
+    fp32 d_theta_l;         // 腿原始角速度
+    fp32 theta_l_filter;    // 腿滤波后角度
+    fp32 d_theta_l_filter;  // 腿滤波后角速度
+    fp32 theta_l_lowpass;   // 腿低通后角度
+    fp32 d_theta_l_lowpass; // 腿低通后角速度
+    fp32 theta_l_ctrl;      // 本周期控制实际使用的腿角度
+    fp32 d_theta_l_ctrl;    // 本周期控制实际使用的腿角速度
+    fp32 dd_L_lowpass;      // 腿长加速度低通后值
+    fp32 d_theta_l_set;     // 腿角速度设置
 };
 
 /* 底盘控制类 */
-class Chassis_Move {
-  public:
-    Chassis_State_e        state                           = CHASSIS_STOP;
-    Chassis_State_e        last_state                      = CHASSIS_STOP;
-    Chassis_State_e        pending_state                   = CHASSIS_NORMAL;
-    Chassis_Posture_e      posture                         = CHASSIS_POSTURE_DOWN;
-    Chassis_Posture_e      last_posture                    = CHASSIS_POSTURE_DOWN;
-    Chassis_Init_Phase_e   init_phase                      = CHASSIS_INIT_FOLD;
-    Chassis_Jump_Phase_e   jump_phase                      = CHASSIS_JUMP_DONE;
-    Chassis_StepUp_Phase_e step_up_phase                   = STEP_UP_DONE;
-    chassis_mode_e         last_request_mode               = CHASSIS_MODE_RESERVED;
-    uint16_t               jump_phase_ticks                = 0;
-    uint16_t               step_up_phase_ticks             = 0;
-    uint16_t               step_up_total_ticks             = 0;
-    uint16_t               posture_stable_ticks            = 0;
-    uint16_t               normal_force_touch_ground_ticks = 0;
-    fp32                   step_up_leg_target              = CHASSIS_LEG_2_TARGET;
+class Chassis_Move
+{
+public:
+    Chassis_State_e state = CHASSIS_STOP;
+    Chassis_State_e last_state = CHASSIS_STOP;
+    Chassis_State_e pending_state = CHASSIS_NORMAL;
+    Chassis_Posture_e posture = CHASSIS_POSTURE_DOWN;
+    Chassis_Posture_e last_posture = CHASSIS_POSTURE_DOWN;
+    Chassis_Init_Phase_e init_phase = CHASSIS_INIT_FOLD;
+    Chassis_Jump_Phase_e jump_phase = CHASSIS_JUMP_DONE;
+    Chassis_StepUp_Phase_e step_up_phase = STEP_UP_DONE;
+    chassis_mode_e last_request_mode = CHASSIS_MODE_RESERVED;
+    uint16_t jump_phase_ticks = 0;
+    uint16_t step_up_phase_ticks = 0;
+    uint16_t step_up_total_ticks = 0;
+    uint16_t posture_stable_ticks = 0;
+    uint16_t normal_force_touch_ground_ticks = 0;
+    fp32 step_up_leg_target = CHASSIS_LEG_2_TARGET;
 
     const fp32 *chassis_INS_gyro;       // 机体角速度指针
     const fp32 *chassis_INS_angle;      // 获取陀螺仪解算出的欧拉角指针
@@ -373,17 +383,17 @@ class Chassis_Move {
     PidTypeDef_t buffer_pid;        // 缓冲能量pid
 
     uint32_t chassis_dwt_count; // 任务时间间隔计数
-    fp32     dt;                // 任务间隔时间
+    fp32 dt;                    // 任务间隔时间
 
-    fp32                      chassis_v_set;     // 目标速度
-    fp32                      chassis_x_set;     // 目标位移
-    fp32                      chassis_d_yaw_set; // 目标角速度
-    fp32                      chassis_yaw_set;
-    fp32                      chassis_leg_set;        // 腿部目标长度
-    fp32                      chassis_left_leg_set;   // 左腿最终目标长度
-    fp32                      chassis_right_leg_set;  // 右腿最终目标长度
+    fp32 chassis_v_set;     // 目标速度
+    fp32 chassis_x_set;     // 目标位移
+    fp32 chassis_d_yaw_set; // 目标角速度
+    fp32 chassis_yaw_set;
+    fp32 chassis_leg_set;                             // 腿部目标长度
+    fp32 chassis_left_leg_set;                        // 左腿最终目标长度
+    fp32 chassis_right_leg_set;                       // 右腿最终目标长度
     first_order_filter_type_t chassis_leg_filter_set; // 低通/斜坡后的腿部目标长度
-    fp32                      chassis_roll_set;       // 底盘roll轴设定值
+    fp32 chassis_roll_set;                            // 底盘roll轴设定值
 
     fp32 K = K_APAPT; // 驱动轮补偿系数
 
@@ -421,14 +431,15 @@ extern Chassis_Move *Get_Chassis_Move_Point(void);
 #endif
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
-/**
- * @brief          底盘任务，间隔 CHASSIS_CONTROL_TIME_MS 1ms
- * @param[in]      pvParameters: 空
- * @retval         none
- */
-extern void Chassis_Task(void *pvParameters);
+    /**
+     * @brief          底盘任务，间隔 CHASSIS_CONTROL_TIME_MS 1ms
+     * @param[in]      pvParameters: 空
+     * @retval         none
+     */
+    extern void Chassis_Task(void *pvParameters);
 #ifdef __cplusplus
 }
 #endif
