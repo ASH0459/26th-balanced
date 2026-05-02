@@ -302,6 +302,8 @@ class leg_control {
     fp32                   d_theta_l_filter;  // 腿滤波后角速度
     fp32                   theta_l_lowpass;   // 腿低通后角度
     fp32                   d_theta_l_lowpass; // 腿低通后角速度
+    fp32                   theta_l_ctrl;      // 本周期控制实际使用的腿角度
+    fp32                   d_theta_l_ctrl;    // 本周期控制实际使用的腿角速度
     fp32                   dd_L_lowpass;      // 腿长加速度低通后值
     fp32                   d_theta_l_set;     // 腿角速度设置
 };

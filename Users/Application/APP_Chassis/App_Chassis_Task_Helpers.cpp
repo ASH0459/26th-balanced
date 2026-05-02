@@ -10,38 +10,6 @@
 extern "C" {
 #endif
 
-// Task.cpp 主流程里反复用到的小辅助函数，集中放这里降低主文件噪音。
-fp32 chassis_select_theta_signal(const leg_control *leg, uint8_t filter_source) {
-    return (filter_source == CHASSIS_FILTER_LOWPASS) ? leg->theta_l_lowpass : leg->theta_l_filter;
-}
-
-fp32 chassis_select_d_theta_signal(const leg_control *leg, uint8_t filter_source) {
-    return (filter_source == CHASSIS_FILTER_LOWPASS) ? leg->d_theta_l_lowpass : leg->d_theta_l_filter;
-}
-
-fp32 chassis_calc_leg_tbl_attenuation_scale(fp32 abs_theta_l) {
-#if CHASSIS_LEG_TBL_ANGLE_ATTENUATION_ENABLE
-    return 1.0f / (1.0f + expf(CHASSIS_LEG_TBL_ANGLE_ATTENUATION_SHARPNESS *
-                               (abs_theta_l - CHASSIS_LEG_TBL_ANGLE_ATTENUATION_CENTER)));
-#else
-    (void)abs_theta_l;
-    return 1.0f;
-#endif
-}
-
-void chassis_apply_leg_tbl_angle_attenuation(Chassis_Move *chassis_move_control_loop) {
-#if CHASSIS_LEG_TBL_ANGLE_ATTENUATION_ENABLE
-    chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t *=
-        chassis_calc_leg_tbl_attenuation_scale(
-            fabsf(chassis_select_theta_signal(&chassis_move_control_loop->chassis_left_control, CHASSIS_LEFT_THETA_FILTER_SOURCE)));
-    chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t *=
-        chassis_calc_leg_tbl_attenuation_scale(
-            fabsf(chassis_select_theta_signal(&chassis_move_control_loop->chassis_right_control, CHASSIS_RIGHT_THETA_FILTER_SOURCE)));
-#else
-    (void)chassis_move_control_loop;
-#endif
-}
-
 bool_t chassis_init_legs_retracted(const Chassis_Move *chassis_move_control_loop) {
     if (chassis_move_control_loop == NULL) {
         return 0;
@@ -54,10 +22,8 @@ bool_t chassis_init_legs_retracted(const Chassis_Move *chassis_move_control_loop
 fp32 chassis_calc_init_wheel_theta_scale(const Chassis_Move *chassis_move_control_loop) {
     // 取两条腿里更差的一侧作为轮子输出门控，避免一边没摆正时轮子提前发力。
     const fp32 theta_err = fmaxf(
-        fabsf(chassis_select_theta_signal(&chassis_move_control_loop->chassis_left_control, CHASSIS_LEFT_THETA_FILTER_SOURCE) -
-              CHASSIS_INIT_WHEEL_TARGET_THETA),
-        fabsf(chassis_select_theta_signal(&chassis_move_control_loop->chassis_right_control, CHASSIS_RIGHT_THETA_FILTER_SOURCE) -
-              CHASSIS_INIT_WHEEL_TARGET_THETA));
+        fabsf(chassis_move_control_loop->chassis_left_control.theta_l_ctrl - CHASSIS_INIT_WHEEL_TARGET_THETA),
+        fabsf(chassis_move_control_loop->chassis_right_control.theta_l_ctrl - CHASSIS_INIT_WHEEL_TARGET_THETA));
     const fp32 span = CHASSIS_INIT_WHEEL_ZERO_OUTPUT_THETA_ERR - CHASSIS_INIT_WHEEL_FULL_OUTPUT_THETA_ERR;
 
     if (span <= 1e-6f) {
@@ -68,6 +34,8 @@ fp32 chassis_calc_init_wheel_theta_scale(const Chassis_Move *chassis_move_contro
 }
 
 void chassis_apply_init_wheel_theta_gate(Chassis_Move *chassis_move_control_loop) {
+    // 这个最终阶段的轮子门控默认 wheel_T 仍然是本周期基础 LQR 的输出，
+    // 中间没有被别的阶段逻辑提前改写。
     if (chassis_move_control_loop->state != CHASSIS_INIT) {
         return;
     }
@@ -107,8 +75,8 @@ fp32 chassis_calc_leg_extend_force(leg_control *leg, fp32 target_leg_length) {
     return -Leg_PID_Calc(&leg->leg_pid_control, leg->wbr_control.L, target_leg_length);
 }
 
-void chassis_update_leg_angle_signals(leg_control *leg, const fp32 *f_theta) {
-    // 腿角信号同时保留原始值、低通值和卡尔曼值，主控制环按宏选择其中一路。
+void chassis_update_leg_angle_signals(leg_control *leg, const fp32 *f_theta, uint8_t theta_filter_source, uint8_t d_theta_filter_source) {
+    // 腿角信号同时保留原始值、低通值和卡尔曼值，同时在 feedback 阶段就缓存出本周期控制实际采用的一路。
     memcpy(leg->chassis_vaestimatekf_theta.F_data, f_theta, 4 * sizeof(fp32));
 
     leg->theta_l   = leg->wbr_control.theta_l;
@@ -125,6 +93,8 @@ void chassis_update_leg_angle_signals(leg_control *leg, const fp32 *f_theta) {
     Kalman_Filter_Update(&leg->chassis_vaestimatekf_theta);
     leg->theta_l_filter   = leg->chassis_vaestimatekf_theta.FilteredValue[0];
     leg->d_theta_l_filter = leg->chassis_vaestimatekf_theta.FilteredValue[1];
+    leg->theta_l_ctrl     = (theta_filter_source == CHASSIS_FILTER_LOWPASS) ? leg->theta_l_lowpass : leg->theta_l_filter;
+    leg->d_theta_l_ctrl   = (d_theta_filter_source == CHASSIS_FILTER_LOWPASS) ? leg->d_theta_l_lowpass : leg->d_theta_l_filter;
 }
 
 bool_t chassis_is_balancing_state(Chassis_State_e state) {

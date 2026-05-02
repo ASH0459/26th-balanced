@@ -57,18 +57,6 @@
 // 0: 使用正常控制输出。
 #define CHASSIS_FORCE_ALL_MOTOR_ZERO_OUTPUT 1
 
-
-/* -------------------- 腿部水平输出角度衰减 -------------------- */
-// 1: 按摆杆角度衰减 Tbl_t，摆杆角越大，水平输出越小。
-// 0: 关闭该衰减逻辑。
-#define CHASSIS_LEG_TBL_ANGLE_ATTENUATION_ENABLE 0
-
-// Sigmoid 中心点 (rad): |theta_l| == center 时，缩放系数为 0.5。
-#define CHASSIS_LEG_TBL_ANGLE_ATTENUATION_CENTER 0.2f
-
-// Sigmoid 陡峭度: 数值越大，中心点附近衰减越快。
-#define CHASSIS_LEG_TBL_ANGLE_ATTENUATION_SHARPNESS 4.0f
-
 /* -------------------- 行为层 yaw 与速度参数 -------------------- */
 // 组合 yaw 指令输出的全局角速度保护上限。
 #define CHASSIS_D_YAW_MAX 1000.0f

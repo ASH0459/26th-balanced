@@ -237,6 +237,16 @@ extern "C"
         chassis_move_control_loop->normal_force_touch_ground_ticks = CHASSIS_NORMAL_FORCE_TOUCH_GROUND_TICKS;
     }
 
+    // 只有当“最终输出映射策略”真的不同，才新增一种输出模式。
+    // 如果只是缩放、偏置、门控这类局部差异，仍沿用原模式，在模式内部做细化处理。
+    typedef enum
+    {
+        CHASSIS_OUTPUT_MODE_NORMAL_WBR = 0, // 标准轮腿平衡输出：wheel_T / Tbl_t / Fbl_t 一起参与 WBR 映射
+        CHASSIS_OUTPUT_MODE_RETRACT_LEG_ONLY, // 收腿专用输出：清零 wheel_T / Tbl_t，只保留 Fbl_t 做关节映射
+        CHASSIS_OUTPUT_MODE_STEP_STAND, // 上台阶站稳阶段：清零 wheel_T，仅保留角度相关 Tbl_t 与 Fbl_t 共同映射
+        CHASSIS_OUTPUT_MODE_DIRECT_JOINT // 专用关节直写阶段：joint_T 已在上游直接给出，这里只清理 wheel_T / Tbl_t
+    } chassis_output_mode_e;
+
     /**
      * @brief          初始化"chassis_move"变量，包括pid初始化， 遥控器指针初始化，3508底盘电机指针初始化，云台电机初始化，陀螺仪角度指针初始化
      * @param[out]     chassis_move_init:"chassis_move"变量指针.
@@ -301,6 +311,11 @@ extern "C"
      * @brief          计算左右腿当前支持力
      */
     static void chassis_calc_support_force(Chassis_Move *chassis_move_control_loop);
+
+    /**
+     * @brief          选择当前控制周期的最终输出映射模式
+     */
+    static chassis_output_mode_e chassis_select_output_mode(const Chassis_Move *chassis_move_control_loop);
 
     /**
      * @brief          将轮腿控制量映射为关节输出
@@ -876,8 +891,10 @@ extern "C"
         chassis_move_update->vaEstimateKF_F_theta[2] = 0.0f;
         chassis_move_update->vaEstimateKF_F_theta[3] = 1.0f;
         //选取卡尔曼滤波或是低通滤波
-        chassis_update_leg_angle_signals(&chassis_move_update->chassis_left_control, chassis_move_update->vaEstimateKF_F_theta);
-        chassis_update_leg_angle_signals(&chassis_move_update->chassis_right_control, chassis_move_update->vaEstimateKF_F_theta);
+        chassis_update_leg_angle_signals(&chassis_move_update->chassis_left_control, chassis_move_update->vaEstimateKF_F_theta,
+                                         CHASSIS_LEFT_THETA_FILTER_SOURCE, CHASSIS_LEFT_D_THETA_FILTER_SOURCE);
+        chassis_update_leg_angle_signals(&chassis_move_update->chassis_right_control, chassis_move_update->vaEstimateKF_F_theta,
+                                         CHASSIS_RIGHT_THETA_FILTER_SOURCE, CHASSIS_RIGHT_D_THETA_FILTER_SOURCE);
 
         // 实际左腿转矩
         chassis_move_update->chassis_left_control.wbr_control.Tbl_r = (chassis_move_update->chassis_left_control.wbr_control.J[0][0] * chassis_move_update->chassis_joint[1].chassis_joint_measure->tor + chassis_move_update->chassis_left_control.wbr_control.J[1][0] * chassis_move_update->chassis_joint[0].chassis_joint_measure->tor) / (chassis_move_update->chassis_left_control.wbr_control.J[0][0] * chassis_move_update->chassis_left_control.wbr_control.J[1][1] - chassis_move_update->chassis_left_control.wbr_control.J[0][1] * chassis_move_update->chassis_left_control.wbr_control.J[1][0]);
@@ -1054,10 +1071,10 @@ extern "C"
         // 旋转分量 (以左轮为正，右轮系数天然反号，因为 LQR_K[1][2] == -LQR_K[0][2])
         fp32 U_yaw = -LQR_K[0][2] * yaw_err - LQR_K[0][3] * dyaw_err;
 
-        const fp32 left_theta_ctrl = chassis_select_theta_signal(&chassis_move_control_loop->chassis_left_control, CHASSIS_LEFT_THETA_FILTER_SOURCE);
-        const fp32 left_d_theta_ctrl = chassis_select_d_theta_signal(&chassis_move_control_loop->chassis_left_control, CHASSIS_LEFT_D_THETA_FILTER_SOURCE);
-        const fp32 right_theta_ctrl = chassis_select_theta_signal(&chassis_move_control_loop->chassis_right_control, CHASSIS_RIGHT_THETA_FILTER_SOURCE);
-        const fp32 right_d_theta_ctrl = chassis_select_d_theta_signal(&chassis_move_control_loop->chassis_right_control, CHASSIS_RIGHT_D_THETA_FILTER_SOURCE);
+        const fp32 left_theta_ctrl = chassis_move_control_loop->chassis_left_control.theta_l_ctrl;
+        const fp32 left_d_theta_ctrl = chassis_move_control_loop->chassis_left_control.d_theta_l_ctrl;
+        const fp32 right_theta_ctrl = chassis_move_control_loop->chassis_right_control.theta_l_ctrl;
+        const fp32 right_d_theta_ctrl = chassis_move_control_loop->chassis_right_control.d_theta_l_ctrl;
 
         // 3. 提取维持姿态平衡的扭矩分量
         fp32 U_else_L = LQR_K[0][4] * left_theta_ctrl + LQR_K[0][5] * left_d_theta_ctrl + LQR_K[0][6] * right_theta_ctrl + LQR_K[0][7] * right_d_theta_ctrl - LQR_K[0][8] * (chassis_move_control_loop->chassis_pitch) - LQR_K[0][9] * chassis_move_control_loop->chassis_d_pitch + chassis_move_control_loop->chassis_left_control.Tw_adapt;
@@ -1092,9 +1109,6 @@ extern "C"
         chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t =
             (U_speed_leg_R * decay_Uspeed) + (U_yaw_leg_R * decay_Uyaw) + U_else_leg_R;
 
-        // INIT 仅在双腿收短后允许轮毂输出。
-        chassis_apply_init_wheel_theta_gate(chassis_move_control_loop);
-
 #if CHASSIS_VERTICAL_SUPPORT_ONLY_MODE
         chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t = 0.0f;
         chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t = 0.0f;
@@ -1113,9 +1127,10 @@ extern "C"
     {
         /* 本部分代码包括以下阶段：
          * 1. 基础LQR与功率限制
-         * 2. INIT/UP等特殊阶段控制
-         * 3. 支持力和关节输出计算
-         * 4. 输出限幅和历史反馈保存
+         * 2. INIT/UP等特殊阶段状态更新
+         * 3. 支持力计算
+         * 4. 最终输出预处理与模式映射
+         * 5. 输出限幅和历史反馈保存
          * */
 
         if (chassis_move_control_loop->state == CHASSIS_STOP)
@@ -1187,6 +1202,8 @@ extern "C"
         }
         chassis_calc_support_force(chassis_move_control_loop);
 
+        // 最终输出阶段：本周期实际生效的 wheel_T / Tbl_t / joint_T
+        // 只允许在这里完成最终归属和覆盖。
         chassis_apply_joint_output(chassis_move_control_loop);
         chassis_limit_output(chassis_move_control_loop);
         chassis_save_last_feedback(chassis_move_control_loop);
@@ -1222,8 +1239,8 @@ extern "C"
         fp32 right_theta_raw = chassis_move_control_loop->chassis_right_control.theta_l;
         fp32 left_theta_360 = left_theta_raw < 0.0f ? left_theta_raw + 2.0f * PI : left_theta_raw;
         fp32 right_theta_360 = right_theta_raw < 0.0f ? right_theta_raw + 2.0f * PI : right_theta_raw;
-        const fp32 left_d_theta_ctrl = chassis_select_d_theta_signal(&chassis_move_control_loop->chassis_left_control, CHASSIS_LEFT_D_THETA_FILTER_SOURCE);
-        const fp32 right_d_theta_ctrl = chassis_select_d_theta_signal(&chassis_move_control_loop->chassis_right_control, CHASSIS_RIGHT_D_THETA_FILTER_SOURCE);
+        const fp32 left_d_theta_ctrl = chassis_move_control_loop->chassis_left_control.d_theta_l_ctrl;
+        const fp32 right_d_theta_ctrl = chassis_move_control_loop->chassis_right_control.d_theta_l_ctrl;
 
         fp32 left_target = chassis_move_control_loop->chassis_left_control.init_angle_ramp.out +
                            direction * CHASSIS_INIT_LEVEL_ANGLE_STEP;
@@ -1547,19 +1564,6 @@ extern "C"
         chassis_move_control_loop->chassis_left_control.fd_roll = PID_Calc(&chassis_move_control_loop->chassis_left_control.roll_control, chassis_move_control_loop->chassis_roll, chassis_move_control_loop->chassis_roll_set);
         chassis_move_control_loop->chassis_right_control.fd_roll = PID_Calc(&chassis_move_control_loop->chassis_right_control.roll_control, chassis_move_control_loop->chassis_roll, chassis_move_control_loop->chassis_roll_set);
 
-        const bool_t init_retract_force =
-            (chassis_move_control_loop->state == CHASSIS_INIT &&
-             (chassis_move_control_loop->init_phase == CHASSIS_INIT_FOLD ||
-              chassis_move_control_loop->init_phase == CHASSIS_INIT_RETRACT)) ||
-            (chassis_is_step_up_active(chassis_move_control_loop) &&
-             chassis_move_control_loop->step_up_phase == STEP_UP_RETRACT);
-        const bool_t jump_takeoff_force =
-            chassis_move_control_loop->state == CHASSIS_JUMP &&
-            chassis_move_control_loop->jump_phase == CHASSIS_JUMP_TAKEOFF;
-        const bool_t jump_readyland_force =
-            chassis_move_control_loop->state == CHASSIS_JUMP &&
-            chassis_move_control_loop->jump_phase == CHASSIS_JUMP_READYLAND;
-
         // 腿长PID
         chassis_move_control_loop->chassis_left_control.fd_leg = Leg_PID_Calc(&chassis_move_control_loop->chassis_left_control.leg_pid_control, chassis_move_control_loop->chassis_left_control.wbr_control.L, chassis_move_control_loop->chassis_left_leg_set);
         chassis_move_control_loop->chassis_right_control.fd_leg = Leg_PID_Calc(&chassis_move_control_loop->chassis_right_control.leg_pid_control, chassis_move_control_loop->chassis_right_control.wbr_control.L, chassis_move_control_loop->chassis_right_leg_set);
@@ -1576,15 +1580,24 @@ extern "C"
         chassis_move_control_loop->chassis_left_control.Fbl_inertial = (MASS_OF_BODY / 2 + chassis_move_control_loop->chassis_left_control.eta * MASS_OF_LEG) * chassis_move_control_loop->chassis_left_control.wbr_control.L * chassis_move_control_loop->chassis_d_yaw * chassis_move_control_loop->v_filter / (2 * DRIVE_WHEEL_DIS);
         chassis_move_control_loop->chassis_right_control.Fbl_inertial = (MASS_OF_BODY / 2 + chassis_move_control_loop->chassis_right_control.eta * MASS_OF_LEG) * chassis_move_control_loop->chassis_right_control.wbr_control.L * chassis_move_control_loop->chassis_d_yaw * chassis_move_control_loop->v_filter / (2 * DRIVE_WHEEL_DIS);
 
-        // 起身阶段收腿时不提供额外的起身支持力，保持轮腿输出为纯腿长PID，避免过早提供支持力导致的起身失败。
-        // 适用于INIT阶段的FOLD和RETRACT，以及STEP_UP阶段的RETRACT。（也就是腿部正在收短准备起身的阶段）
+        const bool_t init_retract_force =
+            (chassis_move_control_loop->state == CHASSIS_INIT &&
+             chassis_move_control_loop->init_phase == CHASSIS_INIT_RETRACT) ||
+            (chassis_is_step_up_active(chassis_move_control_loop) &&
+             chassis_move_control_loop->step_up_phase == STEP_UP_RETRACT);
+
+        const bool_t jump_takeoff_force =
+            chassis_move_control_loop->state == CHASSIS_JUMP &&
+            chassis_move_control_loop->jump_phase == CHASSIS_JUMP_TAKEOFF;
+        const bool_t jump_readyland_force =
+            chassis_move_control_loop->state == CHASSIS_JUMP &&
+            chassis_move_control_loop->jump_phase == CHASSIS_JUMP_READYLAND;
+            
+        // 起身阶段收腿时不提供额外的横向输出，支持力退化为纯腿长PID。
+        // 适用于INIT_RETRACT与STEP_UP_RETRACT。（也就是腿部正在收短准备起身的阶段）
         if (init_retract_force)
         {
-            chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t = 0.0f;
-            chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t = 0.0f;
-            chassis_move_control_loop->chassis_wheel[0].wheel_T = 0.0f;
-            chassis_move_control_loop->chassis_wheel[1].wheel_T = 0.0f;
-
+            // 收腿阶段额外补一点向上的支持力，避免腿在回收过程中支撑不足。
             chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t = -chassis_move_control_loop->chassis_left_control.fd_leg + chassis_move_control_loop->chassis_left_control.Fbl_spring + 100;
             chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t = -chassis_move_control_loop->chassis_right_control.fd_leg + chassis_move_control_loop->chassis_right_control.Fbl_spring + 100;
         }
@@ -1621,43 +1634,96 @@ extern "C"
         }
     }
 
+    static chassis_output_mode_e chassis_select_output_mode(const Chassis_Move *chassis_move_control_loop)
+    {
+        if (chassis_move_control_loop == NULL)
+        {
+            return CHASSIS_OUTPUT_MODE_NORMAL_WBR;
+        }
+
+        // CHASSIS_FLIP、STEP_UP_SWING、STEP_UP_HOLD 会在 control_loop 前面直接 return，
+        // 不会进入这里的最终输出分发。
+        if (chassis_move_control_loop->state == CHASSIS_INIT)
+        {
+            if (chassis_move_control_loop->init_phase == CHASSIS_INIT_FOLD)
+            {
+                return CHASSIS_OUTPUT_MODE_DIRECT_JOINT;
+            }
+
+            if (chassis_move_control_loop->init_phase == CHASSIS_INIT_RETRACT)
+            {
+                return CHASSIS_OUTPUT_MODE_RETRACT_LEG_ONLY;
+            }
+
+            return CHASSIS_OUTPUT_MODE_NORMAL_WBR;
+        }
+
+        if (chassis_is_step_up_active(chassis_move_control_loop))
+        {
+            if (chassis_move_control_loop->step_up_phase == STEP_UP_RETRACT)
+            {
+                return CHASSIS_OUTPUT_MODE_RETRACT_LEG_ONLY;
+            }
+
+            if (chassis_move_control_loop->step_up_phase == STEP_UP_STAND)
+            {
+                return CHASSIS_OUTPUT_MODE_STEP_STAND;
+            }
+        }
+
+        // CHASSIS_JUMP 虽然会改变支持力策略，但最终仍走标准 WBR 输出映射，
+        // 因此不需要单独拆一个输出模式。
+        return CHASSIS_OUTPUT_MODE_NORMAL_WBR;
+    }
+
     static void chassis_apply_joint_output(Chassis_Move *chassis_move_control_loop)
     {
         /*
          * 状态输出闭环说明：
          * STOP 在进入本函数前已经清零。
          * FLIP / INIT_FOLD / STEP_UP_SWING / STEP_UP_HOLD 在各自特殊控制函数中直接写 joint_T。
-         * NORMAL / LEG_1 / LEG_2 / STEP_UP_EXTEND / STEP_UP_DETECT 由 LQR 生成 wheel_T/Tbl_t，
-         * 腿长控制生成 Fbl_t，再在这里把 WBR 输出映射为 joint_T。
-         * INIT_RETRACT / STEP_UP_RETRACT 抑制 wheel_T/Tbl_t，只保留收腿输出。
-         * INIT_STAND / 瞬态 INIT_DONE 显式使用标准 WBR 关节映射。
-         * CHASSIS_JUMP 仅保留旧代码，当前没有重新接入。
+         * 其他阶段先由基础输出和支持力逻辑得到 wheel_T / Tbl_t / Fbl_t，
+         * 再在这里统一决定本周期最终采用哪一种输出策略。
          */
-        const bool_t is_retract =
-            (chassis_move_control_loop->state == CHASSIS_INIT &&
-             chassis_move_control_loop->init_phase == CHASSIS_INIT_RETRACT) ||
-            (chassis_is_step_up_active(chassis_move_control_loop) &&
-             chassis_move_control_loop->step_up_phase == STEP_UP_RETRACT);
-        if (is_retract)
+        const chassis_output_mode_e output_mode =
+            chassis_select_output_mode(chassis_move_control_loop);
+
+        // 最终输出预处理：INIT 起身阶段可能需要先衰减轮子输出，
+        // 再进入后面的统一映射策略。
+        if (chassis_move_control_loop->state == CHASSIS_INIT)
         {
+            // 这里默认 wheel_T 仍然是本周期基础 LQR 刚算出来的值，
+            // 中间没有被其他阶段逻辑提前改写。
+            chassis_apply_init_wheel_theta_gate(chassis_move_control_loop);
+        }
+
+        switch (output_mode)
+        {
+        case CHASSIS_OUTPUT_MODE_RETRACT_LEG_ONLY:
+        {
+            chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t = 0.0f;
+            chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t = 0.0f;
+            chassis_move_control_loop->chassis_wheel[0].wheel_T = 0.0f;
+            chassis_move_control_loop->chassis_wheel[1].wheel_T = 0.0f;
             APPLY_WBR_JOINT_OUTPUT(chassis_move_control_loop,
                                    chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t,
                                    0.0f,
                                    chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t,
                                    0.0f);
+            break;
         }
-        else if (chassis_is_step_up_active(chassis_move_control_loop) &&
-                 chassis_move_control_loop->step_up_phase == STEP_UP_STAND)
+
+        case CHASSIS_OUTPUT_MODE_STEP_STAND:
         {
             // 停止轮子输出
             chassis_move_control_loop->chassis_wheel[0].wheel_T = 0.0f;
             chassis_move_control_loop->chassis_wheel[1].wheel_T = 0.0f;
 
-            // 获取当前的角度/角速度反馈
-            fp32 left_theta = chassis_select_theta_signal(&chassis_move_control_loop->chassis_left_control, CHASSIS_LEFT_THETA_FILTER_SOURCE);
-            fp32 left_d_theta = chassis_select_d_theta_signal(&chassis_move_control_loop->chassis_left_control, CHASSIS_LEFT_D_THETA_FILTER_SOURCE);
-            fp32 right_theta = chassis_select_theta_signal(&chassis_move_control_loop->chassis_right_control, CHASSIS_RIGHT_THETA_FILTER_SOURCE);
-            fp32 right_d_theta = chassis_select_d_theta_signal(&chassis_move_control_loop->chassis_right_control, CHASSIS_RIGHT_D_THETA_FILTER_SOURCE);
+            // STEP_STAND 这里直接使用 feedback 阶段已经选好的控制反馈，不再在输出阶段重复选源。
+            fp32 left_theta = chassis_move_control_loop->chassis_left_control.theta_l_ctrl;
+            fp32 left_d_theta = chassis_move_control_loop->chassis_left_control.d_theta_l_ctrl;
+            fp32 right_theta = chassis_move_control_loop->chassis_right_control.theta_l_ctrl;
+            fp32 right_d_theta = chassis_move_control_loop->chassis_right_control.d_theta_l_ctrl;
 
             // 腿部扭矩(Tbl_t)仅由LQR中与K24,K25,K26,K27(及右侧同理项)角度控制相关的项组成
             chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t =
@@ -1674,58 +1740,67 @@ extern "C"
                                    chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t * 0.35,
                                    chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t,
                                    chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t * 0.35);
+            break;
         }
-        else if (chassis_move_control_loop->state != CHASSIS_INIT)
+
+        case CHASSIS_OUTPUT_MODE_DIRECT_JOINT:
         {
-            const bool_t left_off_ground =
-                (chassis_move_control_loop->chassis_left_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND);
-            const bool_t right_off_ground =
-                (chassis_move_control_loop->chassis_right_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND);
+            chassis_move_control_loop->chassis_wheel[0].wheel_T = 0.0f;
+            chassis_move_control_loop->chassis_wheel[1].wheel_T = 0.0f;
+            chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t = 0.0f;
+            chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t = 0.0f;
+            break;
+        }
 
-            if (left_off_ground)
+        case CHASSIS_OUTPUT_MODE_NORMAL_WBR:
+        default:
+        {
+            // default 作为 NORMAL_WBR 的安全兜底；
+            // 如果后面新增输出模式，记得在这里补明确的 case。
+            if (chassis_move_control_loop->state != CHASSIS_INIT)
             {
-                chassis_move_control_loop->chassis_wheel[0].wheel_T = 0.0f;
+                const bool_t left_off_ground =
+                    (chassis_move_control_loop->chassis_left_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND);
+                const bool_t right_off_ground =
+                    (chassis_move_control_loop->chassis_right_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND);
+
+                if (left_off_ground)
+                {
+                    chassis_move_control_loop->chassis_wheel[0].wheel_T = 0.0f;
 #if CHASSIS_VERTICAL_SUPPORT_ONLY_MODE
-                chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t = 0.0f;
+                    chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t = 0.0f;
 #else
-            chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t =
-                LQR_K[2][4] * chassis_move_control_loop->chassis_left_control.theta_l +
-                LQR_K[2][5] * chassis_move_control_loop->chassis_left_control.d_theta_l +
-                LQR_K[2][6] * chassis_move_control_loop->chassis_right_control.theta_l +
-                LQR_K[2][7] * chassis_move_control_loop->chassis_right_control.d_theta_l;
+                    chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t =
+                        LQR_K[2][4] * chassis_move_control_loop->chassis_left_control.theta_l +
+                        LQR_K[2][5] * chassis_move_control_loop->chassis_left_control.d_theta_l +
+                        LQR_K[2][6] * chassis_move_control_loop->chassis_right_control.theta_l +
+                        LQR_K[2][7] * chassis_move_control_loop->chassis_right_control.d_theta_l;
 #endif
+                }
+
+                if (right_off_ground)
+                {
+                    chassis_move_control_loop->chassis_wheel[1].wheel_T = 0.0f;
+#if CHASSIS_VERTICAL_SUPPORT_ONLY_MODE
+                    chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t = 0.0f;
+#else
+                    chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t =
+                        LQR_K[3][4] * chassis_move_control_loop->chassis_left_control.theta_l +
+                        LQR_K[3][5] * chassis_move_control_loop->chassis_left_control.d_theta_l +
+                        LQR_K[3][6] * chassis_move_control_loop->chassis_right_control.theta_l +
+                        LQR_K[3][7] * chassis_move_control_loop->chassis_right_control.d_theta_l;
+#endif
+                }
+
             }
 
-            if (right_off_ground)
-            {
-                chassis_move_control_loop->chassis_wheel[1].wheel_T = 0.0f;
-#if CHASSIS_VERTICAL_SUPPORT_ONLY_MODE
-                chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t = 0.0f;
-#else
-            chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t =
-                LQR_K[3][4] * chassis_move_control_loop->chassis_left_control.theta_l +
-                LQR_K[3][5] * chassis_move_control_loop->chassis_left_control.d_theta_l +
-                LQR_K[3][6] * chassis_move_control_loop->chassis_right_control.theta_l +
-                LQR_K[3][7] * chassis_move_control_loop->chassis_right_control.d_theta_l;
-#endif
-            }
-
-            chassis_apply_leg_tbl_angle_attenuation(chassis_move_control_loop);
             APPLY_WBR_JOINT_OUTPUT(chassis_move_control_loop,
                                    chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t,
                                    chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t,
                                    chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t,
                                    chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t);
+            break;
         }
-        else if (chassis_move_control_loop->state == CHASSIS_INIT &&
-                 (chassis_move_control_loop->init_phase == CHASSIS_INIT_STAND ||
-                  chassis_move_control_loop->init_phase == CHASSIS_INIT_DONE))
-        {
-            APPLY_WBR_JOINT_OUTPUT(chassis_move_control_loop,
-                                   chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t,
-                                   chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t,
-                                   chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t,
-                                   chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t);
         }
     }
 
@@ -1795,11 +1870,6 @@ extern "C"
 
         if (chassis_init_standup->init_phase == CHASSIS_INIT_FOLD)
         {
-            chassis_init_standup->chassis_left_control.wbr_control.Tbl_t = 0.0f;
-            chassis_init_standup->chassis_right_control.wbr_control.Tbl_t = 0.0f;
-            chassis_init_standup->chassis_wheel[0].wheel_T = 0.0f;
-            chassis_init_standup->chassis_wheel[1].wheel_T = 0.0f;
-
             fp32 left_theta_raw = chassis_init_standup->chassis_left_control.theta_l;
             fp32 right_theta_raw = chassis_init_standup->chassis_right_control.theta_l;
             fp32 left_theta_360 = left_theta_raw < 0.0f ? left_theta_raw + 2.0f * PI : left_theta_raw;
@@ -1836,8 +1906,8 @@ extern "C"
             bool_t left_ramp_finished = (chassis_init_standup->chassis_left_control.init_angle_ramp.out >= target_360 - 0.05f);
             bool_t right_ramp_finished = (chassis_init_standup->chassis_right_control.init_angle_ramp.out >= target_360 - 0.05f);
 
-            const fp32 left_d_theta_ctrl = chassis_select_d_theta_signal(&chassis_init_standup->chassis_left_control, CHASSIS_LEFT_D_THETA_FILTER_SOURCE);
-            const fp32 right_d_theta_ctrl = chassis_select_d_theta_signal(&chassis_init_standup->chassis_right_control, CHASSIS_RIGHT_D_THETA_FILTER_SOURCE);
+            const fp32 left_d_theta_ctrl = chassis_init_standup->chassis_left_control.d_theta_l_ctrl;
+            const fp32 right_d_theta_ctrl = chassis_init_standup->chassis_right_control.d_theta_l_ctrl;
             bool_t left_stopped = (fabs(left_d_theta_ctrl) < 0.2f);
             bool_t right_stopped = (fabs(right_d_theta_ctrl) < 0.2f);
 
