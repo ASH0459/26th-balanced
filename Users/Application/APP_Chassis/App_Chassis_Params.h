@@ -69,25 +69,6 @@
 // Sigmoid 陡峭度: 数值越大，中心点附近衰减越快。
 #define CHASSIS_LEG_TBL_ANGLE_ATTENUATION_SHARPNESS 4.0f
 
-/* -------------------- INIT起身驱动偏置 -------------------- */
-// 1: INIT_STAND 阶段按摆杆角放大腿水平输出并抑制轮子输出。
-// 0: 关闭该偏置逻辑。
-#define CHASSIS_INIT_STAND_DRIVE_BIAS_ENABLE 0
-
-// 摆杆角偏置中心点 (rad): |theta_l| == center 时偏置强度约为中等。
-#define CHASSIS_INIT_STAND_DRIVE_BIAS_CENTER 0.1f
-
-// 偏置陡峭度: 数值越大，中心点附近增益变化越快。
-#define CHASSIS_INIT_STAND_DRIVE_BIAS_SHARPNESS 7.0f
-
-// INIT_STAND 时腿部 Tbl_t 缩放范围，角度越大越接近 MAX。
-#define CHASSIS_INIT_STAND_LEG_TBL_SCALE_MIN 1.0f
-#define CHASSIS_INIT_STAND_LEG_TBL_SCALE_MAX 3.0f
-
-// INIT_STAND 时轮子 wheel_T 缩放范围，角度越大越接近 MIN。
-#define CHASSIS_INIT_STAND_WHEEL_SCALE_MIN 0.2f
-#define CHASSIS_INIT_STAND_WHEEL_SCALE_MAX 1.0f
-
 /* -------------------- 行为层 yaw 与速度参数 -------------------- */
 // 组合 yaw 指令输出的全局角速度保护上限。
 #define CHASSIS_D_YAW_MAX 1000.0f

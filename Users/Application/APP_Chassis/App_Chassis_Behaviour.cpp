@@ -1,4 +1,5 @@
 #include "App_Chassis_Behaviour.h"
+#include "App_Chassis_Task_Helpers.h"
 
 #include "Alg_UserLib.h"
 #include "arm_math.h"
@@ -97,18 +98,6 @@ static bool_t chassis_is_request_rising_edge(const Chassis_Move *chassis_move_mo
 {
     return chassis_move_mode->chassis_gimbal_data->chassis_behaviour_mode == target_mode &&
            chassis_move_mode->last_request_mode != target_mode;
-}
-
-static bool_t chassis_is_step_up_active(const Chassis_Move *chassis_move)
-{
-    if (chassis_move == NULL)
-    {
-        return 0;
-    }
-
-    return (chassis_move->state == CHASSIS_LEG_1 ||
-            chassis_move->state == CHASSIS_LEG_2) &&
-           chassis_move->step_up_phase != STEP_UP_DONE;
 }
 
 static Chassis_State_e chassis_requested_mode_to_pending_state(chassis_mode_e requested_mode)

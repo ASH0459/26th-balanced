@@ -1,0 +1,7 @@
+{
+  "name": "26th-balanced-code-tools",
+  "private": true,
+  "devDependencies": {
+    "prettier": "3.6.2"
+  }
+}

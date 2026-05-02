@@ -616,7 +616,7 @@ extern "C"
              chassis_move_transit->last_state == CHASSIS_FLIP ||
              chassis_move_transit->last_state == CHASSIS_INIT))
         {
-            chassis_move_transit->chassis_d_yaw = chassis_get_imu_d_yaw(chassis_move_transit);
+            chassis_move_transit->chassis_d_yaw = chassis_move_transit->chassis_d_yaw_imu;
             chassis_move_transit->chassis_yaw = chassis_move_transit->chassis_gimbal_data->chassis_relative_angle;
 
             chassis_move_transit->chassis_v_set = 0.0f;
@@ -657,7 +657,7 @@ extern "C"
             PID_clear(&chassis_move_transit->chassis_right_control.init_leg_angle_pid);
             chassis_reset_leg_pid_state(chassis_move_transit);
 
-            chassis_move_transit->chassis_d_yaw = chassis_get_imu_d_yaw(chassis_move_transit);
+            chassis_move_transit->chassis_d_yaw = chassis_move_transit->chassis_d_yaw_imu;
             chassis_move_transit->chassis_yaw = chassis_move_transit->chassis_gimbal_data->chassis_relative_angle;
 
             chassis_move_transit->chassis_v_set = 0.0f;
@@ -715,12 +715,9 @@ extern "C"
         /* 获取三个控制设置值 */
         chassis_behaviour_control_set(&chassis_v_set, &chassis_yaw_set, &chassis_d_yaw_set, &chassis_leg_set, chassis_move_control);
 
-        chassis_move_control->chassis_d_yaw_imu = chassis_get_imu_d_yaw(chassis_move_control);
-
-        if (chassis_is_yaw_lqr_state(chassis_move_control->state))
+        if (chassis_is_balancing_state(chassis_move_control->state) ||
+            chassis_move_control->state == CHASSIS_JUMP)
         {
-            chassis_move_control->chassis_d_yaw = chassis_move_control->chassis_d_yaw_imu;
-
             chassis_move_control->chassis_yaw = chassis_move_control->chassis_gimbal_data->chassis_relative_angle;
             if (chassis_is_step_up_before_standup(chassis_move_control))
             {
@@ -755,8 +752,6 @@ extern "C"
         else if (chassis_is_init_like_state(chassis_move_control->state) ||
                  chassis_move_control->state == CHASSIS_STOP)
         {
-
-            chassis_move_control->chassis_d_yaw = chassis_move_control->chassis_d_yaw_imu;
             chassis_move_control->chassis_yaw = chassis_move_control->chassis_gimbal_data->chassis_relative_angle;
 
             chassis_move_control->chassis_v_set = 0.0f;
@@ -772,10 +767,9 @@ extern "C"
         const bool_t leg_off_ground =
             (chassis_move_control->chassis_left_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND) ||
             (chassis_move_control->chassis_right_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND);
-        if (chassis_is_balancing_state(chassis_move_control->state) &&
-            leg_off_ground &&
-            !(chassis_is_step_up_active(chassis_move_control) &&
-              chassis_move_control->step_up_phase == STEP_UP_RETRACT))
+
+        if (chassis_is_balancing_state(chassis_move_control->state) && leg_off_ground &&
+            !(chassis_is_step_up_active(chassis_move_control) && chassis_move_control->step_up_phase == STEP_UP_RETRACT))
         {
             chassis_landing_admittance_control(chassis_move_control,
                                                &chassis_move_control->chassis_left_leg_set,
@@ -826,7 +820,11 @@ extern "C"
         chassis_move_update->x_filter = chassis_move_update->chassis_vaestimatekf_xv.FilteredValue[0];
         chassis_move_update->v_filter = chassis_move_update->chassis_vaestimatekf_xv.FilteredValue[1];
 
-        // 姿态角速度更新（yaw轴根据轮毂电机速度计算，pitch和roll根据陀螺仪直接读取）
+        // 姿态角速度更新。当前底盘 yaw 角速度固定使用 IMU 陀螺仪读数。
+        chassis_move_update->chassis_d_yaw_imu =
+            CHASSIS_D_YAW_IMU_SIGN *
+            (*(chassis_move_update->chassis_INS_gyro + INS_GYRO_Z_ADDRESS_OFFSET));
+        chassis_move_update->chassis_d_yaw = chassis_move_update->chassis_d_yaw_imu;
         chassis_move_update->chassis_d_roll = *(chassis_move_update->chassis_INS_gyro + INS_GYRO_Y_ADDRESS_OFFSET);
         chassis_move_update->chassis_d_pitch = *(chassis_move_update->chassis_INS_gyro + INS_GYRO_X_ADDRESS_OFFSET);
 
@@ -859,12 +857,14 @@ extern "C"
         wbr_jacobian_calc(&chassis_move_update->chassis_left_control.wbr_control);
         wbr_jacobian_calc(&chassis_move_update->chassis_right_control.wbr_control);
 
+        // 防止腿长加速度出现异常值
         fp32 left_dd_L_raw = chassis_sanitize_dd_L(chassis_move_update->chassis_left_control.wbr_control.dd_L);
         fp32 right_dd_L_raw = chassis_sanitize_dd_L(chassis_move_update->chassis_right_control.wbr_control.dd_L);
 
         CLAMP_FILTER_NAN(chassis_move_update->chassis_left_control.dd_L_lowpass_filter.out);
         CLAMP_FILTER_NAN(chassis_move_update->chassis_right_control.dd_L_lowpass_filter.out);
 
+        //计算腿长加速度的低通滤波值
         first_order_filter_cali(&chassis_move_update->chassis_left_control.dd_L_lowpass_filter, left_dd_L_raw);
         first_order_filter_cali(&chassis_move_update->chassis_right_control.dd_L_lowpass_filter, right_dd_L_raw);
         chassis_move_update->chassis_left_control.dd_L_lowpass = chassis_sanitize_dd_L(chassis_move_update->chassis_left_control.dd_L_lowpass_filter.out);
@@ -875,11 +875,13 @@ extern "C"
         chassis_move_update->vaEstimateKF_F_theta[1] = chassis_move_update->dt;
         chassis_move_update->vaEstimateKF_F_theta[2] = 0.0f;
         chassis_move_update->vaEstimateKF_F_theta[3] = 1.0f;
+        //选取卡尔曼滤波或是低通滤波
         chassis_update_leg_angle_signals(&chassis_move_update->chassis_left_control, chassis_move_update->vaEstimateKF_F_theta);
         chassis_update_leg_angle_signals(&chassis_move_update->chassis_right_control, chassis_move_update->vaEstimateKF_F_theta);
 
         // 实际左腿转矩
         chassis_move_update->chassis_left_control.wbr_control.Tbl_r = (chassis_move_update->chassis_left_control.wbr_control.J[0][0] * chassis_move_update->chassis_joint[1].chassis_joint_measure->tor + chassis_move_update->chassis_left_control.wbr_control.J[1][0] * chassis_move_update->chassis_joint[0].chassis_joint_measure->tor) / (chassis_move_update->chassis_left_control.wbr_control.J[0][0] * chassis_move_update->chassis_left_control.wbr_control.J[1][1] - chassis_move_update->chassis_left_control.wbr_control.J[0][1] * chassis_move_update->chassis_left_control.wbr_control.J[1][0]);
+        
         // 实际右腿转矩
         chassis_move_update->chassis_right_control.wbr_control.Tbl_r = -(chassis_move_update->chassis_right_control.wbr_control.J[0][0] * chassis_move_update->chassis_joint[3].chassis_joint_measure->tor + chassis_move_update->chassis_right_control.wbr_control.J[1][0] * chassis_move_update->chassis_joint[2].chassis_joint_measure->tor) / (chassis_move_update->chassis_right_control.wbr_control.J[0][0] * chassis_move_update->chassis_right_control.wbr_control.J[1][1] - chassis_move_update->chassis_right_control.wbr_control.J[0][1] * chassis_move_update->chassis_right_control.wbr_control.J[1][0]);
 
@@ -978,15 +980,41 @@ extern "C"
         }
 
         // 采用离地/落地双阈值迟滞，避免支持力在单阈值附近抖动导致状态翻转
-        chassis_move_prediction->chassis_left_control.chassis_off_ground_detection =
-            chassis_update_off_ground_detection_state(
-                chassis_move_prediction->chassis_left_control.chassis_off_ground_detection,
-                chassis_move_prediction->chassis_left_control.Fwn);
+        if (chassis_move_prediction->chassis_left_control.chassis_off_ground_detection ==
+            CHASSIS_OFF_GROUND)
+        {
+            chassis_move_prediction->chassis_left_control.chassis_off_ground_detection =
+                (chassis_move_prediction->chassis_left_control.Fwn >=
+                 CHASSIS_TOUCH_GROUND_FORCE_THRESHOLD)
+                    ? CHASSIS_TOUCH_GROUND
+                    : CHASSIS_OFF_GROUND;
+        }
+        else
+        {
+            chassis_move_prediction->chassis_left_control.chassis_off_ground_detection =
+                (chassis_move_prediction->chassis_left_control.Fwn <=
+                 CHASSIS_OFF_GROUND_FORCE_THRESHOLD)
+                    ? CHASSIS_OFF_GROUND
+                    : CHASSIS_TOUCH_GROUND;
+        }
 
-        chassis_move_prediction->chassis_right_control.chassis_off_ground_detection =
-            chassis_update_off_ground_detection_state(
-                chassis_move_prediction->chassis_right_control.chassis_off_ground_detection,
-                chassis_move_prediction->chassis_right_control.Fwn);
+        if (chassis_move_prediction->chassis_right_control.chassis_off_ground_detection ==
+            CHASSIS_OFF_GROUND)
+        {
+            chassis_move_prediction->chassis_right_control.chassis_off_ground_detection =
+                (chassis_move_prediction->chassis_right_control.Fwn >=
+                 CHASSIS_TOUCH_GROUND_FORCE_THRESHOLD)
+                    ? CHASSIS_TOUCH_GROUND
+                    : CHASSIS_OFF_GROUND;
+        }
+        else
+        {
+            chassis_move_prediction->chassis_right_control.chassis_off_ground_detection =
+                (chassis_move_prediction->chassis_right_control.Fwn <=
+                 CHASSIS_OFF_GROUND_FORCE_THRESHOLD)
+                    ? CHASSIS_OFF_GROUND
+                    : CHASSIS_TOUCH_GROUND;
+        }
 
         if (chassis_move_prediction->chassis_left_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND && chassis_move_prediction->chassis_right_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND)
         {
@@ -1012,10 +1040,13 @@ extern "C"
         // 1. 计算状态误差
         fp32 x_err = -chassis_move_control_loop->x_filter + chassis_move_control_loop->chassis_x_set;
         fp32 v_err = -chassis_move_control_loop->v_filter + chassis_move_control_loop->chassis_v_set;
-        fp32 yaw_err = chassis_is_yaw_lqr_state(chassis_move_control_loop->state) ? chassis_move_control_loop->chassis_yaw_err : 0.0f;
-        fp32 dyaw_err = chassis_is_yaw_lqr_state(chassis_move_control_loop->state) ? chassis_move_control_loop->chassis_d_yaw_set -
-                                                                                         chassis_move_control_loop->chassis_d_yaw
-                                                                                   : 0.0f;
+        const bool_t use_yaw_lqr =
+            chassis_is_balancing_state(chassis_move_control_loop->state) ||
+            chassis_move_control_loop->state == CHASSIS_JUMP;
+        fp32 yaw_err = use_yaw_lqr ? chassis_move_control_loop->chassis_yaw_err : 0.0f;
+        fp32 dyaw_err = use_yaw_lqr ? chassis_move_control_loop->chassis_d_yaw_set -
+                                          chassis_move_control_loop->chassis_d_yaw
+                                    : 0.0f;
 
         // 2. 提取平动和旋转的控制分量
         fp32 U_speed = LQR_K[0][0] * x_err + LQR_K[0][1] * v_err;
@@ -1061,8 +1092,7 @@ extern "C"
         chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t =
             (U_speed_leg_R * decay_Uspeed) + (U_yaw_leg_R * decay_Uyaw) + U_else_leg_R;
 
-        // INIT 仅在双腿收短后允许轮毂输出，并按腿部 theta 回正程度放大到全输出。
-        chassis_apply_init_stand_drive_bias(chassis_move_control_loop);
+        // INIT 仅在双腿收短后允许轮毂输出。
         chassis_apply_init_wheel_theta_gate(chassis_move_control_loop);
 
 #if CHASSIS_VERTICAL_SUPPORT_ONLY_MODE
@@ -1151,7 +1181,10 @@ extern "C"
         chassis_lqr_power_control(chassis_move_control_loop);
 
         // chassis_update_jump_phase(chassis_move_control_loop);
-        chassis_init_standup(chassis_move_control_loop);
+        if (chassis_move_control_loop->state == CHASSIS_INIT)
+        {
+            chassis_init_standup(chassis_move_control_loop);
+        }
         chassis_calc_support_force(chassis_move_control_loop);
 
         chassis_apply_joint_output(chassis_move_control_loop);

@@ -42,42 +42,6 @@ void chassis_apply_leg_tbl_angle_attenuation(Chassis_Move *chassis_move_control_
 #endif
 }
 
-fp32 chassis_calc_init_stand_bias_strength(fp32 abs_theta_l) {
-    return 1.0f / (1.0f + expf(-CHASSIS_INIT_STAND_DRIVE_BIAS_SHARPNESS *
-                               (abs_theta_l - CHASSIS_INIT_STAND_DRIVE_BIAS_CENTER)));
-}
-
-void chassis_apply_init_stand_drive_bias(Chassis_Move *chassis_move_control_loop) {
-#if CHASSIS_INIT_STAND_DRIVE_BIAS_ENABLE
-    if (chassis_move_control_loop->state != CHASSIS_INIT ||
-        chassis_move_control_loop->init_phase != CHASSIS_INIT_STAND) {
-        return;
-    }
-
-    const fp32 bias_l = chassis_calc_init_stand_bias_strength(
-        fabsf(chassis_select_theta_signal(&chassis_move_control_loop->chassis_left_control, CHASSIS_LEFT_THETA_FILTER_SOURCE)));
-    const fp32 bias_r = chassis_calc_init_stand_bias_strength(
-        fabsf(chassis_select_theta_signal(&chassis_move_control_loop->chassis_right_control, CHASSIS_RIGHT_THETA_FILTER_SOURCE)));
-
-    // INIT_STAND 时腿越接近“还没摆正”，越多给腿部横向力、越少给轮子。
-    chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t *=
-        CHASSIS_INIT_STAND_LEG_TBL_SCALE_MIN +
-        (CHASSIS_INIT_STAND_LEG_TBL_SCALE_MAX - CHASSIS_INIT_STAND_LEG_TBL_SCALE_MIN) * bias_l;
-    chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t *=
-        CHASSIS_INIT_STAND_LEG_TBL_SCALE_MIN +
-        (CHASSIS_INIT_STAND_LEG_TBL_SCALE_MAX - CHASSIS_INIT_STAND_LEG_TBL_SCALE_MIN) * bias_r;
-
-    chassis_move_control_loop->chassis_wheel[0].wheel_T *=
-        CHASSIS_INIT_STAND_WHEEL_SCALE_MAX -
-        (CHASSIS_INIT_STAND_WHEEL_SCALE_MAX - CHASSIS_INIT_STAND_WHEEL_SCALE_MIN) * bias_l;
-    chassis_move_control_loop->chassis_wheel[1].wheel_T *=
-        CHASSIS_INIT_STAND_WHEEL_SCALE_MAX -
-        (CHASSIS_INIT_STAND_WHEEL_SCALE_MAX - CHASSIS_INIT_STAND_WHEEL_SCALE_MIN) * bias_r;
-#else
-    (void)chassis_move_control_loop;
-#endif
-}
-
 bool_t chassis_init_legs_retracted(const Chassis_Move *chassis_move_control_loop) {
     if (chassis_move_control_loop == NULL) {
         return 0;
@@ -143,17 +107,6 @@ fp32 chassis_calc_leg_extend_force(leg_control *leg, fp32 target_leg_length) {
     return -Leg_PID_Calc(&leg->leg_pid_control, leg->wbr_control.L, target_leg_length);
 }
 
-chassis_off_ground_detection_e chassis_update_off_ground_detection_state(chassis_off_ground_detection_e current_state, fp32 support_force) {
-    if (current_state == CHASSIS_OFF_GROUND) {
-        return (support_force >= CHASSIS_TOUCH_GROUND_FORCE_THRESHOLD) ? CHASSIS_TOUCH_GROUND : CHASSIS_OFF_GROUND;
-    }
-    return (support_force <= CHASSIS_OFF_GROUND_FORCE_THRESHOLD) ? CHASSIS_OFF_GROUND : CHASSIS_TOUCH_GROUND;
-}
-
-fp32 chassis_get_imu_d_yaw(const Chassis_Move *chassis_move_calc) {
-    return CHASSIS_D_YAW_IMU_SIGN * (*(chassis_move_calc->chassis_INS_gyro + INS_GYRO_Z_ADDRESS_OFFSET));
-}
-
 void chassis_update_leg_angle_signals(leg_control *leg, const fp32 *f_theta) {
     // 腿角信号同时保留原始值、低通值和卡尔曼值，主控制环按宏选择其中一路。
     memcpy(leg->chassis_vaestimatekf_theta.F_data, f_theta, 4 * sizeof(fp32));
@@ -189,10 +142,6 @@ bool_t chassis_is_step_up_active(const Chassis_Move *chassis_move_control) {
 
     return chassis_is_step_mode_state(chassis_move_control->state) &&
            chassis_move_control->step_up_phase != STEP_UP_DONE;
-}
-
-bool_t chassis_is_yaw_lqr_state(Chassis_State_e state) {
-    return chassis_is_balancing_state(state) || state == CHASSIS_JUMP;
 }
 
 bool_t chassis_is_step_up_before_standup(const Chassis_Move *chassis_move_control) {
