@@ -91,6 +91,7 @@ add_executable(${CMAKE_PROJECT_NAME}
         Users/Bsp/Bsp_Device/Dev_Can_Receive/Dev_Can_Receive.h
         Users/Upper_Communication/UC_Referee/UC_Protocol.c
         Users/Upper_Communication/UC_Referee/UC_Protocol.h
+        Users/Upper_Communication/UC_Referee/UC_Referee_Protocol_Contract.c
         Users/Upper_Communication/UC_Referee/UC_Referee.c
         Users/Upper_Communication/UC_Referee/UC_Referee.h
         Middlewares/ST/ARM/DSP/Inc/arm_math.h

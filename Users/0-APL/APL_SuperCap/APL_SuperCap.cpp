@@ -55,7 +55,7 @@ void SuperCap_Task(void *pvParameters) {
       // SuperCap_TX_Config(&SuperCap_Data,
       //                      1,
       //                      robot_state.chassis_power_limit,
-      //                      power_heat_data_t.chassis_power_buffer,
+      //                      power_heat_data_t.buffer_energy,
       //                      1,
       //                      0,
       //                      0
@@ -64,7 +64,7 @@ void SuperCap_Task(void *pvParameters) {
       SuperCap_TX_Config(&SuperCap_Data,
                            1,
                            robot_state.chassis_power_limit,
-                           power_heat_data_t.chassis_power_buffer,
+                           power_heat_data_t.buffer_energy,
                            1,
                            0,
                            0

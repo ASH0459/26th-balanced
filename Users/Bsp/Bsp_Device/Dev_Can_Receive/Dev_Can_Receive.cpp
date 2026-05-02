@@ -170,7 +170,7 @@ void CAN_cmd_wheel(const fp32 motor1, const fp32 motor2)
 {
 	int16_t motor1_current = (int16_t)(motor1 * CONSTANT_OF_TORQUE);
 	int16_t motor2_current = (int16_t)(motor2 * CONSTANT_OF_TORQUE);
-	const uint16_t shoot_heat = power_heat_data_t.shooter_id1_17mm_cooling_heat;
+	const uint16_t shoot_heat = power_heat_data_t.shooter_17mm_barrel_heat;
 	const uint16_t shoot_heat_limit = robot_state.shooter_barrel_heat_limit;
 	const uint16_t shoot_cooling_value = robot_state.shooter_barrel_cooling_value;
 
