@@ -921,17 +921,17 @@ extern "C"
         chassis_move_update->chassis_right_control.eta = 1.0f - 2.0f * chassis_move_update->chassis_right_control.l_b / chassis_move_update->chassis_right_control.wbr_control.L;
 
     // 限位支持力
-    fp32 left_leg_limit_fd, right_leg_limit_fd;
-    if (chassis_move_update->chassis_left_control.wbr_control.L <= CHASSIS_LEG_MIN + 0.02f) {
-        left_leg_limit_fd = 30.0f;
-    } else {
-        left_leg_limit_fd = 0.0f;
-    }
-    if (chassis_move_update->chassis_right_control.wbr_control.L <= CHASSIS_LEG_MIN + 0.02f) {
-        right_leg_limit_fd = 30.0f;
-    } else {
-        right_leg_limit_fd = 0.0f;
-    }
+    // fp32 left_leg_limit_fd, right_leg_limit_fd;
+    // if (chassis_move_update->chassis_left_control.wbr_control.L <= CHASSIS_LEG_MIN + 0.02f) {
+    //     left_leg_limit_fd = 30.0f;
+    // } else {
+    //     left_leg_limit_fd = 0.0f;
+    // }
+    // if (chassis_move_update->chassis_right_control.wbr_control.L <= CHASSIS_LEG_MIN + 0.02f) {
+    //     right_leg_limit_fd = 30.0f;
+    // } else {
+    //     right_leg_limit_fd = 0.0f;
+    // }
     // 左轮地面支持力
     // chassis_move_update->chassis_left_control.Fwn = chassis_move_update->chassis_left_control.wbr_control.Fbl_r * arm_cos_f32(chassis_move_update->chassis_left_control.wbr_control.theta_l)
     // + MASS_OF_LEG * (GRAVITY_ACCELERATION + chassis_move_update->chassis_accel_n_z - (1 - chassis_move_update->chassis_left_control.eta)
