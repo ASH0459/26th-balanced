@@ -51,11 +51,11 @@
 /* -------------------- 输出调试开关 -------------------- */
 // 1: 腿部仅保留垂直支持力（禁用 Tbl_t 横向输出）并关闭轮子输出。
 // 0: 保持轮腿协同输出。
-#define CHASSIS_VERTICAL_SUPPORT_ONLY_MODE 0
+#define CHASSIS_VERTICAL_SUPPORT_ONLY_MODE 1
 
 // 1: 强制所有底盘电机输出清零（关节 + 轮子），用于紧急停机/联调保护。
 // 0: 使用正常控制输出。
-#define CHASSIS_FORCE_ALL_MOTOR_ZERO_OUTPUT 1
+#define CHASSIS_FORCE_ALL_MOTOR_ZERO_OUTPUT 0
 
 /* -------------------- 行为层 yaw 与速度参数 -------------------- */
 // 组合 yaw 指令输出的全局角速度保护上限。

@@ -67,6 +67,7 @@ void wbr_calc(wbr_leg_t *wbr, fp32 dt)
 	// 腿部倾斜角相关数据
 	wbr->theta_l = wbr->theta - *(wbr->INS_angle + INS_PITCH_ADDRESS_OFFSET);
 	wbr->d_theta_l = (wbr->theta_l - wbr->theta_l_p) / dt;
+	wbr->dd_theta_l = wbr->d_theta_l - wbr->d_theta_l_p;
 
 
 	if (wbr->theta_l - wbr->theta_l_p > PI)

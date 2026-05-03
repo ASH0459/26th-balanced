@@ -36,7 +36,8 @@ typedef struct
 
 	// 腿部角度
 	fp32 theta_l, theta_l_p;
-	fp32 d_theta_l;
+	fp32 d_theta_l, d_theta_l_p;
+	fp32 dd_theta_l;
 
     // 雅可比矩阵各元素
     fp32 PHI_1l, PHI_1theta, PHI_2l, PHI_2theta;
