@@ -581,8 +581,8 @@ static void Gimbal_Chassis_Relative_Angle_Update(void)
   }
 
   const fp32 relative_angle = chassis_move->chassis_gimbal_data->chassis_relative_angle + PI;
-  const fp32 start_angle = 135.0f - relative_angle * 57.32f;
-  const fp32 end_angle = 225.0f - relative_angle * 57.32f;
+  const fp32 start_angle = 135.0f + relative_angle * 57.32f;
+  const fp32 end_angle = 225.0f + relative_angle * 57.32f;
 
   ui_normal_DynamicGroup1_SpinArc->start_angle = UI_Normalize_Angle_Deg(start_angle);
   ui_normal_DynamicGroup1_SpinArc->end_angle = UI_Normalize_Angle_Deg(end_angle);
