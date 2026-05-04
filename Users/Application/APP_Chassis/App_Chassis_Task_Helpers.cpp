@@ -145,9 +145,9 @@ fp32 chassis_calc_leg_extend_force(leg_control *leg, fp32 target_leg_length) {
 
 chassis_off_ground_detection_e chassis_update_off_ground_detection_state(chassis_off_ground_detection_e current_state, fp32 support_force) {
     if (current_state == CHASSIS_OFF_GROUND) {
-        return (support_force >= CHASSIS_TOUCH_GROUND_FORCE_THRESHOLD) ? CHASSIS_TOUCH_GROUND : CHASSIS_TOUCH_GROUND;//debug2
+        return (support_force >= CHASSIS_TOUCH_GROUND_FORCE_THRESHOLD) ? CHASSIS_TOUCH_GROUND : CHASSIS_OFF_GROUND;//debug2
     }
-    return (support_force <= CHASSIS_OFF_GROUND_FORCE_THRESHOLD) ? CHASSIS_TOUCH_GROUND : CHASSIS_TOUCH_GROUND;//debug1
+    return (support_force <= CHASSIS_OFF_GROUND_FORCE_THRESHOLD) ? CHASSIS_OFF_GROUND : CHASSIS_TOUCH_GROUND;//debug1
 }
 
 fp32 chassis_get_imu_d_yaw(const Chassis_Move *chassis_move_calc) {
