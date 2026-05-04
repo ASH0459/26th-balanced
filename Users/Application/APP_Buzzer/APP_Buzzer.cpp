@@ -92,7 +92,7 @@ extern "C" {
   /**
    * @brief 根据错误编号响对应次数。
    * @param num 响声次数，对应设备编号+1（DBUS=1声，VT=2声，JOINT1=3声...）。
-   * @note 每声约500ms（50 ticks 静音 + 50 ticks 响），每组响声后静音约1秒（100 ticks）。
+   * @note 每声约200ms（20 ticks 静音 + 20 ticks 响），每组响声后静音约1秒（100 ticks）。
    */
   static void buzzer_warn_beep(uint8_t num)
   {
@@ -108,16 +108,16 @@ extern "C" {
       stop_num--;
       buzzer_off();
     }
-    // 响声阶段：tick < 50 静音，tick >= 50 响，tick >= 100 重置并减少剩余次数。
+    // 响声阶段：tick < 20 静音，tick >= 20 响，tick >= 40 重置并减少剩余次数。
     else
     {
       static uint8_t tick = 0;
       tick++;
-      if (tick < 50)
+      if (tick < 20)
       {
         buzzer_off();
       }
-      else if (tick < 100)
+      else if (tick < 40)
       {
         buzzer_on(100, 1500);
       }

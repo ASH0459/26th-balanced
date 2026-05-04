@@ -46,12 +46,12 @@
 /* -------------------- 初始化流程开关 -------------------- */
 // 1: 绕过 CHASSIS_INIT 模式，姿态正常后直接进入 pending_state。
 // 0: 保留原始 INIT 流程
-#define CHASSIS_BYPASS_INIT_MODE 1
+#define CHASSIS_BYPASS_INIT_MODE 0
 
 /* -------------------- 输出调试开关 -------------------- */
 // 1: 腿部仅保留垂直支持力（禁用 Tbl_t 横向输出）并关闭轮子输出。
 // 0: 保持轮腿协同输出。
-#define CHASSIS_VERTICAL_SUPPORT_ONLY_MODE 1
+#define CHASSIS_VERTICAL_SUPPORT_ONLY_MODE 0
 
 // 1: 强制所有底盘电机输出清零（关节 + 轮子），用于紧急停机/联调保护。
 // 0: 使用正常控制输出。

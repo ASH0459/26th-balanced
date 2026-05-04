@@ -206,16 +206,16 @@ static void detect_init(uint32_t time)
     // 设置离线时间，上线稳定工作时间，优先级 offlineTime onlinetime priority
     uint16_t set_item[ERROR_LIST_LENGHT][3] =
         {
-            // {100, 10, 1},  // DBUS (当前工程未接入，后续会在下方禁用)
-            {100, 10, 15}, // VT
-            {100, 20, 8},  // chassis joint1
-            {100, 20, 8},  // chassis joint2
-            {100, 20, 8},  // chassis joint3
-            {100, 20, 8},  // chassis joint4
-            {100, 20, 8},  // chassis wheel1
-            {100, 20, 8},  // chassis wheel2
-            {300, 100, 7}, // referee (UART10空闲中断触发)
-            {400, 100, 6}, // supercap (任务周期100ms，留足抖动裕量)
+            {100, 10, 1},  // DBUS (当前工程未接入，后续会在下方禁用)
+            {1000, 10, 1}, // VT
+            {1000, 20, 2},  // chassis joint1
+            {1000, 20, 2},  // chassis joint2
+            {1000, 20, 2},  // chassis joint3
+            {1000, 20, 2},  // chassis joint4
+            {1000, 20, 3},  // chassis wheel1
+            {1000, 20, 3},  // chassis wheel2
+            {1000, 10, 5}, // referee (UART10空闲中断触发)
+            {1000, 10, 4}, // supercap (任务周期100ms，留足抖动裕量)
         };
 
     for (uint8_t i = 0; i < ERROR_LIST_LENGHT; i++)
