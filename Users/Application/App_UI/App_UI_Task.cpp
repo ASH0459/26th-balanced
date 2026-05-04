@@ -165,6 +165,7 @@ static uint8_t g_ui_low_ammo_warning_visible = 0U;
 static uint8_t g_ui_offline_warning_visible = 0U;
 static uint8_t g_ui_offline_active_index = 0xFFU;
 static uint8_t g_ui_reset_mode_latched = 0U;
+static const error_t *error_list_ui = nullptr; // 设备离线检测错误列表指针，由 get_error_list_point() 获取
 static uint32_t g_ui_text_next_send_tick = 0U;
 
 static void UI_Run_Startup_Sequence(void);
@@ -809,6 +810,12 @@ static void Low_Ammo_Warning_Update(void)
  */
 static void Device_Offline_Warnings_Update(void)
 {
+  // 首次调用时获取错误列表指针，后续直接访问，避免重复调用函数。
+  if (error_list_ui == nullptr)
+  {
+    error_list_ui = get_error_list_point();
+  }
+
   // 这些动态文字在UI里共用相近位置；同一时刻只显示优先级最高的一条，避免重叠。
   static const UI_Offline_Warning_t warnings[] = {
       {VT_TOE, _ui_init_normal_DynamicTextGroup1_1, _ui_remove_normal_DynamicTextGroup1_1},
@@ -823,9 +830,10 @@ static void Device_Offline_Warnings_Update(void)
   const uint8_t warning_count = (uint8_t)(sizeof(warnings) / sizeof(warnings[0]));
 
   // 按表顺序选择第一个掉线设备，表顺序就是显示优先级。
+  // 直接访问 error_exist 字段，比调用 toe_is_error() 更高效。
   for (uint8_t i = 0U; i < warning_count; ++i)
   {
-    if (toe_is_error(warnings[i].toe))
+    if (error_list_ui[warnings[i].toe].error_exist)
     {
       selected_index = i;
       break;
