@@ -67,13 +67,13 @@
 
 // 腿的最大最小长度
 #define CHASSIS_LEG_MAX 0.36f
-#define CHASSIS_LEG_MIN 0.15f
+#define CHASSIS_LEG_MIN 0.165f
 
 // 初始化收腿目标角度 (rad)，原始坐标系下为-1.26rad，换算到0~2π下为2π-1.26
 #define CHASSIS_INIT_LEG_ANGLE_TARGET_RAW (-1.26f)
 #define CHASSIS_INIT_LEG_ANGLE_TARGET_360 5.1f
 // 初始化收腿角度到位阈值 (rad)
-#define CHASSIS_INIT_LEG_ANGLE_THRESHOLD (0.15f)
+#define CHASSIS_INIT_LEG_ANGLE_THRESHOLD (0.16f)
 // 初始化收腿PID参数
 #define INIT_LEG_ANGLE_PID_KP 5.0f
 #define INIT_LEG_ANGLE_PID_KI 0.0f
@@ -97,8 +97,8 @@
 #define CHASSIS_POSTURE_STABLE_TICKS 50U
 
 // 离地检测迟滞阈值：落地阈值需高于离地阈值
-#define CHASSIS_OFF_GROUND_FORCE_THRESHOLD 30.0f
-#define CHASSIS_TOUCH_GROUND_FORCE_THRESHOLD 80.0f
+#define CHASSIS_OFF_GROUND_FORCE_THRESHOLD 80.0f
+#define CHASSIS_TOUCH_GROUND_FORCE_THRESHOLD 85.0f
 
 // 初始化时机体未水平的自扶正腿部旋转参数
 #define CHASSIS_INIT_LEVEL_ANGLE_STEP 0.8f             // 机体未水平时腿部旋转角度 (rad/s)
@@ -123,10 +123,10 @@
 #define ROLL_PID_MAX_OUT 200.0f
 #define ROLL_PID_MAX_IOUT 0.0f
 
-#define CHASSIS_X_BACK 0.5f
+#define CHASSIS_X_BACK 0.0f
 // 左右腿长度PID
-#define LEG_PID_KP 2500.0f
-#define LEG_PID_KI 4.8f
+#define LEG_PID_KP 2000.0f
+#define LEG_PID_KI 6.0f
 #define LEG_PID_KD 100000.0f
 #define LEG_PID_MAX_OUT 300.0f // 300
 #define LEG_PID_MAX_IOUT 60.0f
@@ -151,7 +151,7 @@
 
 /* 机体相关数据 */
 // 机体质量
-#define MASS_OF_BODY 28.0f
+#define MASS_OF_BODY 30.0f
 
 #define CHASSIS_ACCEL_LEG_NUM 0.3333333333f
 #define CHASSIS_THETA_L_LOWPASS_NUM 0.01f

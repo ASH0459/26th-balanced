@@ -40,7 +40,7 @@
 // 初始化自扶正阶段的腿部旋转速度设定。
 #define CHASSIS_INIT_LEVEL_ROTATE_SPEED 0.8f
 
-// 初始化自扶正阶段的腿部旋转速度硬限幅。
+// 初始化自扶正阶段的腿部旋转速度硬限幅。8/
 #define CHASSIS_INIT_LEVEL_SPEED_LIMIT 1.5f
 
 /* -------------------- 初始化流程开关 -------------------- */

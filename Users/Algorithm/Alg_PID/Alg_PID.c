@@ -210,7 +210,7 @@ float Leg_PID_Calc(PidTypeDef_t *pid, float ref, float set)
 
 		// 2. 计算积分项 (I) - [带死区的四段式积分管理]
 		float I_Band = 0.01;
-		float I_Deadband = 0.001f; // 【新增】积分死区：5毫米 (0.005m)
+		float I_Deadband = 0.005f; // 【新增】积分死区：5毫米 (0.005m)
 
 		if (fabsf(pid->error[0]) < I_Deadband)
 		{
