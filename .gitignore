@@ -1,23 +1,19 @@
 # Build outputs
-/build/
-/cmake-build-*/
-**/cmake-build-*/
-/Debug/
-/Release/
-**/Debug/
-**/Release/
-/out/
-/dist/
+build/
+build-ninja/
+cmake-build-*/
+Debug/
+Release/
 
 # CMake and Ninja generated files
 CMakeCache.txt
-compile_commands.json
-cmake_install.cmake
-.cmake/
 CMakeFiles/
+cmake_install.cmake
+compile_commands.json
 *.ninja
 .ninja_deps
 .ninja_log
+.cmake/
 
 # Firmware / toolchain outputs
 *.o
@@ -32,7 +28,7 @@ CMakeFiles/
 *.lst
 *.list
 
-# Keil / MDK local and generated files
+# Keil / MDK
 *.uvguix.*
 *.uvoptx
 *.dep
@@ -48,21 +44,32 @@ ULog/
 Listings/
 Objects/
 
-# IDE settings
-.idea/
-.vscode/
-.settings/
-!.vscode/
+# IAR
+settings/
+*.xcl
+*.dbgdt
+*.dni
+*.wsdt
+
+# VSCode (保留配置，忽略其他)
+.vscode/*
 !.vscode/settings.json
 !.vscode/c_cpp_properties.json
+!.vscode/launch.json
+!.vscode/tasks.json
 
-# Node / formatter tooling
-node_modules/
+# CLion
+.idea/
 
-# OS / editor noise
+# Clang tools
+.clangd/
+.cache/
+
+# OS
 Thumbs.db
 .DS_Store
-*.log
+desktop.ini
 *.swp
 *.swo
 *~
+*.log
