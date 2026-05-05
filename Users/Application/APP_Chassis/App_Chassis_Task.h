@@ -92,8 +92,8 @@
 #define CHASSIS_JUMP_TAKEOFF_TARGET 0.35f
 #define CHASSIS_JUMP_AIRBORNE_TARGET 0.16f
 #define CHASSIS_JUMP_LAND_TARGET CHASSIS_JUMP_AIRBORNE_TARGET
-#define CHASSIS_JUMP_TAKEOFF_FORCE_BONUS 200.0f
-#define CHASSIS_JUMP_LAND_TICKS 150U
+#define CHASSIS_JUMP_TAKEOFF_FORCE_BONUS 500.0f
+#define CHASSIS_JUMP_LAND_TICKS 300U
 #define CHASSIS_POSTURE_STABLE_TICKS 50U
 
 // 离地检测迟滞阈值：落地阈值需高于离地阈值
@@ -336,6 +336,7 @@ public:
     uint16_t step_up_total_ticks = 0;
     uint16_t posture_stable_ticks = 0;
     uint16_t normal_force_touch_ground_ticks = 0;
+    uint16_t jump_landing_cooldown_ticks = 0; // JUMP→NORMAL 后的落地保护倒计时 (ms)
     fp32 step_up_leg_target = CHASSIS_LEG_2_TARGET;
 
     const fp32 *chassis_INS_gyro;       // 机体角速度指针
