@@ -99,7 +99,7 @@ void WheelLeggedPowerLimitator::Update_Power_Loop(float referee_limit, float cap
 
         // P_max = P_r - PD(sqrt(E_target), sqrt(E_current))
         // 使用能量的平方根进行PID计算以防止非线性突变
-        float pid_out = PID_Calc(&energy_pid, sqrtf(cap_energy), sqrtf(buffSet));
+        float pid_out = -PID_Calc(&energy_pid, sqrtf(cap_energy), sqrtf(buffSet));
 
         configuredMaxPower = referee_limit + pid_out;
 
@@ -191,7 +191,8 @@ void WheelLeggedPowerLimitator::Calculate_Decay(float Uspeed, float Uyaw,
         // 低通滤波平滑输出衰减因子，防止控制突变导致机体抖动
         decayUspeed = tempDecayUspeed * 0.1f + decayUspeed * 0.9f;
         decayUyaw   = tempDecayUyaw * 0.1f + decayUyaw * 0.9f;
-        decayUyaw = 1.0f;
+        // decayUspeed = 1.0f;
+        // decayUyaw = 1.0f;
     }
 }
 
