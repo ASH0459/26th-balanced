@@ -99,27 +99,27 @@ fp32 chassis_get_imu_d_yaw(const Chassis_Move *chassis_move_calc) {
     return CHASSIS_D_YAW_IMU_SIGN * (*(chassis_move_calc->chassis_INS_gyro + INS_GYRO_Z_ADDRESS_OFFSET));
 }
 
-void chassis_update_leg_angle_signals(leg_control *leg, const fp32 *f_theta) {
+void chassis_update_leg_angle_signals(leg_control *leg, const fp32 *f_theta, uint8_t theta_filter_source, uint8_t d_theta_filter_source) {
     // 腿角信号同时保留原始值、低通值和卡尔曼值，主控制环按宏选择其中一路。
     memcpy(leg->chassis_vaestimatekf_theta.F_data, f_theta, 4 * sizeof(fp32));
 
-        leg->theta_l = leg->wbr_control.theta_l;
-        leg->d_theta_l = leg->wbr_control.d_theta_l;
+    leg->theta_l = leg->wbr_control.theta_l;
+    leg->d_theta_l = leg->wbr_control.d_theta_l;
 
-        first_order_filter_cali(&leg->theta_l_lowpass_filter, leg->theta_l);
-        first_order_filter_cali(&leg->d_theta_l_lowpass_filter, leg->d_theta_l);
-        leg->theta_l_lowpass = leg->theta_l_lowpass_filter.out;
-        leg->d_theta_l_lowpass = leg->d_theta_l_lowpass_filter.out;
+    first_order_filter_cali(&leg->theta_l_lowpass_filter, leg->theta_l);
+    first_order_filter_cali(&leg->d_theta_l_lowpass_filter, leg->d_theta_l);
+    leg->theta_l_lowpass = leg->theta_l_lowpass_filter.out;
+    leg->d_theta_l_lowpass = leg->d_theta_l_lowpass_filter.out;
 
-        leg->chassis_vaestimatekf_theta.MeasuredVector[0] = leg->theta_l;
-        leg->chassis_vaestimatekf_theta.MeasuredVector[1] = leg->d_theta_l;
+    leg->chassis_vaestimatekf_theta.MeasuredVector[0] = leg->theta_l;
+    leg->chassis_vaestimatekf_theta.MeasuredVector[1] = leg->d_theta_l;
 
-        Kalman_Filter_Update(&leg->chassis_vaestimatekf_theta);
-        leg->theta_l_filter = leg->chassis_vaestimatekf_theta.FilteredValue[0];
-        leg->d_theta_l_filter = leg->chassis_vaestimatekf_theta.FilteredValue[1];
-        leg->theta_l_ctrl = (theta_filter_source == CHASSIS_FILTER_LOWPASS) ? leg->theta_l_lowpass : leg->theta_l_filter;
-        leg->d_theta_l_ctrl = (d_theta_filter_source == CHASSIS_FILTER_LOWPASS) ? leg->d_theta_l_lowpass : leg->d_theta_l_filter;
-    }
+    Kalman_Filter_Update(&leg->chassis_vaestimatekf_theta);
+    leg->theta_l_filter = leg->chassis_vaestimatekf_theta.FilteredValue[0];
+    leg->d_theta_l_filter = leg->chassis_vaestimatekf_theta.FilteredValue[1];
+    leg->theta_l_ctrl = (theta_filter_source == CHASSIS_FILTER_LOWPASS) ? leg->theta_l_lowpass : leg->theta_l_filter;
+    leg->d_theta_l_ctrl = (d_theta_filter_source == CHASSIS_FILTER_LOWPASS) ? leg->d_theta_l_lowpass : leg->d_theta_l_filter;
+}
 
     bool_t chassis_is_balancing_state(Chassis_State_e state)
     {
