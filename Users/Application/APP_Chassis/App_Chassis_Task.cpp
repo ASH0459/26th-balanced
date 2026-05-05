@@ -619,6 +619,11 @@ extern "C"
         if (chassis_move_transit->state == CHASSIS_NORMAL)
         {
             chassis_prepare_normal_entry(chassis_move_transit, 0);
+            // 从 JUMP 落地后 1s 内跳过离地支持力限制，避免落地冲击误触发
+            if (chassis_move_transit->last_state == CHASSIS_JUMP)
+            {
+                chassis_move_transit->jump_landing_cooldown_ticks = 1000U;
+            }
         }
         else if (chassis_move_transit->state == CHASSIS_LEG_1 ||
                  chassis_move_transit->state == CHASSIS_LEG_2)
@@ -1458,8 +1463,8 @@ extern "C"
             break;
 
         case CHASSIS_JUMP_TAKEOFF:
-            if ((chassis_move_control_loop->jump_phase_ticks >= 60U && legs_near_takeoff_target) ||
-                chassis_move_control_loop->jump_phase_ticks >= CHASSIS_JUMP_LAND_TICKS)
+            if ((chassis_move_control_loop->jump_phase_ticks >= 60U && legs_near_takeoff_target)) //||
+                //chassis_move_control_loop->jump_phase_ticks >= CHASSIS_JUMP_LAND_TICKS)
             {
                 chassis_move_control_loop->jump_phase = CHASSIS_JUMP_READYLAND;
                 chassis_move_control_loop->jump_phase_ticks = 0;
@@ -1467,11 +1472,8 @@ extern "C"
             break;
 
         case CHASSIS_JUMP_READYLAND:
-            if ((
-                    chassis_move_control_loop->jump_phase_ticks >= CHASSIS_JUMP_LAND_TICKS &&
-                    fabsf(chassis_move_control_loop->chassis_left_control.wbr_control.L - CHASSIS_JUMP_LAND_TARGET) < 0.02f &&
-                    fabsf(chassis_move_control_loop->chassis_right_control.wbr_control.L - CHASSIS_JUMP_LAND_TARGET) < 0.02f) ||
-                chassis_move_control_loop->jump_phase_ticks >= (CHASSIS_JUMP_LAND_TICKS * 3U))
+            if (fabsf(chassis_move_control_loop->chassis_left_control.wbr_control.L - CHASSIS_JUMP_LAND_TARGET) < 0.01f &&
+                    fabsf(chassis_move_control_loop->chassis_right_control.wbr_control.L - CHASSIS_JUMP_LAND_TARGET) < 0.01f)
             {
                 chassis_move_control_loop->jump_phase = CHASSIS_JUMP_DONE;
                 chassis_move_control_loop->jump_phase_ticks = 0;
@@ -1640,8 +1642,14 @@ extern "C"
 
             // -重力补偿 - 侧向惯性力矩补偿 + 右腿腿长PID + 右腿roll轴补偿PID + 弹簧补偿
             chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t = +chassis_move_control_loop->chassis_right_control.fd_roll - chassis_move_control_loop->chassis_right_control.fd_leg + chassis_move_control_loop->chassis_right_control.Fbl_inertial + chassis_move_control_loop->chassis_right_control.Fbl_spring - chassis_move_control_loop->chassis_left_control.Fbl_gravity;
-            // 新加1
-            if (chassis_move_control_loop->chassis_left_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND && chassis_move_control_loop->chassis_right_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND)
+            // JUMP→NORMAL 落地保护倒计时递减
+            if (chassis_move_control_loop->jump_landing_cooldown_ticks > 0U)
+            {
+                chassis_move_control_loop->jump_landing_cooldown_ticks--;
+            }
+            // 双腿离地且不在落地保护期内，限制支持力
+            if (chassis_move_control_loop->jump_landing_cooldown_ticks == 0U &&
+                chassis_move_control_loop->chassis_left_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND && chassis_move_control_loop->chassis_right_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND)
             {
                 if (chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t > chassis_move_control_loop->chassis_left_control.Fbl_spring - 40.0f)
                 {
