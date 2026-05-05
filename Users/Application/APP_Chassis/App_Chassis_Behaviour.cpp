@@ -522,7 +522,7 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
     chassis_move_mode->last_request_mode = requested_mode;
 }
 
-// 根据当前 state 生成本拍行为层目标：vx_set / yaw_set / d_yaw_set / leg_set。
+// 根据当前 state 生成本拍行为层目标：vx_set / yaw_set / d_yaw_set / leg_set。.
 void chassis_behaviour_control_set(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set, fp32 *leg_set,
                                    Chassis_Move *chassis_move_rc_to_vector)
 {
