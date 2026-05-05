@@ -1202,16 +1202,16 @@ extern "C"
         {
             const bool_t left_step_hit =
                 fabsf(chassis_move_control_loop->chassis_left_control.theta_l) >= STEP_UP_ANGLE_THRESHOLD &&
-                chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_r >= STEP_UP_TORQUE_THRESHOLD;
+                fabsf(chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_r) >= STEP_UP_TORQUE_THRESHOLD;
             const bool_t right_step_hit =
                 fabsf(chassis_move_control_loop->chassis_right_control.theta_l) >= STEP_UP_ANGLE_THRESHOLD &&
-                chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_r >= STEP_UP_TORQUE_THRESHOLD;
+                fabsf(chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_r) >= STEP_UP_TORQUE_THRESHOLD;
 
             if (left_step_hit || right_step_hit)
             {
                 const fp32 target_leg_length =
                     (chassis_move_control_loop->state == CHASSIS_LEG_1) ? CHASSIS_LEG_1_TARGET : CHASSIS_LEG_2_TARGET;
-                chassis_move_control_loop->step_up_phase = STEP_UP_EXTEND;
+                chassis_move_control_loop->step_up_phase = STEP_UP_DETECT;
                 chassis_move_control_loop->step_up_phase_ticks = 0;
                 chassis_move_control_loop->step_up_total_ticks = 0;
                 chassis_move_control_loop->step_up_leg_target = target_leg_length;
