@@ -134,8 +134,6 @@ extern "C"
 #define KF_INIT_PARAMS(kf, src, suffix)                                                            \
     do                                                                                             \
     {                                                                                              \
-    do                                                                                             \
-    {                                                                                              \
         memcpy((kf).F_data, (src).vaEstimateKF_F_##suffix, sizeof((src).vaEstimateKF_F_##suffix)); \
         memcpy((kf).P_data, (src).vaEstimateKF_P_##suffix, sizeof((src).vaEstimateKF_P_##suffix)); \
         memcpy((kf).Q_data, (src).vaEstimateKF_Q_##suffix, sizeof((src).vaEstimateKF_Q_##suffix)); \
@@ -1672,6 +1670,48 @@ extern "C"
         }
     }
 
+    static chassis_output_mode_e chassis_select_output_mode(const Chassis_Move *chassis_move_control_loop)
+    {
+        if (chassis_move_control_loop == NULL)
+        {
+            return CHASSIS_OUTPUT_MODE_NORMAL_WBR;
+        }
+
+        // CHASSIS_FLIP、STEP_UP_SWING、STEP_UP_HOLD 会在 control_loop 前面直接 return，
+        // 不会进入这里的最终输出分发。
+        if (chassis_move_control_loop->state == CHASSIS_INIT)
+        {
+            if (chassis_move_control_loop->init_phase == CHASSIS_INIT_FOLD)
+            {
+                return CHASSIS_OUTPUT_MODE_DIRECT_JOINT;
+            }
+
+            if (chassis_move_control_loop->init_phase == CHASSIS_INIT_RETRACT)
+            {
+                return CHASSIS_OUTPUT_MODE_RETRACT_LEG_ONLY;
+            }
+
+            return CHASSIS_OUTPUT_MODE_NORMAL_WBR;
+        }
+
+        if (chassis_is_step_up_active(chassis_move_control_loop))
+        {
+            if (chassis_move_control_loop->step_up_phase == STEP_UP_RETRACT)
+            {
+                return CHASSIS_OUTPUT_MODE_RETRACT_LEG_ONLY;
+            }
+
+            if (chassis_move_control_loop->step_up_phase == STEP_UP_STAND)
+            {
+                return CHASSIS_OUTPUT_MODE_STEP_STAND;
+            }
+        }
+
+        // CHASSIS_JUMP 虽然会改变支持力策略，但最终仍走标准 WBR 输出映射，
+        // 因此不需要单独拆一个输出模式。
+        return CHASSIS_OUTPUT_MODE_NORMAL_WBR;
+    }
+
     static void chassis_apply_joint_output(Chassis_Move *chassis_move_control_loop)
     {
         /*
@@ -1725,23 +1765,10 @@ extern "C"
                                    chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t * 0.35,
                                    chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t,
                                    chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t * 0.35);
-            break;
         }
-
-        case CHASSIS_OUTPUT_MODE_DIRECT_JOINT:
+        else
         {
-            chassis_move_control_loop->chassis_wheel[0].wheel_T = 0.0f;
-            chassis_move_control_loop->chassis_wheel[1].wheel_T = 0.0f;
-            chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t = 0.0f;
-            chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t = 0.0f;
-            break;
-        }
-
-        case CHASSIS_OUTPUT_MODE_NORMAL_WBR:
-        default:
-        {
-            // default 作为 NORMAL_WBR 的安全兜底；
-            // 如果后面新增输出模式，记得在这里补明确的 case。
+            // NORMAL_WBR 模式
             if (chassis_move_control_loop->state != CHASSIS_INIT)
             {
                 const bool_t left_off_ground =
@@ -1749,12 +1776,11 @@ extern "C"
                 const bool_t right_off_ground =
                     (chassis_move_control_loop->chassis_right_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND);
 
-            if (left_off_ground && right_off_ground)
-            {
-                chassis_move_control_loop->chassis_wheel[0].wheel_T = 0.0f;
-                chassis_move_control_loop->chassis_wheel[1].wheel_T = 0.0f;
+                if (left_off_ground)
+                {
+                    chassis_move_control_loop->chassis_wheel[0].wheel_T = 0.0f;
 #if CHASSIS_VERTICAL_SUPPORT_ONLY_MODE
-                chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t = 0.0f;
+                    chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t = 0.0f;
 #else
                     chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t =
                         LQR_K[2][4] * chassis_move_control_loop->chassis_left_control.theta_l +
@@ -1777,7 +1803,6 @@ extern "C"
                         LQR_K[3][7] * chassis_move_control_loop->chassis_right_control.d_theta_l;
 #endif
                 }
-
             }
 
             APPLY_WBR_JOINT_OUTPUT(chassis_move_control_loop,
@@ -1785,8 +1810,6 @@ extern "C"
                                    chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t,
                                    chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t,
                                    chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t);
-            break;
-        }
         }
     }
 
