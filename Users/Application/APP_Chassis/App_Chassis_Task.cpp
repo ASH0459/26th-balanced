@@ -1720,27 +1720,38 @@ extern "C"
          * 状态输出闭环说明：
          * STOP 在进入本函数前已经清零。
          * FLIP / INIT_FOLD / STEP_UP_SWING / STEP_UP_HOLD 在各自特殊控制函数中直接写 joint_T。
-         * NORMAL / LEG_1 / LEG_2 / STEP_UP_EXTEND / STEP_UP_DETECT 由 LQR 生成 wheel_T/Tbl_t，
-         * 腿长控制生成 Fbl_t，再在这里把 WBR 输出映射为 joint_T。
-         * INIT_RETRACT / STEP_UP_RETRACT 抑制 wheel_T/Tbl_t，只保留收腿输出。
-         * INIT_STAND / 瞬态 INIT_DONE 显式使用标准 WBR 关节映射。
-         * CHASSIS_JUMP 仅保留旧代码，当前没有重新接入。
+         * 其他阶段先由基础输出和支持力逻辑得到 wheel_T / Tbl_t / Fbl_t，
+         * 再在这里统一决定本周期最终采用哪一种输出策略。
          */
-        const bool_t is_retract =
-            (chassis_move_control_loop->state == CHASSIS_INIT &&
-             chassis_move_control_loop->init_phase == CHASSIS_INIT_RETRACT) ||
-            (chassis_is_step_up_active(chassis_move_control_loop) &&
-             chassis_move_control_loop->step_up_phase == STEP_UP_RETRACT);
-        if (is_retract)
+        const chassis_output_mode_e output_mode =
+            chassis_select_output_mode(chassis_move_control_loop);
+
+        // 最终输出预处理：INIT 起身阶段可能需要先衰减轮子输出，
+        // 再进入后面的统一映射策略。
+        if (chassis_move_control_loop->state == CHASSIS_INIT)
         {
+            // 这里默认 wheel_T 仍然是本周期基础 LQR 刚算出来的值，
+            // 中间没有被其他阶段逻辑提前改写。
+            chassis_apply_init_wheel_theta_gate(chassis_move_control_loop);
+        }
+
+        switch (output_mode)
+        {
+        case CHASSIS_OUTPUT_MODE_RETRACT_LEG_ONLY:
+        {
+            chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t = 0.0f;
+            chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t = 0.0f;
+            chassis_move_control_loop->chassis_wheel[0].wheel_T = 0.0f;
+            chassis_move_control_loop->chassis_wheel[1].wheel_T = 0.0f;
             APPLY_WBR_JOINT_OUTPUT(chassis_move_control_loop,
                                    chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t,
                                    0.0f,
                                    chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t,
                                    0.0f);
+            break;
         }
-        else if (chassis_is_step_up_active(chassis_move_control_loop) &&
-                 chassis_move_control_loop->step_up_phase == STEP_UP_STAND)
+
+        case CHASSIS_OUTPUT_MODE_STEP_STAND:
         {
             // 停止轮子输出
             chassis_move_control_loop->chassis_wheel[0].wheel_T = 0.0f;
@@ -1767,10 +1778,23 @@ extern "C"
                                    chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t * 0.35,
                                    chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t,
                                    chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t * 0.35);
+            break;
         }
-        else
+
+        case CHASSIS_OUTPUT_MODE_DIRECT_JOINT:
         {
-            // NORMAL_WBR 模式
+            chassis_move_control_loop->chassis_wheel[0].wheel_T = 0.0f;
+            chassis_move_control_loop->chassis_wheel[1].wheel_T = 0.0f;
+            chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t = 0.0f;
+            chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t = 0.0f;
+            break;
+        }
+
+        case CHASSIS_OUTPUT_MODE_NORMAL_WBR:
+        default:
+        {
+            // default 作为 NORMAL_WBR 的安全兜底；
+            // 如果后面新增输出模式，记得在这里补明确的 case。
             if (chassis_move_control_loop->state != CHASSIS_INIT)
             {
                 const bool_t left_off_ground =
@@ -1805,6 +1829,7 @@ extern "C"
                         LQR_K[3][7] * chassis_move_control_loop->chassis_right_control.d_theta_l;
 #endif
                 }
+
             }
 
             APPLY_WBR_JOINT_OUTPUT(chassis_move_control_loop,
@@ -1812,6 +1837,8 @@ extern "C"
                                    chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t,
                                    chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t,
                                    chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t);
+            break;
+        }
         }
     }
 
