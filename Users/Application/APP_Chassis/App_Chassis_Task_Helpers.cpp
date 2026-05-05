@@ -40,8 +40,6 @@ extern "C"
 
     void chassis_apply_init_wheel_theta_gate(Chassis_Move *chassis_move_control_loop)
     {
-        // 这个最终阶段的轮子门控默认 wheel_T 仍然是本周期基础 LQR 的输出，
-        // 中间没有被别的阶段逻辑提前改写。
         if (chassis_move_control_loop->state != CHASSIS_INIT)
         {
             return;
@@ -50,7 +48,6 @@ extern "C"
         if (chassis_move_control_loop->init_phase != CHASSIS_INIT_STAND ||
             chassis_init_legs_retracted(chassis_move_control_loop) == 0)
         {
-            // INIT 只有在“已收腿且开始站起”后才允许轮子输出。
             chassis_move_control_loop->chassis_wheel[0].wheel_T = 0.0f;
             chassis_move_control_loop->chassis_wheel[1].wheel_T = 0.0f;
             return;
@@ -124,36 +121,6 @@ void chassis_update_leg_angle_signals(leg_control *leg, const fp32 *f_theta, uin
     bool_t chassis_is_balancing_state(Chassis_State_e state)
     {
         return state == CHASSIS_NORMAL || state == CHASSIS_LEG_1 || state == CHASSIS_LEG_2;
-    }
-
-    bool_t chassis_is_step_mode_state(Chassis_State_e state)
-    {
-        return state == CHASSIS_LEG_1 || state == CHASSIS_LEG_2;
-    }
-
-    bool_t chassis_is_step_up_active(const Chassis_Move *chassis_move_control)
-    {
-        if (chassis_move_control == NULL)
-        {
-            return 0;
-        }
-
-        return chassis_is_step_mode_state(chassis_move_control->state) &&
-               chassis_move_control->step_up_phase != STEP_UP_DONE;
-    }
-
-    bool_t chassis_is_step_up_before_standup(const Chassis_Move *chassis_move_control)
-    {
-        if (chassis_is_step_up_active(chassis_move_control) == 0)
-        {
-            return 0;
-        }
-
-        // 这几段仍属于“台阶子流程未完成”，主控制要继续抑制正常前进逻辑。
-        return (chassis_move_control->step_up_phase == STEP_UP_SWING ||
-                chassis_move_control->step_up_phase == STEP_UP_HOLD ||
-                chassis_move_control->step_up_phase == STEP_UP_RETRACT ||
-                chassis_move_control->step_up_phase == STEP_UP_STAND);
     }
 
     bool_t chassis_is_init_like_state(Chassis_State_e state)
