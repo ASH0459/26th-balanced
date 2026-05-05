@@ -269,10 +269,7 @@ static void chassis_normal_control(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set,
 
     if (chassis_move_rc_to_vector->state == CHASSIS_LEG_2 || chassis_move_rc_to_vector->state == CHASSIS_LEG_1)
     {
-        const fp32 speed_limit = chassis_is_step_up_active(chassis_move_rc_to_vector)
-                                     ? CHASSIS_STEP_UP_MAX_SPEED
-                                     : CHASSIS_LEG_MAX_SPEED;
-        target_vx = clamp_abs_fp32(raw_target_vx, speed_limit);
+        target_vx = clamp_abs_fp32(raw_target_vx, CHASSIS_LEG_MAX_SPEED);
     }
     else
     {
@@ -378,6 +375,62 @@ static void chassis_jump_control(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set, f
     }
 }
 
+// LEG_1/LEG_2 下的上台阶行为输出：按 step_up_phase 分派速度和腿长策略。
+static void chassis_control_leg_step_up(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set, fp32 *leg_set,
+                                        Chassis_Move *chassis_move_rc_to_vector, fp32 default_leg_target)
+{
+    const Chassis_StepUp_Phase_e phase = chassis_move_rc_to_vector->step_up_phase;
+    const fp32 yaw_target = wrap_to_pi(chassis_move_rc_to_vector->chassis_gimbal_data->yaw_set);
+    const fp32 yaw_pid = chassis_follow_yaw_control(yaw_target, chassis_move_rc_to_vector);
+    *yaw_set = yaw_target;
+    *d_yaw_set = clamp_abs_fp32(yaw_pid, CHASSIS_D_YAW_MAX);
+
+    switch (phase)
+    {
+    case STEP_UP_DETECT:
+    case STEP_UP_DONE:
+        // 正常受控，按默认 LEG 目标输出
+        chassis_normal_control(vx_set, yaw_set, d_yaw_set, leg_set,
+                               chassis_move_rc_to_vector, default_leg_target);
+        break;
+
+    case STEP_UP_CONTACT:
+        // 撞台阶：保持速度/yaw 受控，腿长维持当前 LEG 目标
+        *vx_set = 0.0f;
+        *leg_set = chassis_ramp_leg_target(chassis_move_rc_to_vector,
+                                           default_leg_target,
+                                           CHASSIS_LEG_STEP_RAMP_SPEED);
+        break;
+
+    case STEP_UP_RETRACT:
+        // 收腿到最小腿长
+        *vx_set = 0.0f;
+        *leg_set = chassis_ramp_leg_target(chassis_move_rc_to_vector,
+                                           CHASSIS_NORMAL_LEG_TARGET,
+                                           CHASSIS_LEG_STEP_RAMP_SPEED);
+        break;
+
+    case STEP_UP_STAND:
+        // 0.165站稳等theta摆正，速度回零
+        *vx_set = 0.0f;
+        *leg_set = chassis_ramp_leg_target(chassis_move_rc_to_vector,
+                                           CHASSIS_NORMAL_LEG_TARGET,
+                                           CHASSIS_LEG_STEP_RAMP_SPEED);
+        break;
+
+    case STEP_UP_EXTEND:
+        // 伸腿，允许遥控正常移动
+        chassis_normal_control(vx_set, yaw_set, d_yaw_set, leg_set,
+                               chassis_move_rc_to_vector, STEP_UP_EXTEND_LEG_TARGET);
+        break;
+
+    default:
+        chassis_normal_control(vx_set, yaw_set, d_yaw_set, leg_set,
+                               chassis_move_rc_to_vector, default_leg_target);
+        break;
+    }
+}
+
 // 更新底盘行为状态机：根据外部请求和当前姿态决定 state / pending_state。
 void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
 {
@@ -477,11 +530,17 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
             break;
 
         case CHASSIS_LEG_1:
-            if (chassis_is_step_up_active(chassis_move_mode))
+            if (chassis_move_mode->step_up_phase == STEP_UP_DONE &&
+                chassis_move_mode->step_up_count >= STEP_UP_REQUIRED_COUNT)
             {
-                break;
+                chassis_move_mode->state = CHASSIS_NORMAL;
             }
-            if (step1_edge)
+            else if (chassis_move_mode->step_up_phase != STEP_UP_DETECT &&
+                     chassis_move_mode->step_up_phase != STEP_UP_DONE)
+            {
+                // 上台阶进行中，阻塞模式切换
+            }
+            else if (step1_edge)
             {
                 chassis_move_mode->state = CHASSIS_NORMAL;
             }
@@ -492,11 +551,17 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
             break;
 
         case CHASSIS_LEG_2:
-            if (chassis_is_step_up_active(chassis_move_mode))
+            if (chassis_move_mode->step_up_phase == STEP_UP_DONE &&
+                chassis_move_mode->step_up_count >= STEP_UP_REQUIRED_COUNT)
             {
-                break;
+                chassis_move_mode->state = CHASSIS_NORMAL;
             }
-            if (step2_edge)
+            else if (chassis_move_mode->step_up_phase != STEP_UP_DETECT &&
+                     chassis_move_mode->step_up_phase != STEP_UP_DONE)
+            {
+                // 上台阶进行中，阻塞模式切换
+            }
+            else if (step2_edge)
             {
                 chassis_move_mode->state = CHASSIS_NORMAL;
             }
@@ -587,35 +652,10 @@ void chassis_behaviour_control_set(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set,
     //     chassis_jump_control(vx_set, yaw_set, d_yaw_set, leg_set, chassis_move_rc_to_vector);
     //     break;
     case CHASSIS_LEG_1:
-        // LEG_1 同时承载普通低腿长控制和 step-up 子流程。
-        if (chassis_is_step_up_active(chassis_move_rc_to_vector) &&
-            (chassis_move_rc_to_vector->step_up_phase == STEP_UP_SWING ||
-             chassis_move_rc_to_vector->step_up_phase == STEP_UP_HOLD))
+        if (protocol_valid)
         {
-            // step-up 摆腿/停留阶段：保持姿态和目标腿长。
-            chassis_action_hold_control(vx_set, yaw_set, d_yaw_set, leg_set,
-                                        chassis_move_rc_to_vector, chassis_move_rc_to_vector->step_up_leg_target);
-        }
-        else if (chassis_is_step_up_active(chassis_move_rc_to_vector) &&
-                 (chassis_move_rc_to_vector->step_up_phase == STEP_UP_RETRACT ||
-                  chassis_move_rc_to_vector->step_up_phase == STEP_UP_STAND))
-        {
-            // step-up 后半段：速度回零，恢复 yaw 跟随，腿长回 normal。
-            chassis_update_small_gyro_d_yaw(0, 1);
-            *vx_set = chassis_update_vx_ramp(0.0f, 0);
-            const fp32 yaw_target = wrap_to_pi(chassis_move_rc_to_vector->chassis_gimbal_data->yaw_set);
-            const fp32 yaw_pid = chassis_follow_yaw_control(yaw_target, chassis_move_rc_to_vector);
-            *yaw_set = yaw_target;
-            *d_yaw_set = clamp_abs_fp32(yaw_pid, CHASSIS_D_YAW_MAX);
-            *leg_set = chassis_ramp_leg_target(chassis_move_rc_to_vector,
-                                               CHASSIS_NORMAL_LEG_TARGET,
-                                               CHASSIS_STEP_UP_RETRACT_LEG_RAMP_SPEED);
-        }
-        else if (protocol_valid)
-        {
-            // 普通 LEG_1：低腿长 normal control。
-            chassis_normal_control(vx_set, yaw_set, d_yaw_set, leg_set,
-                                   chassis_move_rc_to_vector, CHASSIS_LEG_1_TARGET);
+            chassis_control_leg_step_up(vx_set, yaw_set, d_yaw_set, leg_set,
+                                        chassis_move_rc_to_vector, CHASSIS_LEG_1_TARGET);
         }
         else
         {
@@ -627,35 +667,10 @@ void chassis_behaviour_control_set(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set,
         break;
 
     case CHASSIS_LEG_2:
-        // LEG_2 同时承载普通高腿长控制和 step-up 子流程。
-        if (chassis_is_step_up_active(chassis_move_rc_to_vector) &&
-            (chassis_move_rc_to_vector->step_up_phase == STEP_UP_SWING ||
-             chassis_move_rc_to_vector->step_up_phase == STEP_UP_HOLD))
+        if (protocol_valid)
         {
-            // step-up 摆腿/停留阶段：保持姿态和目标腿长。
-            chassis_action_hold_control(vx_set, yaw_set, d_yaw_set, leg_set,
-                                        chassis_move_rc_to_vector, chassis_move_rc_to_vector->step_up_leg_target);
-        }
-        else if (chassis_is_step_up_active(chassis_move_rc_to_vector) &&
-                 (chassis_move_rc_to_vector->step_up_phase == STEP_UP_RETRACT ||
-                  chassis_move_rc_to_vector->step_up_phase == STEP_UP_STAND))
-        {
-            // step-up 后半段：速度回零，恢复 yaw 跟随，腿长回 normal。
-            chassis_update_small_gyro_d_yaw(0, 1);
-            *vx_set = chassis_update_vx_ramp(0.0f, 0);
-            const fp32 yaw_target = wrap_to_pi(chassis_move_rc_to_vector->chassis_gimbal_data->yaw_set);
-            const fp32 yaw_pid = chassis_follow_yaw_control(yaw_target, chassis_move_rc_to_vector);
-            *yaw_set = yaw_target;
-            *d_yaw_set = clamp_abs_fp32(yaw_pid, CHASSIS_D_YAW_MAX);
-            *leg_set = chassis_ramp_leg_target(chassis_move_rc_to_vector,
-                                               CHASSIS_NORMAL_LEG_TARGET,
-                                               CHASSIS_STEP_UP_RETRACT_LEG_RAMP_SPEED);
-        }
-        else if (protocol_valid)
-        {
-            // 普通 LEG_2：高腿长 normal control。
-            chassis_normal_control(vx_set, yaw_set, d_yaw_set, leg_set,
-                                   chassis_move_rc_to_vector, CHASSIS_LEG_2_TARGET);
+            chassis_control_leg_step_up(vx_set, yaw_set, d_yaw_set, leg_set,
+                                        chassis_move_rc_to_vector, CHASSIS_LEG_2_TARGET);
         }
         else
         {

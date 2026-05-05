@@ -38,13 +38,6 @@
 // 初始化腿旋转速度
 #define ROTATE_SPEED 1.3f
 
-#define STEP_UP_ANGLE_THRESHOLD 0.6f          // 碰到台阶时，腿部被向后推直的角度阈值 (rad)，需实测微调
-#define STEP_UP_TORQUE_THRESHOLD 4.0f         // 碰到台阶导致堵转的虚拟水平扭矩 Tbl_t 阈值 (Nm)
-#define STEP_UP_PASSIVE_SWING_TARGET -0.8f    // 被动摆腿目标角度，直接使用 theta_l 原始坐标
-#define STEP_UP_HOLD_TICKS 300U               // 被动摆腿后停留时间，控制周期 1ms 时约 500ms
-#define STEP_UP_TIMEOUT_TICKS 5000U         // 上台阶总超时退出，控制周期 1ms 时约 5s
-#define STEP_UP_PASSIVE_REVERSE_LEG_TBL -4.0f // 被动摆腿/停留阶段腿部反向水平力矩，减小上台阶后前滑
-
 // 重力加速度
 #define GRAVITY_ACCELERATION 9.81f
 
@@ -96,6 +89,20 @@
 #define CHASSIS_JUMP_LAND_TICKS 300U
 #define CHASSIS_POSTURE_STABLE_TICKS 50U
 
+// 上台阶检测与流程参数
+#define STEP_UP_ANGLE_THRESHOLD 0.5f         // |theta_l| 第一级撞台阶角度阈值 (rad)
+#define STEP_UP_TORQUE_THRESHOLD 4.0f        // |Tbl_r| 第一级反向力矩阈值 (Nm)
+#define STEP_UP_ANGLE_THRESHOLD_2ND -0.3f    // |theta_l| 第二级撞台阶角度阈值 (rad)
+#define STEP_UP_TORQUE_THRESHOLD_2ND 2.0f    // |Tbl_r| 第二级反向力矩阈值 (Nm)
+#define STEP_UP_LEG_SWING_TARGET (-0.6f)     // 撞台阶后 theta 被动摆到的目标角度 (rad)
+#define STEP_UP_CONTACT_MIN_TICKS 300U       // 进入CONTACT后强制等待时长 (ticks @ 1kHz = 300ms)
+#define STEP_UP_RETRACT_DONE_L 0.170f        // 收腿到位腿长阈值 (m)
+#define STEP_UP_EXTEND_DONE_TOL 0.005f       // 伸腿到位腿长误差阈值 (m)
+#define STEP_UP_REQUIRED_COUNT 2U            // 完成上台阶需要的撞击次数
+#define STEP_UP_CONTACT_TBL_SCALE 0.4f       // CONTACT阶段Tbl_t缩放系数
+#define STEP_UP_CONTACT_REVERSE_WHEEL_T 0.5f // CONTACT阶段反向轮力矩 (Nm)，防止前滑
+#define STEP_UP_EXTEND_LEG_TARGET CHASSIS_LEG_1_TARGET // 上台阶伸腿目标，暂时0.165
+
 // 离地检测迟滞阈值：落地阈值需高于离地阈值
 #define CHASSIS_OFF_GROUND_FORCE_THRESHOLD 80.0f
 #define CHASSIS_TOUCH_GROUND_FORCE_THRESHOLD 85.0f
@@ -127,7 +134,7 @@
 // 左右腿长度PID
 #define LEG_PID_KP 2000.0f
 #define LEG_PID_KI 6.0f
-#define LEG_PID_KD 100000.0f
+#define LEG_PID_KD 50000.0f
 #define LEG_PID_MAX_OUT 300.0f // 300
 #define LEG_PID_MAX_IOUT 60.0f
 
@@ -214,15 +221,6 @@ typedef enum
     CHASSIS_JUMP,
 } Chassis_State_e;
 
-typedef enum
-{
-    STEP_UP_SWING = 0,  // 第一阶段：保持台阶腿长，被动摆到目标角度
-    STEP_UP_HOLD,       // 第二阶段：进入后检查角度，达标或超时后切 RETRACT 起身
-    STEP_UP_RETRACT,    // 第三阶段：独立收腿
-    STEP_UP_STAND,      // 第四阶段：收腿到底后等待腿摆正 (theta < 0.2)
-    STEP_UP_DONE,       // 内部结束标记，结束后回到 NORMAL
-} Chassis_StepUp_Phase_e;
-
 /* 机体姿态 */
 typedef enum
 {
@@ -243,6 +241,16 @@ typedef enum
     CHASSIS_INIT_STAND,
     CHASSIS_INIT_DONE,
 } Chassis_Init_Phase_e;
+
+typedef enum
+{
+    STEP_UP_DETECT = 0, // 在 LEG_1/LEG_2 下检测撞台阶
+    STEP_UP_CONTACT,    // 撞上台阶：轮子力矩=0，腿水平力仅跟随 theta（同离地）
+    STEP_UP_RETRACT,    // 收腿到 NORMAL_LEG_TARGET
+    STEP_UP_STAND,      // 站稳，轮子按 theta_gate 渐开
+    STEP_UP_EXTEND,     // 伸腿到 LEG_1_TARGET 准备下一个台阶
+    STEP_UP_DONE,       // 本次撞击流程完成
+} Chassis_StepUp_Phase_e;
 
 typedef enum
 {
@@ -313,7 +321,7 @@ public:
     fp32 d_theta_l_ctrl;    // 本周期控制实际使用的腿角速度
     fp32 dd_L_lowpass;      // 腿长加速度低通后值
     fp32 d_L;
-    fp32 d_theta_l_set;     // 腿角速度设置
+    fp32 d_theta_l_set; // 腿角速度设置
 };
 
 /* 底盘控制类 */
@@ -327,15 +335,14 @@ public:
     Chassis_Posture_e last_posture = CHASSIS_POSTURE_DOWN;
     Chassis_Init_Phase_e init_phase = CHASSIS_INIT_FOLD;
     Chassis_Jump_Phase_e jump_phase = CHASSIS_JUMP_DONE;
-    Chassis_StepUp_Phase_e step_up_phase = STEP_UP_DONE;
+    Chassis_StepUp_Phase_e step_up_phase = STEP_UP_DETECT;
     chassis_mode_e last_request_mode = CHASSIS_MODE_RESERVED;
     uint16_t jump_phase_ticks = 0;
-    uint16_t step_up_phase_ticks = 0;
-    uint16_t step_up_total_ticks = 0;
     uint16_t posture_stable_ticks = 0;
     uint16_t normal_force_touch_ground_ticks = 0;
     uint16_t jump_landing_cooldown_ticks = 0; // JUMP→NORMAL 后的落地保护倒计时 (ms)
-    fp32 step_up_leg_target = CHASSIS_LEG_2_TARGET;
+    uint32_t step_up_phase_ticks = 0;
+    uint16_t step_up_count = 0;
 
     const fp32 *chassis_INS_gyro;       // 机体角速度指针
     const fp32 *chassis_INS_angle;      // 获取陀螺仪解算出的欧拉角指针
