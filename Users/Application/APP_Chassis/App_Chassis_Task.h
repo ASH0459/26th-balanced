@@ -216,12 +216,10 @@ typedef enum
 
 typedef enum
 {
-    STEP_UP_EXTEND = 0, // 第一阶段：伸长腿
-    STEP_UP_DETECT,     // 第二阶段：保持腿长，检测是否撞击台阶
-    STEP_UP_SWING,      // 第三阶段：保持台阶腿长，被动摆到目标角度
-    STEP_UP_HOLD,       // 第四阶段：进入后检查角度，达标或超时后切 RETRACT 起身
-    STEP_UP_RETRACT,    // 第五阶段：独立收腿
-    STEP_UP_STAND,      // 第六阶段：收腿到底后等待腿摆正 (theta < 0.2)
+    STEP_UP_SWING = 0,  // 第一阶段：保持台阶腿长，被动摆到目标角度
+    STEP_UP_HOLD,       // 第二阶段：进入后检查角度，达标或超时后切 RETRACT 起身
+    STEP_UP_RETRACT,    // 第三阶段：独立收腿
+    STEP_UP_STAND,      // 第四阶段：收腿到底后等待腿摆正 (theta < 0.2)
     STEP_UP_DONE,       // 内部结束标记，结束后回到 NORMAL
 } Chassis_StepUp_Phase_e;
 

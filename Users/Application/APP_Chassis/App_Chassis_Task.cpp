@@ -1199,7 +1199,7 @@ extern "C"
             {
                 const fp32 target_leg_length =
                     (chassis_move_control_loop->state == CHASSIS_LEG_1) ? CHASSIS_LEG_1_TARGET : CHASSIS_LEG_2_TARGET;
-                chassis_move_control_loop->step_up_phase = STEP_UP_DETECT;
+                chassis_move_control_loop->step_up_phase = STEP_UP_SWING;
                 chassis_move_control_loop->step_up_phase_ticks = 0;
                 chassis_move_control_loop->step_up_total_ticks = 0;
                 chassis_move_control_loop->step_up_leg_target = target_leg_length;
@@ -1344,56 +1344,7 @@ extern "C"
             chassis_move_control_loop->step_up_total_ticks++;
         }
 
-        if (chassis_move_control_loop->step_up_phase == STEP_UP_HOLD &&
-            chassis_move_control_loop->step_up_total_ticks >= STEP_UP_TIMEOUT_TICKS)
-        {
-            chassis_move_control_loop->step_up_phase = STEP_UP_RETRACT;
-            chassis_move_control_loop->step_up_phase_ticks = 0;
-            chassis_move_control_loop->chassis_leg_filter_set.out = chassis_move_control_loop->chassis_left_control.wbr_control.L;
-            return;
-        }
-
-        if (chassis_move_control_loop->step_up_phase == STEP_UP_EXTEND)
-        {
-            // 腿长到位后切换到检测阶段
-            if (fabsf(chassis_move_control_loop->chassis_left_control.wbr_control.L - chassis_move_control_loop->step_up_leg_target) < 0.1f &&
-                fabsf(chassis_move_control_loop->chassis_right_control.wbr_control.L - chassis_move_control_loop->step_up_leg_target) < 0.1f)
-            {
-                chassis_move_control_loop->step_up_phase = STEP_UP_DETECT;
-                chassis_move_control_loop->step_up_phase_ticks = 0;
-            }
-        }
-        else if (chassis_move_control_loop->step_up_phase == STEP_UP_DETECT)
-        {
-            chassis_move_control_loop->step_up_phase = STEP_UP_SWING;
-            chassis_move_control_loop->step_up_phase_ticks = 0;
-        }
-        else if (chassis_move_control_loop->step_up_phase == STEP_UP_RETRACT)
-        {
-            bool_t legs_retracted =
-                fabsf(chassis_move_control_loop->chassis_left_control.wbr_control.L - CHASSIS_NORMAL_LEG_TARGET) <= 0.02f &&
-                fabsf(chassis_move_control_loop->chassis_right_control.wbr_control.L - CHASSIS_NORMAL_LEG_TARGET) <= 0.02f;
-            if (legs_retracted)
-            {
-                // 收腿完毕，不再直接恢复 NORMAL，而是进入等待摆正的 STAND 阶段
-                chassis_move_control_loop->step_up_phase = STEP_UP_STAND;
-                chassis_move_control_loop->step_up_phase_ticks = 0;
-            }
-        }
-        else if (chassis_move_control_loop->step_up_phase == STEP_UP_STAND)
-        {
-            // 等待双腿的角度摆正到机体正下方 (小于 0.2 rad)
-            bool_t legs_straight =
-                fabsf(chassis_move_control_loop->chassis_left_control.theta_l) <= 0.15f &&
-                fabsf(chassis_move_control_loop->chassis_right_control.theta_l) <= 0.15f;
-
-            if (legs_straight)
-            {
-                chassis_move_control_loop->step_up_phase = STEP_UP_DONE;
-                chassis_prepare_normal_entry(chassis_move_control_loop, 1);
-            }
-        }
-        else if (chassis_move_control_loop->step_up_phase == STEP_UP_SWING)
+        if (chassis_move_control_loop->step_up_phase == STEP_UP_SWING)
         {
             chassis_move_control_loop->step_up_phase_ticks++;
             if (chassis_move_control_loop->step_up_phase_ticks >= STEP_UP_HOLD_TICKS)
@@ -1415,6 +1366,36 @@ extern "C"
                 chassis_move_control_loop->step_up_phase = STEP_UP_RETRACT;
                 chassis_move_control_loop->step_up_phase_ticks = 0;
                 chassis_move_control_loop->chassis_leg_filter_set.out = chassis_move_control_loop->chassis_left_control.wbr_control.L;
+            }
+            else if (chassis_move_control_loop->step_up_total_ticks >= STEP_UP_TIMEOUT_TICKS)
+            {
+                chassis_move_control_loop->step_up_phase = STEP_UP_RETRACT;
+                chassis_move_control_loop->step_up_phase_ticks = 0;
+                chassis_move_control_loop->chassis_leg_filter_set.out = chassis_move_control_loop->chassis_left_control.wbr_control.L;
+            }
+        }
+        else if (chassis_move_control_loop->step_up_phase == STEP_UP_RETRACT)
+        {
+            bool_t legs_retracted =
+                fabsf(chassis_move_control_loop->chassis_left_control.wbr_control.L - CHASSIS_NORMAL_LEG_TARGET) <= 0.02f &&
+                fabsf(chassis_move_control_loop->chassis_right_control.wbr_control.L - CHASSIS_NORMAL_LEG_TARGET) <= 0.02f;
+            if (legs_retracted)
+            {
+                chassis_move_control_loop->step_up_phase = STEP_UP_STAND;
+                chassis_move_control_loop->step_up_phase_ticks = 0;
+            }
+        }
+        else if (chassis_move_control_loop->step_up_phase == STEP_UP_STAND)
+        {
+            // 等待双腿的角度摆正到机体正下方 (小于 0.2 rad)
+            bool_t legs_straight =
+                fabsf(chassis_move_control_loop->chassis_left_control.theta_l) <= 0.15f &&
+                fabsf(chassis_move_control_loop->chassis_right_control.theta_l) <= 0.15f;
+
+            if (legs_straight)
+            {
+                chassis_move_control_loop->step_up_phase = STEP_UP_DONE;
+                chassis_prepare_normal_entry(chassis_move_control_loop, 1);
             }
         }
     }

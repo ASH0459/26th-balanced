@@ -589,15 +589,8 @@ void chassis_behaviour_control_set(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set,
     case CHASSIS_LEG_1:
         // LEG_1 同时承载普通低腿长控制和 step-up 子流程。
         if (chassis_is_step_up_active(chassis_move_rc_to_vector) &&
-            chassis_move_rc_to_vector->step_up_phase <= STEP_UP_DETECT)
-        {
-            // step-up 前半段：仍走 normal control，腿长目标改为 step_up_leg_target。
-            chassis_normal_control(vx_set, yaw_set, d_yaw_set, leg_set,
-                                   chassis_move_rc_to_vector, chassis_move_rc_to_vector->step_up_leg_target);
-        }
-        else if (chassis_is_step_up_active(chassis_move_rc_to_vector) &&
-                 (chassis_move_rc_to_vector->step_up_phase == STEP_UP_SWING ||
-                  chassis_move_rc_to_vector->step_up_phase == STEP_UP_HOLD))
+            (chassis_move_rc_to_vector->step_up_phase == STEP_UP_SWING ||
+             chassis_move_rc_to_vector->step_up_phase == STEP_UP_HOLD))
         {
             // step-up 摆腿/停留阶段：保持姿态和目标腿长。
             chassis_action_hold_control(vx_set, yaw_set, d_yaw_set, leg_set,
@@ -636,15 +629,8 @@ void chassis_behaviour_control_set(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set,
     case CHASSIS_LEG_2:
         // LEG_2 同时承载普通高腿长控制和 step-up 子流程。
         if (chassis_is_step_up_active(chassis_move_rc_to_vector) &&
-            chassis_move_rc_to_vector->step_up_phase <= STEP_UP_DETECT)
-        {
-            // step-up 前半段：仍走 normal control，腿长目标改为 step_up_leg_target。
-            chassis_normal_control(vx_set, yaw_set, d_yaw_set, leg_set,
-                                   chassis_move_rc_to_vector, chassis_move_rc_to_vector->step_up_leg_target);
-        }
-        else if (chassis_is_step_up_active(chassis_move_rc_to_vector) &&
-                 (chassis_move_rc_to_vector->step_up_phase == STEP_UP_SWING ||
-                  chassis_move_rc_to_vector->step_up_phase == STEP_UP_HOLD))
+            (chassis_move_rc_to_vector->step_up_phase == STEP_UP_SWING ||
+             chassis_move_rc_to_vector->step_up_phase == STEP_UP_HOLD))
         {
             // step-up 摆腿/停留阶段：保持姿态和目标腿长。
             chassis_action_hold_control(vx_set, yaw_set, d_yaw_set, leg_set,
