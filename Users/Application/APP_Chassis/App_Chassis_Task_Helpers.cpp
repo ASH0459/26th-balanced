@@ -88,10 +88,20 @@ extern "C"
         return -Leg_PID_Calc(&leg->leg_pid_control, leg->wbr_control.L, target_leg_length);
     }
 
-    void chassis_update_leg_angle_signals(leg_control *leg, const fp32 *f_theta, uint8_t theta_filter_source, uint8_t d_theta_filter_source)
-    {
-        // 腿角信号同时保留原始值、低通值和卡尔曼值，同时在 feedback 阶段就缓存出本周期控制实际采用的一路。
-        memcpy(leg->chassis_vaestimatekf_theta.F_data, f_theta, 4 * sizeof(fp32));
+chassis_off_ground_detection_e chassis_update_off_ground_detection_state(chassis_off_ground_detection_e current_state, fp32 support_force) {
+    if (current_state == CHASSIS_OFF_GROUND) {
+        return (support_force >= CHASSIS_TOUCH_GROUND_FORCE_THRESHOLD) ? CHASSIS_TOUCH_GROUND : CHASSIS_OFF_GROUND;//debug2
+    }
+    return (support_force <= CHASSIS_OFF_GROUND_FORCE_THRESHOLD) ? CHASSIS_OFF_GROUND : CHASSIS_TOUCH_GROUND;//debug1
+}
+
+fp32 chassis_get_imu_d_yaw(const Chassis_Move *chassis_move_calc) {
+    return CHASSIS_D_YAW_IMU_SIGN * (*(chassis_move_calc->chassis_INS_gyro + INS_GYRO_Z_ADDRESS_OFFSET));
+}
+
+void chassis_update_leg_angle_signals(leg_control *leg, const fp32 *f_theta) {
+    // 腿角信号同时保留原始值、低通值和卡尔曼值，主控制环按宏选择其中一路。
+    memcpy(leg->chassis_vaestimatekf_theta.F_data, f_theta, 4 * sizeof(fp32));
 
         leg->theta_l = leg->wbr_control.theta_l;
         leg->d_theta_l = leg->wbr_control.d_theta_l;
