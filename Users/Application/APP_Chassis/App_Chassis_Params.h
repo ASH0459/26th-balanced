@@ -34,7 +34,7 @@
 #define CHASSIS_NORMAL_FORCE_TOUCH_GROUND_TICKS 1500U
 
 // 跳跃空中/落地阶段的腿长恢复速率。
-#define CHASSIS_JUMP_AIRBORNE_LEG_RAMP_SPEED 0.80f
+#define CHASSIS_JUMP_AIRBORNE_LEG_RAMP_SPEED 1.0f
 
 /* -------------------- 初始化自扶正参数 -------------------- */
 // 初始化自扶正阶段的腿部旋转速度设定。

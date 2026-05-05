@@ -1013,6 +1013,23 @@ extern "C"
             return;
         }
 
+        // 跳跃 TAKEOFF 全程强制触地，保证速度/位移数据持续更新
+        if (chassis_move_prediction->state == CHASSIS_JUMP &&
+            chassis_move_prediction->jump_phase == CHASSIS_JUMP_TAKEOFF)
+        {
+            chassis_move_prediction->chassis_left_control.chassis_off_ground_detection = CHASSIS_TOUCH_GROUND;
+            chassis_move_prediction->chassis_right_control.chassis_off_ground_detection = CHASSIS_TOUCH_GROUND;
+            return;
+        }
+        // 跳跃 READYLAND 全程强制离地，冻结速度/位移数据避免空中漂移
+        if (chassis_move_prediction->state == CHASSIS_JUMP &&
+            chassis_move_prediction->jump_phase == CHASSIS_JUMP_READYLAND)
+        {
+            chassis_move_prediction->chassis_left_control.chassis_off_ground_detection = CHASSIS_OFF_GROUND;
+            chassis_move_prediction->chassis_right_control.chassis_off_ground_detection = CHASSIS_OFF_GROUND;
+            return;
+        }
+
         if (chassis_move_prediction->state == CHASSIS_NORMAL &&
             chassis_move_prediction->normal_force_touch_ground_ticks > 0U)
         {
@@ -1221,7 +1238,7 @@ extern "C"
         /* 后方的所有函数和处理均是作为支持力计算和其他附加功能的实现 */
         chassis_lqr_power_control(chassis_move_control_loop);
 
-        // chassis_update_jump_phase(chassis_move_control_loop);
+        chassis_update_jump_phase(chassis_move_control_loop);
         if (chassis_move_control_loop->state == CHASSIS_INIT)
         {
             chassis_init_standup(chassis_move_control_loop);
@@ -1472,7 +1489,7 @@ extern "C"
             break;
 
         case CHASSIS_JUMP_TAKEOFF:
-            if ((chassis_move_control_loop->jump_phase_ticks >= 60U && (both_off_ground || legs_near_takeoff_target)) ||
+            if ((chassis_move_control_loop->jump_phase_ticks >= 60U && legs_near_takeoff_target) ||
                 chassis_move_control_loop->jump_phase_ticks >= CHASSIS_JUMP_LAND_TICKS)
             {
                 chassis_move_control_loop->jump_phase = CHASSIS_JUMP_READYLAND;
@@ -1481,7 +1498,7 @@ extern "C"
             break;
 
         case CHASSIS_JUMP_READYLAND:
-            if ((both_touch_ground &&
+            if ((
                  chassis_move_control_loop->jump_phase_ticks >= CHASSIS_JUMP_LAND_TICKS &&
                  fabsf(chassis_move_control_loop->chassis_left_control.wbr_control.L - CHASSIS_JUMP_LAND_TARGET) < 0.02f &&
                  fabsf(chassis_move_control_loop->chassis_right_control.wbr_control.L - CHASSIS_JUMP_LAND_TARGET) < 0.02f) ||

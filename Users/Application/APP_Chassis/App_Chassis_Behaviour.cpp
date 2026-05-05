@@ -115,6 +115,8 @@ static Chassis_State_e chassis_requested_mode_to_pending_state(chassis_mode_e re
         return CHASSIS_LEG_1;
     case CHASSIS_MODE_STEP_2:
         return CHASSIS_LEG_2;
+    case CHASSIS_MODE_JUMP:
+        return CHASSIS_JUMP;
     case CHASSIS_MODE_NORMAL:
     default:
         return CHASSIS_NORMAL;
@@ -343,7 +345,7 @@ static void chassis_init_control(fp32 *vx_set, fp32 *d_yaw_set, fp32 *leg_set, C
     }
 }
 
-// 旧跳跃行为输出；当前主流程已不再走这里，先保留逻辑。
+
 static void chassis_jump_control(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set, fp32 *leg_set,
                                  Chassis_Move *chassis_move_rc_to_vector)
 {
@@ -387,6 +389,7 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
     const chassis_mode_e requested_mode = chassis_move_mode->chassis_gimbal_data->chassis_behaviour_mode;
     const bool_t step1_edge = chassis_is_request_rising_edge(chassis_move_mode, CHASSIS_MODE_STEP_1);
     const bool_t step2_edge = chassis_is_request_rising_edge(chassis_move_mode, CHASSIS_MODE_STEP_2);
+    const bool_t jump_edge = chassis_is_request_rising_edge(chassis_move_mode, CHASSIS_MODE_JUMP);
 
     if (requested_mode == CHASSIS_MODE_NO_FORCE ||
         requested_mode == CHASSIS_MODE_RESERVED)
@@ -466,6 +469,10 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
             else if (step2_edge)
             {
                 chassis_move_mode->state = CHASSIS_LEG_2;
+            }
+            else if (jump_edge)
+            {
+                chassis_move_mode->state = CHASSIS_JUMP;
             }
             break;
 
@@ -576,7 +583,9 @@ void chassis_behaviour_control_set(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set,
                                         chassis_move_rc_to_vector, CHASSIS_NORMAL_LEG_TARGET);
         }
         break;
-
+    // case CHASSIS_JUMP:
+    //     chassis_jump_control(vx_set, yaw_set, d_yaw_set, leg_set, chassis_move_rc_to_vector);
+    //     break;
     case CHASSIS_LEG_1:
         // LEG_1 同时承载普通低腿长控制和 step-up 子流程。
         if (chassis_is_step_up_active(chassis_move_rc_to_vector) &&
@@ -671,10 +680,6 @@ void chassis_behaviour_control_set(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set,
         }
         break;
 
-    // CHASSIS_JUMP is retained as legacy enum space only. STEP_UP 子流程已收敛到 LEG_1 / LEG_2 内部。
-    // case CHASSIS_JUMP:
-    //     chassis_jump_control(vx_set, yaw_set, d_yaw_set, leg_set, chassis_move_rc_to_vector);
-    //     break;
     default:
         chassis_zero_force_control(vx_set, d_yaw_set, leg_set);
         chassis_update_small_gyro_d_yaw(0, 1);
