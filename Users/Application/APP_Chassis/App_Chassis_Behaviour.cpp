@@ -457,7 +457,11 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
         switch (chassis_move_mode->state)
         {
         case CHASSIS_STOP:
-            if (requested_mode == CHASSIS_MODE_NORMAL)
+            if (jump_edge)
+            {
+                NVIC_SystemReset();
+            }
+            else if (requested_mode == CHASSIS_MODE_NORMAL)
             {
                 chassis_move_mode->pending_state = chassis_requested_mode_to_pending_state(requested_mode);
 #if CHASSIS_BYPASS_INIT_MODE

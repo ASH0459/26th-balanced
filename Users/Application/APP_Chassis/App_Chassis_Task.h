@@ -115,6 +115,8 @@
 #define CHASSIS_INIT_WHEEL_TARGET_THETA 0.20f          // INIT腿收短后，轮毂输出参考的正常站立theta
 #define CHASSIS_INIT_WHEEL_FULL_OUTPUT_THETA_ERR 0.08f // theta误差小于该值时轮毂全输出
 #define CHASSIS_INIT_WHEEL_ZERO_OUTPUT_THETA_ERR 0.60f // theta误差大于该值时轮毂不输出
+#define CHASSIS_INIT_RETRACT_TBL_SCALE 0.5f             // INIT收腿阶段Tbl缩放系数
+#define CHASSIS_INIT_RETRACT_THETA_THRESHOLD 0.2f       // INIT收腿退出theta阈值 (rad)
 
 // yaw轴跟随PID
 #define YAW_PID_KP 20.0f
@@ -136,7 +138,7 @@
 #define LEG_PID_KI 6.0f
 #define LEG_PID_KD 50000.0f
 #define LEG_PID_MAX_OUT 300.0f // 300
-#define LEG_PID_MAX_IOUT 60.0f
+#define LEG_PID_MAX_IOUT 30.0f
 
 /* 轮子相关数据 */
 // 轮子质量 KG

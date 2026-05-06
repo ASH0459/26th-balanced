@@ -823,6 +823,13 @@ extern "C"
         chassis_move_update->x_filter = chassis_move_update->chassis_vaestimatekf_xv.FilteredValue[0];
         chassis_move_update->v_filter = chassis_move_update->chassis_vaestimatekf_xv.FilteredValue[1];
 
+        // 初始化站立稳定前冻结 x_filter，防止腿部动作引起的虚假轮位移进入 LQR
+        if (chassis_move_update->state == CHASSIS_INIT &&
+            chassis_move_update->init_phase != CHASSIS_INIT_DONE)
+        {
+            chassis_move_update->x_filter = chassis_move_update->x_filter_last;
+        }
+
         // 姿态角速度更新。当前底盘 yaw 角速度固定使用 IMU 陀螺仪读数。
         chassis_move_update->chassis_d_yaw_imu =
             CHASSIS_D_YAW_IMU_SIGN *
@@ -1372,6 +1379,7 @@ extern "C"
             {
                 chassis_move_control_loop->step_up_phase = STEP_UP_RETRACT;
                 chassis_move_control_loop->step_up_phase_ticks = 0;
+                chassis_reset_leg_pid_state(chassis_move_control_loop);
             }
             break;
 
@@ -1391,6 +1399,7 @@ extern "C"
         case STEP_UP_STAND:
             chassis_move_control_loop->step_up_phase = STEP_UP_EXTEND;
             chassis_move_control_loop->step_up_phase_ticks = 0;
+            chassis_reset_leg_pid_state(chassis_move_control_loop);
             break;
 
         case STEP_UP_EXTEND:
@@ -1650,24 +1659,44 @@ extern "C"
 
         // 最终输出预处理：INIT 起身阶段可能需要先衰减轮子输出，
         // 再进入后面的统一映射策略。
-        if (chassis_move_control_loop->state == CHASSIS_INIT)
-        {
-            chassis_apply_init_wheel_theta_gate(chassis_move_control_loop);
-        }
+        // if (chassis_move_control_loop->state == CHASSIS_INIT)
+        // {
+        //     chassis_apply_init_wheel_theta_gate(chassis_move_control_loop);
+        // }
 
         switch (output_mode)
         {
         case CHASSIS_OUTPUT_MODE_RETRACT_LEG_ONLY:
         {
-            chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t = 0.0f;
-            chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t = 0.0f;
             chassis_move_control_loop->chassis_wheel[0].wheel_T = 0.0f;
             chassis_move_control_loop->chassis_wheel[1].wheel_T = 0.0f;
+
+            if (chassis_move_control_loop->state == CHASSIS_INIT &&
+                chassis_move_control_loop->init_phase == CHASSIS_INIT_RETRACT)
+            {
+                // INIT收腿时保留theta控制Tbl（类似离地），缩小系数在映射输出时乘入
+                chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t =
+                    LQR_K[2][4] * chassis_move_control_loop->chassis_left_control.theta_l +
+                    LQR_K[2][5] * chassis_move_control_loop->chassis_left_control.d_theta_l +
+                    LQR_K[2][6] * chassis_move_control_loop->chassis_right_control.theta_l +
+                    LQR_K[2][7] * chassis_move_control_loop->chassis_right_control.d_theta_l;
+                chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t =
+                    LQR_K[3][4] * chassis_move_control_loop->chassis_left_control.theta_l +
+                    LQR_K[3][5] * chassis_move_control_loop->chassis_left_control.d_theta_l +
+                    LQR_K[3][6] * chassis_move_control_loop->chassis_right_control.theta_l +
+                    LQR_K[3][7] * chassis_move_control_loop->chassis_right_control.d_theta_l;
+            }
+            else
+            {
+                chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t = 0.0f;
+                chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t = 0.0f;
+            }
+
             APPLY_WBR_JOINT_OUTPUT(chassis_move_control_loop,
                                    chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t,
-                                   0.0f,
+                                   chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t * CHASSIS_INIT_RETRACT_TBL_SCALE,
                                    chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t,
-                                   0.0f);
+                                   chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t * CHASSIS_INIT_RETRACT_TBL_SCALE);
             break;
         }
 
@@ -1900,7 +1929,9 @@ extern "C"
 
         if (chassis_init_standup->init_phase == CHASSIS_INIT_RETRACT)
         {
-            if (chassis_init_standup->chassis_left_control.wbr_control.L <= CHASSIS_INIT_RETRACT_LEG_TARGET + 0.005f &&
+            if (fabsf(chassis_init_standup->chassis_left_control.theta_l) < CHASSIS_INIT_RETRACT_THETA_THRESHOLD &&
+                fabsf(chassis_init_standup->chassis_right_control.theta_l) < CHASSIS_INIT_RETRACT_THETA_THRESHOLD &&
+                chassis_init_standup->chassis_left_control.wbr_control.L <= CHASSIS_INIT_RETRACT_LEG_TARGET + 0.005f &&
                 chassis_init_standup->chassis_right_control.wbr_control.L <= CHASSIS_INIT_RETRACT_LEG_TARGET + 0.005f)
             {
                 chassis_init_standup->init_phase = CHASSIS_INIT_STAND;
