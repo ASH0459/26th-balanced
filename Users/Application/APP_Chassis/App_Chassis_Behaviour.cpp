@@ -444,11 +444,19 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
     const bool_t step2_edge = chassis_is_request_rising_edge(chassis_move_mode, CHASSIS_MODE_STEP_2);
     const bool_t jump_edge = chassis_is_request_rising_edge(chassis_move_mode, CHASSIS_MODE_JUMP);
 
-    if (requested_mode == CHASSIS_MODE_NO_FORCE ||
-        requested_mode == CHASSIS_MODE_RESERVED)
+    if (requested_mode == CHASSIS_MODE_NO_FORCE)
     {
         chassis_move_mode->pending_state = CHASSIS_NORMAL;
         chassis_move_mode->state = CHASSIS_STOP;
+        chassis_move_mode->init_phase = CHASSIS_INIT_FOLD;
+        chassis_move_mode->jump_phase = CHASSIS_JUMP_DONE;
+        chassis_move_mode->reserved_angle_init_done = 0;
+    }
+    else if (requested_mode == CHASSIS_MODE_RESERVED)
+    {
+        // RESERVED 模式：趴地模式，不走 LQR，用 PID 控制速度和腿角度。
+        chassis_move_mode->pending_state = CHASSIS_NORMAL;
+        chassis_move_mode->state = CHASSIS_RESERVED;
         chassis_move_mode->init_phase = CHASSIS_INIT_FOLD;
         chassis_move_mode->jump_phase = CHASSIS_JUMP_DONE;
     }
@@ -515,6 +523,24 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
                 }
                 chassis_move_mode->pending_state = CHASSIS_NORMAL;
             }
+#endif
+            break;
+
+        case CHASSIS_RESERVED:
+            // 从 RESERVED 切到其他模式时，走 INIT/FLIP 流程起身。
+            chassis_move_mode->pending_state = chassis_requested_mode_to_pending_state(requested_mode);
+#if CHASSIS_BYPASS_INIT_MODE
+            if (chassis_move_mode->posture == CHASSIS_POSTURE_DOWN)
+            {
+                chassis_move_mode->state = CHASSIS_FLIP;
+            }
+            else
+            {
+                chassis_move_mode->state = chassis_sanitize_pending_state(chassis_move_mode->pending_state);
+                chassis_move_mode->pending_state = CHASSIS_NORMAL;
+            }
+#else
+            chassis_move_mode->state = (chassis_move_mode->posture == CHASSIS_POSTURE_DOWN) ? CHASSIS_FLIP : CHASSIS_INIT;
 #endif
             break;
 
@@ -589,6 +615,48 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
     }
 
     chassis_move_mode->last_request_mode = requested_mode;
+}
+
+// RESERVED 模式行为层输出：根据标志位生成速度和腿长目标，腿角度由控制循环处理。
+static void chassis_reserved_behaviour_control(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set, fp32 *leg_set,
+                                                Chassis_Move *chassis_move_rc_to_vector)
+{
+    const uint8_t flags = chassis_move_rc_to_vector->chassis_gimbal_data->reserved_flags;
+
+    // bit0/1: 前进/后退
+    fp32 target_vx = 0.0f;
+    if ((flags & 0x01U) != 0U)  // VEL_FWD
+    {
+        target_vx = CHASSIS_RESERVED_FWD_SPEED;
+    }
+    else if ((flags & 0x02U) != 0U)  // VEL_BWD
+    {
+        target_vx = -CHASSIS_RESERVED_BWD_SPEED;
+    }
+    *vx_set = target_vx;
+
+    // bit6/7: 腿长增/减，双腿同步
+    fp32 leg_offset = 0.0f;
+    if ((flags & 0x40U) != 0U)  // LEG_LEN_INC
+    {
+        leg_offset = CHASSIS_RESERVED_LEG_INC_STEP;
+    }
+    else if ((flags & 0x80U) != 0U)  // LEG_LEN_DEC
+    {
+        leg_offset = -CHASSIS_RESERVED_LEG_INC_STEP;
+    }
+
+    chassis_move_rc_to_vector->chassis_left_leg_set =
+        clamp_leg_length(chassis_move_rc_to_vector->chassis_left_leg_set + leg_offset);
+    chassis_move_rc_to_vector->chassis_right_leg_set =
+        clamp_leg_length(chassis_move_rc_to_vector->chassis_right_leg_set + leg_offset);
+
+    const fp32 avg_leg = (chassis_move_rc_to_vector->chassis_left_leg_set +
+                          chassis_move_rc_to_vector->chassis_right_leg_set) * 0.5f;
+    *leg_set = chassis_ramp_leg_target(chassis_move_rc_to_vector, avg_leg, CHASSIS_LEG_STEP_RAMP_SPEED);
+
+    *yaw_set = 0.0f;
+    *d_yaw_set = 0.0f;
 }
 
 // 根据当前 state 生成本拍行为层目标：vx_set / yaw_set / d_yaw_set / leg_set。.
@@ -683,6 +751,12 @@ void chassis_behaviour_control_set(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set,
             chassis_action_hold_control(vx_set, yaw_set, d_yaw_set, leg_set,
                                         chassis_move_rc_to_vector, CHASSIS_LEG_2_TARGET);
         }
+        break;
+
+    case CHASSIS_RESERVED:
+        chassis_update_small_gyro_d_yaw(0, 1);
+        chassis_reserved_behaviour_control(vx_set, yaw_set, d_yaw_set, leg_set,
+                                           chassis_move_rc_to_vector);
         break;
 
     default:

@@ -74,6 +74,20 @@
 #define INIT_LEG_ANGLE_PID_MAX_OUT 20.0f
 #define INIT_LEG_ANGLE_PID_MAX_IOUT 0.0f
 
+// RESERVED 模式速度 PID 参数
+#define RESERVED_VEL_PID_KP 3.0f
+#define RESERVED_VEL_PID_KI 0.001f
+#define RESERVED_VEL_PID_KD 0.0f
+#define RESERVED_VEL_PID_MAX_OUT 3.0f
+#define RESERVED_VEL_PID_MAX_IOUT 2.0f
+
+// RESERVED 模式腿角度 PID 参数
+#define RESERVED_LEG_ANGLE_PID_KP 20.0f
+#define RESERVED_LEG_ANGLE_PID_KI 0.0f
+#define RESERVED_LEG_ANGLE_PID_KD 10.0f
+#define RESERVED_LEG_ANGLE_PID_MAX_OUT 20.0f
+#define RESERVED_LEG_ANGLE_PID_MAX_IOUT 0.0f
+
 // 机体pitch角度正常水平阈值 (rad)
 #define CHASSIS_PITCH_LEVEL_THRESHOLD 0.7f
 #define CHASSIS_ROLL_LEVEL_THRESHOLD 0.7f
@@ -221,6 +235,7 @@ typedef enum
     CHASSIS_LEG_1,
     CHASSIS_LEG_2,
     CHASSIS_JUMP,
+    CHASSIS_RESERVED,
 } Chassis_State_e;
 
 /* 机体姿态 */
@@ -299,6 +314,7 @@ public:
     PidTypeDef_t leg_pid_control;           // 腿长PID
     fp32 fd_leg;                            // 腿长PID输出值
     PidTypeDef_t init_leg_angle_pid;        // 初始化收腿角度PID
+    PidTypeDef_t reserved_leg_angle_pid;    // RESERVED 模式腿角度 PID
     fp32 Fbl_gravity;                       // 重力补偿前馈
     fp32 Fbl_inertial;                      // 侧向惯性力矩补偿前馈
     fp32 Fbl_spring;                        // 腿部弹力补偿前馈
@@ -345,6 +361,7 @@ public:
     uint16_t jump_landing_cooldown_ticks = 0; // JUMP→NORMAL 后的落地保护倒计时 (ms)
     uint32_t step_up_phase_ticks = 0;
     uint16_t step_up_count = 0;
+    uint8_t reserved_angle_init_done = 0;
 
     const fp32 *chassis_INS_gyro;       // 机体角速度指针
     const fp32 *chassis_INS_angle;      // 获取陀螺仪解算出的欧拉角指针
@@ -390,6 +407,7 @@ public:
 
     PidTypeDef_t chassis_angle_pid; // 底盘跟随角度pid
     PidTypeDef_t buffer_pid;        // 缓冲能量pid
+    PidTypeDef_t reserved_vel_pid;  // RESERVED 模式速度 pid
 
     uint32_t chassis_dwt_count; // 任务时间间隔计数
     fp32 dt;                    // 任务间隔时间

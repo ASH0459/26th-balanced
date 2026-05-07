@@ -91,6 +91,17 @@
 #define CHASSIS_DIRECTION_VX_ACCEL_FAST_GAIN 10.0f
 #define CHASSIS_DIRECTION_VX_ACCEL_SLOW_GAIN 0.5f
 
+/* -------------------- RESERVED 模式标志位控制参数 -------------------- */
+// 标志位为 1 时的前进/后退目标速度 (m/s)。
+#define CHASSIS_RESERVED_FWD_SPEED 1.0f
+#define CHASSIS_RESERVED_BWD_SPEED 1.0f
+
+// 腿长每控制周期增减量 (m)，约 0.25 m/s @ 50 Hz。
+#define CHASSIS_RESERVED_LEG_INC_STEP 0.002f
+
+// 腿角度斜坡速率 (rad/s)，复用 INIT 级别。
+#define CHASSIS_RESERVED_LEG_ANGLE_SPEED 1.0f
+
 /* -------------------- 兼容保留（当前代码未引用） -------------------- */
 // 以下参数在当前控制链路中未被代码直接使用，保留用于旧逻辑兼容或后续扩展。
 

@@ -329,6 +329,7 @@ public:
     uint8_t protocol_valid;
     Fric_State_e fric_state;
     chassis_mode_e chassis_behaviour_mode;
+    uint8_t reserved_flags;
 
     /**
      * @brief          获取云台对象指针
@@ -436,6 +437,18 @@ inline void CAN_cmd_gimbal_receive(const uint8_t *received_data)
     gimbal_data.chassis_behaviour_mode =
         mode_valid ? static_cast<chassis_mode_e>(frame.mode) : CHASSIS_MODE_NO_FORCE;
     gimbal_data.fric_state = fric_state;
+
+    // RESERVED 模式：v_set 字段为标志位字节，速度和转向由行为层根据标志位生成。
+    if (gimbal_data.chassis_behaviour_mode == CHASSIS_MODE_RESERVED)
+    {
+        gimbal_data.reserved_flags = received_data[0];
+        gimbal_data.v_tmp = 0.0f;
+        gimbal_data.yaw_set = 0.0f;
+    }
+    else
+    {
+        gimbal_data.reserved_flags = 0U;
+    }
 
     if (gimbal_data.protocol_valid == 0U)
     {
