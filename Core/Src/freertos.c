@@ -104,7 +104,7 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* 创建检测任务 */
-  // xTaskCreate(Detect_Task, "Detect_Task", 512, NULL, osPriorityNormal, NULL);
+  xTaskCreate(Detect_Task, "Detect_Task", 512, NULL, osPriorityNormal, NULL);
 
   /* 创建底盘任务 */
   xTaskCreate(Chassis_Task, "Chassis_Task", 2048, NULL, osPriorityHigh, NULL);
@@ -116,7 +116,7 @@ void MX_FREERTOS_Init(void) {
   // xTaskCreate(Calibrate_Task, "Calibrate_Task", 512, NULL, osPriorityNormal, NULL);
 
   /* 创建LED闪烁任务done */
-  // xTaskCreate(led_RGB_flow_task, "LED_RGB_Flow_Task", 256, NULL, osPriorityNormal, NULL);
+  xTaskCreate(led_RGB_flow_task, "LED_RGB_Flow_Task", 256, NULL, osPriorityNormal, NULL);
 
   /* 创建蜂鸣器报警任务done */
   xTaskCreate(buzzer_task, "Buzzer_Task", 128, NULL, osPriorityNormal, NULL);
