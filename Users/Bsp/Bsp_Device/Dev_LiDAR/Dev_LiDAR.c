@@ -1,19 +1,16 @@
 /**
   ****************************(C) COPYRIGHT 2025 Robot_Z ****************************
   * @file       Dev_LiDAR.c
-  * @brief      STP-23激光雷达设备驱动
+  * @brief      STP-23 / STP-23L 激光雷达设备驱动
   * @note       Device Layer
   * @history
   *  Version    Date            Author          Modification
   *  V1.0.0     Mar-05-2026                      1. done
+  *  V2.0.0     May-07-2026                      2. 新增STP-23L支持，双协议切换
   *
   @verbatim
   ==============================================================================
-  * STP-23激光雷达协议：
-  *   帧格式：Header(0x54) + VerLen(0x2C) + Temp(2B) + StartAngle(2B)
-  *           + 12×(Distance(2B)+Intensity(1B)) + EndAngle(2B) + Timestamp(2B) + CRC8
-  *   波特率：921600
-  *   每帧47字节
+  * 修改 Dev_LiDAR.h 中的 LIDAR_TYPE_SELECT 宏即可切换雷达型号
   ==============================================================================
   @endverbatim
   ****************************(C) COPYRIGHT 2025 Robot_Z ****************************
@@ -21,7 +18,21 @@
 #include "Dev_LiDAR.h"
 #include <string.h>
 
-/* CRC8 查表，用于STP-23激光雷达数据校验 */
+/*============================================================================
+ *  公共变量
+ *============================================================================*/
+uint16_t lidar_distance = 0;               // 雷达计算后的距离值 (mm)
+uint16_t lidar_receive_cnt = 0;            // 雷达接收正确帧计数
+__attribute__((section(".ram_d2"), aligned(4))) uint8_t lidar_rx_buf[LIDAR_RX_BUF_SIZE];
+
+/*============================================================================
+ *  STP-23 驱动
+ *============================================================================*/
+#if (LIDAR_TYPE_SELECT == LIDAR_TYPE_STP23)
+
+LiDARFrameTypeDef LiDAR_Data;
+
+/* CRC8 查表 */
 static const uint8_t CrcTable[256] = {
     0x00, 0x4d, 0x9a, 0xd7, 0x79, 0x34, 0xe3,
     0xae, 0xf2, 0xbf, 0x68, 0x25, 0x8b, 0xc6, 0x11, 0x5c, 0xa9, 0xe4, 0x33,
@@ -47,143 +58,232 @@ static const uint8_t CrcTable[256] = {
     0x5a, 0x06, 0x4b, 0x9c, 0xd1, 0x7f, 0x32, 0xe5, 0xa8
 };
 
-/* 激光雷达全局变量 */
-LiDARFrameTypeDef LiDAR_Data;              // 雷达帧数据
-uint16_t lidar_distance = 0;               // 雷达计算后的距离值 (mm)
-uint16_t lidar_receive_cnt = 0;            // 雷达接收正确帧计数
-__attribute__((section(".ram_d2"), aligned(4))) uint8_t lidar_rx_buf[LIDAR_RX_BUF_SIZE];
-
-/**
-  * @brief  激光雷达初始化，开启串口1 DMA不定长接收
-  *         本函数将会在FreeRTOS中的初始化环节被调用
-  */
-void LiDAR_Init(void)
-{
-    /* 串口不定长接收+DMA初始化 */
-    HAL_UARTEx_ReceiveToIdle_DMA(&huart1, lidar_rx_buf, LIDAR_RX_BUF_SIZE);
-}
-
-/**
-  * @brief  CRC8校验计算
-  * @param  data: 数据指针
-  * @param  len:  数据长度
-  * @retval CRC8校验值
-  */
 static uint8_t lidar_crc8_calc(uint8_t *data, uint16_t len)
 {
     uint8_t crc = 0;
     for (uint16_t i = 0; i < len; i++)
-    {
         crc = CrcTable[(crc ^ data[i]) & 0xff];
-    }
     return crc;
 }
 
-/**
-  * @brief  激光雷达数据处理函数，每100帧计算一次平均距离
-  */
 static void lidar_data_process(void)
 {
-    static uint8_t frame_cnt = 0;
-    static uint16_t valid_count = 0;
-    static uint32_t sum = 0;
+    uint16_t valid_count = 0;
+    uint32_t sum = 0;
 
     for (uint8_t i = 0; i < LIDAR_POINT_NUM; i++)
     {
-        if (LiDAR_Data.point[i].distance != 0) // 去除距离为0的无效点
+        if (LiDAR_Data.point[i].distance != 0)
         {
             valid_count++;
             sum += LiDAR_Data.point[i].distance;
         }
     }
 
-    if (++frame_cnt >= 100) // 每100帧计算一次平均距离
-    {
-        if (valid_count > 0)
-        {
-            lidar_distance = sum / valid_count;
-        }
-        sum = 0;
-        valid_count = 0;
-        frame_cnt = 0;
-    }
+    if (valid_count > 0)
+        lidar_distance = sum / valid_count;
 }
 
-/**
-  * @brief  从DMA接收缓冲区中解析激光雷达帧
-  *         在缓冲区中搜索帧头，找到完整帧后进行CRC校验和数据处理
-  * @param  data: DMA接收缓冲区指针
-  * @param  len:  本次接收到的数据长度
-  */
 static void lidar_parse_buffer(uint8_t *data, uint16_t len)
 {
     uint16_t i = 0;
-
     while (i + LIDAR_FRAME_LEN <= len)
     {
-        // 搜索帧头
         if (data[i] == LIDAR_HEADER && data[i + 1] == LIDAR_VERLEN)
         {
-            // 校验CRC8（前46字节计算CRC，第47字节为CRC值）
             uint8_t crc = lidar_crc8_calc(&data[i], LIDAR_FRAME_LEN - 1);
-
             if (crc == data[i + LIDAR_FRAME_LEN - 1])
             {
-                // CRC校验通过，解析帧数据
                 uint8_t *p = &data[i];
-
                 LiDAR_Data.header      = p[0];
                 LiDAR_Data.ver_len     = p[1];
                 LiDAR_Data.temperature = (uint16_t)p[2] | ((uint16_t)p[3] << 8);
                 LiDAR_Data.start_angle = (uint16_t)p[4] | ((uint16_t)p[5] << 8);
-
                 for (uint8_t j = 0; j < LIDAR_POINT_NUM; j++)
                 {
                     uint8_t offset = 6 + j * 3;
                     LiDAR_Data.point[j].distance  = (uint16_t)p[offset] | ((uint16_t)p[offset + 1] << 8);
                     LiDAR_Data.point[j].intensity  = p[offset + 2];
                 }
-
                 LiDAR_Data.end_angle  = (uint16_t)p[42] | ((uint16_t)p[43] << 8);
                 LiDAR_Data.timestamp  = (uint16_t)p[44] | ((uint16_t)p[45] << 8);
                 LiDAR_Data.crc8       = p[46];
 
                 lidar_data_process();
                 lidar_receive_cnt++;
-
-                i += LIDAR_FRAME_LEN; // 跳过已解析的帧
+                i += LIDAR_FRAME_LEN;
             }
             else
             {
-                i++; // CRC失败，后移一字节继续搜索
+                i++;
             }
         }
         else
         {
-            i++; // 非帧头，后移一字节
+            i++;
         }
     }
 }
 
+/*============================================================================
+ *  STP-23L 驱动
+ *============================================================================*/
+#elif (LIDAR_TYPE_SELECT == LIDAR_TYPE_STP23L)
+
+LiDAR23LFrameTypeDef LiDAR23L_Data;
+
+static uint8_t lidar23l_crc_calc(uint8_t *data, uint16_t len)
+{
+    uint8_t crc = 0;
+    for (uint16_t i = 0; i < len; i++)
+        crc += data[i];
+    return crc;
+}
+
+static void lidar23l_data_process(void)
+{
+    uint16_t valid_count = 0;
+    uint32_t sum = 0;
+
+    for (uint8_t i = 0; i < LIDAR23L_POINT_NUM; i++)
+    {
+        if (LiDAR23L_Data.point[i].distance != 0)
+        {
+            valid_count++;
+            sum += LiDAR23L_Data.point[i].distance;
+        }
+    }
+
+    if (valid_count > 0)
+        lidar_distance = sum / valid_count;
+}
+
 /**
-  * @brief  串口1激光雷达DMA不定长接收中断服务函数
-  *         将在HAL_UARTEx_RxEventCallback中被调用，参考UART10裁判系统写法
-  * @param  huart: 串口句柄
-  * @param  Size:  本次接收到的数据长度
+  * @brief  在DMA缓冲区中查找连续4个0xAA的帧头位置
+  * @param  data: 缓冲区指针
+  * @param  len:  缓冲区长度
+  * @retval 帧头起始索引，未找到返回 -1
   */
+static int16_t lidar23l_find_header(uint8_t *data, uint16_t len)
+{
+    for (uint16_t i = 0; i + 3 < len; i++)
+    {
+        if (data[i] == 0xAA && data[i + 1] == 0xAA &&
+            data[i + 2] == 0xAA && data[i + 3] == 0xAA)
+        {
+            return (int16_t)i;
+        }
+    }
+    return -1;
+}
+
+/**
+  * @brief  从DMA缓冲区中解析STP-23L帧
+  *         帧格式：4×0xAA + DevAddr + Cmd + ChunkOff(2B) + DataLen(2B)
+  *               + 12×(Dist(2B)+Noise(2B)+Peak(4B)+Conf(1B)+Intg(4B)+Reftof(2B))
+  *               + Timestamp(4B) + CRC(1B)
+  *         总计195字节，CRC为前面所有字节累加和
+  */
+static void lidar23l_parse_buffer(uint8_t *data, uint16_t len)
+{
+    uint16_t pos = 0;
+
+    while (pos + LIDAR23L_FRAME_LEN <= len)
+    {
+        int16_t hdr = lidar23l_find_header(&data[pos], len - pos);
+        if (hdr < 0)
+            break;
+
+        pos += (uint16_t)hdr;
+
+        if (pos + LIDAR23L_FRAME_LEN > len)
+            break;
+
+        uint8_t *p = &data[pos];
+
+        /* 校验：从device_addr到timestamp末尾（索引4~193）累加和 == 索引194 */
+        uint8_t crc = lidar23l_crc_calc(&p[4], LIDAR23L_FRAME_LEN - 1 - 4);
+        if (crc == p[LIDAR23L_FRAME_LEN - 1])
+        {
+            /* 解析帧头 */
+            LiDAR23L_Data.header[0]    = p[0];
+            LiDAR23L_Data.header[1]    = p[1];
+            LiDAR23L_Data.header[2]    = p[2];
+            LiDAR23L_Data.header[3]    = p[3];
+            LiDAR23L_Data.device_addr  = p[4];
+            LiDAR23L_Data.command      = p[5];
+            LiDAR23L_Data.chunk_offset = (uint16_t)p[6] | ((uint16_t)p[7] << 8);
+            LiDAR23L_Data.data_len     = (uint16_t)p[8] | ((uint16_t)p[9] << 8);
+
+            /* 解析12个测量点，每点15字节 */
+            for (uint8_t i = 0; i < LIDAR23L_POINT_NUM; i++)
+            {
+                uint16_t offset = 10 + i * 15;
+                LiDAR23L_Data.point[i].distance   = (uint16_t)p[offset]      | ((uint16_t)p[offset + 1] << 8);
+                LiDAR23L_Data.point[i].noise       = (uint16_t)p[offset + 2] | ((uint16_t)p[offset + 3] << 8);
+                LiDAR23L_Data.point[i].peak        = (uint32_t)p[offset + 4] | ((uint32_t)p[offset + 5] << 8)
+                                                    | ((uint32_t)p[offset + 6] << 16) | ((uint32_t)p[offset + 7] << 24);
+                LiDAR23L_Data.point[i].confidence  = p[offset + 8];
+                LiDAR23L_Data.point[i].intg        = (uint32_t)p[offset + 9]  | ((uint32_t)p[offset + 10] << 8)
+                                                    | ((uint32_t)p[offset + 11] << 16) | ((uint32_t)p[offset + 12] << 24);
+                LiDAR23L_Data.point[i].reftof      = (int16_t)((uint16_t)p[offset + 13] | ((uint16_t)p[offset + 14] << 8));
+            }
+
+            /* 解析时间戳 */
+            uint16_t ts_offset = 10 + LIDAR23L_DATA_LEN;  /* 190 */
+            LiDAR23L_Data.timestamp = (uint32_t)p[ts_offset]     | ((uint32_t)p[ts_offset + 1] << 8)
+                                    | ((uint32_t)p[ts_offset + 2] << 16) | ((uint32_t)p[ts_offset + 3] << 24);
+            LiDAR23L_Data.crc = p[LIDAR23L_FRAME_LEN - 1];
+
+            lidar23l_data_process();
+            lidar_receive_cnt++;
+
+            pos += LIDAR23L_FRAME_LEN;
+        }
+        else
+        {
+            /* CRC失败，跳过这个假帧头，从下一字节继续 */
+            pos++;
+        }
+    }
+}
+
+#endif /* LIDAR_TYPE_SELECT */
+
+/*============================================================================
+ *  公共接口实现
+ *============================================================================*/
+
+void LiDAR_Init(void)
+{
+    HAL_UARTEx_ReceiveToIdle_DMA(&huart1, lidar_rx_buf, LIDAR_RX_BUF_SIZE);
+}
+
+uint16_t LiDAR_Get_Distance(void)
+{
+    return lidar_distance;
+}
+
+uint16_t LiDAR_Get_Receive_Count(void)
+{
+    return lidar_receive_cnt;
+}
+
 void USART1_LiDAR_ISR_Handler(UART_HandleTypeDef *huart, uint16_t Size)
 {
     if (huart->Instance == USART1)
     {
-        static uint16_t this_time_rx_len = 0;
-        this_time_rx_len = LIDAR_RX_BUF_SIZE - __HAL_DMA_GET_COUNTER(huart1.hdmarx);
+        uint16_t this_time_rx_len = LIDAR_RX_BUF_SIZE - __HAL_DMA_GET_COUNTER(huart1.hdmarx);
 
         if (Size <= LIDAR_RX_BUF_SIZE)
         {
             HAL_UARTEx_ReceiveToIdle_DMA(&huart1, lidar_rx_buf, LIDAR_RX_BUF_SIZE);
 
-            // 解析DMA缓冲区数据
+#if (LIDAR_TYPE_SELECT == LIDAR_TYPE_STP23)
             lidar_parse_buffer(lidar_rx_buf, this_time_rx_len);
+#elif (LIDAR_TYPE_SELECT == LIDAR_TYPE_STP23L)
+            lidar23l_parse_buffer(lidar_rx_buf, this_time_rx_len);
+#endif
         }
         else
         {
@@ -193,13 +293,6 @@ void USART1_LiDAR_ISR_Handler(UART_HandleTypeDef *huart, uint16_t Size)
     }
 }
 
-
-/**
-  * @brief          串口中断错误处理函数
-  *                 将在HAL_UART_ErrorCallback串口1的中断错误回调函数中被调用
-  * @param[in]      none
-  * @retval         none
-  */
 void UART1_Error_Handler(void)
 {
     __HAL_UNLOCK(&huart1);

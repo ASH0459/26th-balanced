@@ -38,28 +38,6 @@ extern UART_HandleTypeDef huart10;
 
 /* USER CODE BEGIN Private defines */
 
-/* STP-23 激光雷达协议定义 */
-#define LIDAR_HEADER        0x54
-#define LIDAR_VERLEN        0x2C
-#define LIDAR_POINT_NUM     12
-#define LIDAR_FRAME_LEN     47
-
-typedef struct {
-    uint16_t distance;
-    uint8_t  intensity;
-} LiDARPointTypeDef;
-
-typedef struct {
-    uint8_t  header;
-    uint8_t  ver_len;
-    uint16_t temperature;
-    uint16_t start_angle;
-    LiDARPointTypeDef point[LIDAR_POINT_NUM];
-    uint16_t end_angle;
-    uint16_t timestamp;
-    uint8_t  crc8;
-} LiDARFrameTypeDef;
-
 /* USER CODE END Private defines */
 
 void MX_USART1_UART_Init(void);
