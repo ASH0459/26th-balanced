@@ -119,7 +119,7 @@
 #define STEP_UP_STAND_D_THETA_TOL 1.5f       // STAND阶段 d_theta 稳定阈值 (rad/s)
 #define STEP_UP_STAND_STABLE_TICKS 500U      // 第一级STAND延时 (ticks @ 1kHz)
 #define STEP_UP_STAND_2ND_TICKS 100U         // 第二级STAND延时 (ticks @ 1kHz)
-#define STEP_UP_CONTACT_TBL_SCALE 0.15f       // CONTACT阶段Tbl_t缩放系数
+#define STEP_UP_CONTACT_TBL_SCALE 0.1f       // CONTACT阶段Tbl_t缩放系数
 #define STEP_UP_CONTACT_REVERSE_WHEEL_T 0.5f // CONTACT阶段反向轮力矩 (Nm)，防止前滑
 #define STEP_UP_EXTEND_LEG_TARGET CHASSIS_LEG_1_TARGET // 上台阶第二级伸腿目标
 
@@ -154,9 +154,9 @@
 
 #define CHASSIS_X_BACK 0.0f
 // 左右腿长度PID
-#define LEG_PID_KP 2000.0f
+#define LEG_PID_KP 2500.0f
 #define LEG_PID_KI 6.0f
-#define LEG_PID_KD 50000.0f
+#define LEG_PID_KD 20000.0f
 #define LEG_PID_MAX_OUT 300.0f // 300
 #define LEG_PID_MAX_IOUT 30.0f
 
