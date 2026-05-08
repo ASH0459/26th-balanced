@@ -1585,12 +1585,21 @@ extern "C"
                 chassis_move_control_loop->chassis_left_control.wbr_control.L <= STEP_UP_RETRACT_DONE_L &&
                 chassis_move_control_loop->chassis_right_control.wbr_control.L <= STEP_UP_RETRACT_DONE_L)
             {
-                chassis_move_control_loop->step_up_phase = STEP_UP_STAND;
-                chassis_move_control_loop->step_up_phase_ticks = 0;
-                chassis_move_control_loop->chassis_leg_set = CHASSIS_NORMAL_LEG_TARGET;
-                chassis_move_control_loop->chassis_leg_filter_set.out = CHASSIS_NORMAL_LEG_TARGET;
-                chassis_reset_leg_pid_state(chassis_move_control_loop);
-                chassis_move_control_loop->posture_stable_ticks = 0;
+                chassis_move_control_loop->step_up_count++;
+                if (chassis_move_control_loop->step_up_count >= STEP_UP_REQUIRED_COUNT)
+                {
+                    chassis_move_control_loop->step_up_phase = STEP_UP_DONE;
+                    chassis_move_control_loop->pending_state = CHASSIS_NORMAL;
+                }
+                else
+                {
+                    chassis_move_control_loop->step_up_phase = STEP_UP_STAND;
+                    chassis_move_control_loop->step_up_phase_ticks = 0;
+                    chassis_move_control_loop->chassis_leg_set = CHASSIS_NORMAL_LEG_TARGET;
+                    chassis_move_control_loop->chassis_leg_filter_set.out = CHASSIS_NORMAL_LEG_TARGET;
+                    chassis_reset_leg_pid_state(chassis_move_control_loop);
+                    chassis_move_control_loop->posture_stable_ticks = 0;
+                }
             }
             break;
 
@@ -1633,17 +1642,8 @@ extern "C"
             if (fabsf(chassis_move_control_loop->chassis_left_control.wbr_control.L - STEP_UP_EXTEND_LEG_TARGET) < STEP_UP_EXTEND_DONE_TOL &&
                 fabsf(chassis_move_control_loop->chassis_right_control.wbr_control.L - STEP_UP_EXTEND_LEG_TARGET) < STEP_UP_EXTEND_DONE_TOL)
             {
-                chassis_move_control_loop->step_up_count++;
-                if (chassis_move_control_loop->step_up_count >= STEP_UP_REQUIRED_COUNT)
-                {
-                    chassis_move_control_loop->step_up_phase = STEP_UP_DONE;
-                    chassis_move_control_loop->pending_state = CHASSIS_NORMAL;
-                }
-                else
-                {
-                    chassis_move_control_loop->step_up_phase = STEP_UP_DETECT;
-                    chassis_move_control_loop->step_up_phase_ticks = 0;
-                }
+                chassis_move_control_loop->step_up_phase = STEP_UP_DETECT;
+                chassis_move_control_loop->step_up_phase_ticks = 0;
             }
             break;
 
