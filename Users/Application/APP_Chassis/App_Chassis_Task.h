@@ -104,7 +104,7 @@
 #define CHASSIS_POSTURE_STABLE_TICKS 50U
 
 // 上台阶检测与流程参数
-#define STEP_UP_ANGLE_THRESHOLD -0.6f         // |theta_l| 第一级撞台阶角度阈值 (rad)
+#define STEP_UP_ANGLE_THRESHOLD -0.6f         // |theta_l| 第一级撞台阶角度阈值 (rad).
 #define STEP_UP_TORQUE_THRESHOLD 5.0f        // |Tbl_r| 第一级反向力矩阈值 (Nm)
 #define STEP_UP_ANGLE_THRESHOLD_2ND -0.4f    // |theta_l| 第二级撞台阶角度阈值 (rad)
 #define STEP_UP_TORQUE_THRESHOLD_2ND 3.0f    // |Tbl_r| 第二级反向力矩阈值 (Nm)
