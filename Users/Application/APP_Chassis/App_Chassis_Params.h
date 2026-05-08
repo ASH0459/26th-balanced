@@ -96,8 +96,11 @@
 #define CHASSIS_RESERVED_FWD_SPEED 1.0f
 #define CHASSIS_RESERVED_BWD_SPEED 1.0f
 
-// 腿长每控制周期增减量 (m)，约 0.25 m/s @ 50 Hz。
+// 腿长每控制周期增减量 (m)。
 #define CHASSIS_RESERVED_LEG_INC_STEP 0.002f
+
+// 差速转向角速度 (rad/s)。
+#define CHASSIS_RESERVED_TURN_SPEED 1.0f
 
 // 腿角度斜坡速率 (rad/s)，复用 INIT 级别。
 #define CHASSIS_RESERVED_LEG_ANGLE_SPEED 1.0f

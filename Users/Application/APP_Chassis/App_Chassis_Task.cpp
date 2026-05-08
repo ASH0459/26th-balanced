@@ -812,7 +812,7 @@ extern "C"
 
             chassis_move_control->chassis_v_set = chassis_v_set;
             chassis_move_control->chassis_x_set = chassis_move_control->x_filter;
-            chassis_move_control->chassis_d_yaw_set = 0.0f;
+            chassis_move_control->chassis_d_yaw_set = chassis_d_yaw_set;  // turn 值从行为层传入
             chassis_move_control->chassis_yaw_set = chassis_move_control->chassis_yaw;
             chassis_move_control->chassis_yaw_err = 0.0f;
             chassis_move_control->chassis_leg_set = chassis_leg_set;
@@ -1283,15 +1283,16 @@ extern "C"
         chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t = 0.0f;
         chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t = 0.0f;
 
-        // ---- 速度 PID → wheel_T ----
+        // ---- 速度 PID → wheel_T（差速转向）----
         const fp32 v_set = chassis_move_control_loop->chassis_v_set;
         const fp32 v_filter = chassis_move_control_loop->v_filter;
         const fp32 wheel_force = PID_Calc(&chassis_move_control_loop->reserved_vel_pid, v_filter, v_set);
-        chassis_move_control_loop->chassis_wheel[0].wheel_T = wheel_force;
-        chassis_move_control_loop->chassis_wheel[1].wheel_T = wheel_force;
+        const fp32 turn = chassis_move_control_loop->chassis_d_yaw_set;
+        chassis_move_control_loop->chassis_wheel[0].wheel_T = wheel_force + turn;  // 左轮
+        chassis_move_control_loop->chassis_wheel[1].wheel_T = wheel_force - turn;  // 右轮
 
         // ---- 腿角度 PID（复用 INIT/FLIP 机制）----
-        const uint8_t flags = chassis_move_control_loop->chassis_gimbal_data->reserved_flags;
+        const uint8_t hi_flags = static_cast<uint8_t>(chassis_move_control_loop->chassis_gimbal_data->reserved_flags >> 8);
         const fp32 rotate_speed = CHASSIS_RESERVED_LEG_ANGLE_SPEED;
 
         fp32 left_theta_raw = chassis_move_control_loop->chassis_left_control.theta_l;
@@ -1301,23 +1302,23 @@ extern "C"
         const fp32 left_d_theta_ctrl = chassis_move_control_loop->chassis_left_control.d_theta_l_ctrl;
         const fp32 right_d_theta_ctrl = chassis_move_control_loop->chassis_right_control.d_theta_l_ctrl;
 
-        // bit2/3: 左腿方向，bit4/5: 右腿方向
+        // 高字节 bit2/3: 左腿方向，bit4/5: 右腿方向
         fp32 left_dir = 0.0f;
-        if ((flags & 0x04U) != 0U)       // L_LEG_FWD
+        if ((hi_flags & 0x04U) != 0U)
         {
             left_dir = -1.0f;
         }
-        else if ((flags & 0x08U) != 0U)  // L_LEG_BWD
+        else if ((hi_flags & 0x08U) != 0U)
         {
             left_dir = 1.0f;
         }
 
         fp32 right_dir = 0.0f;
-        if ((flags & 0x10U) != 0U)       // R_LEG_FWD
+        if ((hi_flags & 0x10U) != 0U)
         {
             right_dir = -1.0f;
         }
-        else if ((flags & 0x20U) != 0U)  // R_LEG_BWD
+        else if ((hi_flags & 0x20U) != 0U)
         {
             right_dir = 1.0f;
         }
@@ -1369,10 +1370,12 @@ extern "C"
         const fp32 left_spring = Get_FeedForward_Force(left_L);
         const fp32 right_spring = Get_FeedForward_Force(right_L);
 
-        const fp32 leg_extend_target =
-            float_constrain(chassis_move_control_loop->chassis_leg_set, CHASSIS_LEG_MIN, CHASSIS_LEG_MAX);
-        const fp32 left_fd_leg = Leg_PID_Calc(&chassis_move_control_loop->chassis_left_control.leg_pid_control, left_L, leg_extend_target);
-        const fp32 right_fd_leg = Leg_PID_Calc(&chassis_move_control_loop->chassis_right_control.leg_pid_control, right_L, leg_extend_target);
+        const fp32 left_leg_target =
+            float_constrain(chassis_move_control_loop->chassis_left_leg_set, CHASSIS_LEG_MIN, CHASSIS_LEG_MAX);
+        const fp32 right_leg_target =
+            float_constrain(chassis_move_control_loop->chassis_right_leg_set, CHASSIS_LEG_MIN, CHASSIS_LEG_MAX);
+        const fp32 left_fd_leg = Leg_PID_Calc(&chassis_move_control_loop->chassis_left_control.leg_pid_control, left_L, left_leg_target);
+        const fp32 right_fd_leg = Leg_PID_Calc(&chassis_move_control_loop->chassis_right_control.leg_pid_control, right_L, right_leg_target);
 
         // Fbl_t = -腿长PID + 弹簧
         chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t = -left_fd_leg + left_spring;
