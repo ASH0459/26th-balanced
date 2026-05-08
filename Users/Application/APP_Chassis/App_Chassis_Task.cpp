@@ -1559,8 +1559,8 @@ extern "C"
                 const fp32 right_theta = chassis_move_control_loop->chassis_right_control.theta_l;
                 const fp32 right_Tbl_r = chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_r;
 
-                if ((left_theta <= angle_threshold && left_Tbl_r >= torque_threshold) ||
-                    (right_theta <= angle_threshold && right_Tbl_r >= torque_threshold))
+                if ((left_theta <= angle_threshold && fabs(left_Tbl_r) >= torque_threshold) ||
+                    (right_theta <= angle_threshold && fabs(right_Tbl_r) >= torque_threshold))
                 {
                     chassis_move_control_loop->step_up_phase = STEP_UP_CONTACT;
                     chassis_move_control_loop->step_up_phase_ticks = 0;

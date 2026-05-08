@@ -99,19 +99,19 @@
 #define CHASSIS_JUMP_TAKEOFF_TARGET 0.35f
 #define CHASSIS_JUMP_AIRBORNE_TARGET 0.16f
 #define CHASSIS_JUMP_LAND_TARGET CHASSIS_JUMP_AIRBORNE_TARGET
-#define CHASSIS_JUMP_TAKEOFF_FORCE_BONUS 300.0f
+#define CHASSIS_JUMP_TAKEOFF_FORCE_BONUS 200.0f
 #define CHASSIS_JUMP_LAND_TICKS 400U
 #define CHASSIS_POSTURE_STABLE_TICKS 50U
 
 // 上台阶检测与流程参数
 #define STEP_UP_ANGLE_THRESHOLD -0.5f         // |theta_l| 第一级撞台阶角度阈值 (rad)
-#define STEP_UP_TORQUE_THRESHOLD 4.0f        // |Tbl_r| 第一级反向力矩阈值 (Nm)
-#define STEP_UP_ANGLE_THRESHOLD_2ND -0.1f    // |theta_l| 第二级撞台阶角度阈值 (rad)
-#define STEP_UP_TORQUE_THRESHOLD_2ND 0.5f    // |Tbl_r| 第二级反向力矩阈值 (Nm)
+#define STEP_UP_TORQUE_THRESHOLD 5.0f        // |Tbl_r| 第一级反向力矩阈值 (Nm)
+#define STEP_UP_ANGLE_THRESHOLD_2ND -0.4f    // |theta_l| 第二级撞台阶角度阈值 (rad)
+#define STEP_UP_TORQUE_THRESHOLD_2ND 2.5f    // |Tbl_r| 第二级反向力矩阈值 (Nm)
 #define STEP_UP_LEG_SWING_TARGET (-0.6f)     // 撞台阶后 theta 被动摆到的目标角度 (rad)
 #define STEP_UP_CONTACT_MIN_TICKS 100U       // 进入CONTACT后强制等待时长 (ticks @ 1kHz = 300ms)
 #define STEP_UP_RETRACT_DONE_L 0.170f        // 收腿到位腿长阈值 (m)
-#define STEP_UP_RETRACT_TBL_L_THRESHOLD 0.18f // 收腿阶段Tbl启用腿长阈值 (m)
+#define STEP_UP_RETRACT_TBL_L_THRESHOLD 0.25f // 收腿阶段Tbl启用腿长阈值 (m)
 #define STEP_UP_RETRACT_THETA_THRESHOLD 0.15f // 收腿退出theta阈值 (rad)，参考INIT_RETRACT
 #define STEP_UP_EXTEND_DONE_TOL 0.005f       // 伸腿到位腿长误差阈值 (m)
 #define STEP_UP_REQUIRED_COUNT 2U            // 完成上台阶需要的撞击次数
