@@ -1543,24 +1543,31 @@ extern "C"
 
         chassis_move_control_loop->step_up_phase_ticks++;
 
+        // step_enable 关闭时，立即退出上台阶流程
+        if (chassis_move_control_loop->step_up_phase != STEP_UP_DETECT &&
+            chassis_move_control_loop->step_up_phase != STEP_UP_DETECT_2ND &&
+            chassis_move_control_loop->step_up_phase != STEP_UP_DONE &&
+            (!chassis_move_control_loop->chassis_gimbal_data->protocol_valid ||
+             !chassis_move_control_loop->chassis_gimbal_data->step_enable))
+        {
+            chassis_reset_step_up_state(chassis_move_control_loop);
+            return;
+        }
+
         switch (chassis_move_control_loop->step_up_phase)
         {
+        // ============ 第一级台阶 ============
         case STEP_UP_DETECT:
             if (chassis_move_control_loop->chassis_gimbal_data->protocol_valid &&
                 chassis_move_control_loop->chassis_gimbal_data->step_enable)
             {
-                const fp32 angle_threshold = (chassis_move_control_loop->step_up_count == 0)
-                    ? STEP_UP_ANGLE_THRESHOLD : STEP_UP_ANGLE_THRESHOLD_2ND;
-                const fp32 torque_threshold = (chassis_move_control_loop->step_up_count == 0)
-                    ? STEP_UP_TORQUE_THRESHOLD : STEP_UP_TORQUE_THRESHOLD_2ND;
-
                 const fp32 left_theta  = chassis_move_control_loop->chassis_left_control.theta_l;
                 const fp32 left_Tbl_r  = chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_r;
                 const fp32 right_theta = chassis_move_control_loop->chassis_right_control.theta_l;
                 const fp32 right_Tbl_r = chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_r;
 
-                if ((left_theta <= angle_threshold && fabs(left_Tbl_r) >= torque_threshold) ||
-                    (right_theta <= angle_threshold && fabs(right_Tbl_r) >= torque_threshold))
+                if ((left_theta <= STEP_UP_ANGLE_THRESHOLD && fabs(left_Tbl_r) >= STEP_UP_TORQUE_THRESHOLD) ||
+                    (right_theta <= STEP_UP_ANGLE_THRESHOLD && fabs(right_Tbl_r) >= STEP_UP_TORQUE_THRESHOLD))
                 {
                     chassis_move_control_loop->step_up_phase = STEP_UP_CONTACT;
                     chassis_move_control_loop->step_up_phase_ticks = 0;
@@ -1585,25 +1592,89 @@ extern "C"
                 chassis_move_control_loop->chassis_left_control.wbr_control.L <= STEP_UP_RETRACT_DONE_L &&
                 chassis_move_control_loop->chassis_right_control.wbr_control.L <= STEP_UP_RETRACT_DONE_L)
             {
-                chassis_move_control_loop->step_up_count++;
-                if (chassis_move_control_loop->step_up_count >= STEP_UP_REQUIRED_COUNT)
-                {
-                    chassis_move_control_loop->step_up_phase = STEP_UP_DONE;
-                    chassis_move_control_loop->pending_state = CHASSIS_NORMAL;
-                }
-                else
-                {
-                    chassis_move_control_loop->step_up_phase = STEP_UP_STAND;
-                    chassis_move_control_loop->step_up_phase_ticks = 0;
-                    chassis_move_control_loop->chassis_leg_set = CHASSIS_NORMAL_LEG_TARGET;
-                    chassis_move_control_loop->chassis_leg_filter_set.out = CHASSIS_NORMAL_LEG_TARGET;
-                    chassis_reset_leg_pid_state(chassis_move_control_loop);
-                    chassis_move_control_loop->posture_stable_ticks = 0;
-                }
+                chassis_move_control_loop->step_up_phase = STEP_UP_STAND;
+                chassis_move_control_loop->step_up_phase_ticks = 0;
+                chassis_move_control_loop->chassis_leg_set = CHASSIS_NORMAL_LEG_TARGET;
+                chassis_move_control_loop->chassis_leg_filter_set.out = CHASSIS_NORMAL_LEG_TARGET;
+                chassis_reset_leg_pid_state(chassis_move_control_loop);
+                chassis_move_control_loop->posture_stable_ticks = 0;
             }
             break;
 
         case STEP_UP_STAND:
+            // 一级 STAND：固定延时，不等站稳
+            if (chassis_move_control_loop->step_up_phase_ticks >= STEP_UP_STAND_STABLE_TICKS)
+            {
+                chassis_move_control_loop->step_up_phase = STEP_UP_EXTEND;
+                chassis_move_control_loop->step_up_phase_ticks = 0;
+                chassis_reset_leg_pid_state(chassis_move_control_loop);
+            }
+            break;
+
+        case STEP_UP_EXTEND:
+            if (fabsf(chassis_move_control_loop->chassis_left_control.wbr_control.L - STEP_UP_EXTEND_LEG_TARGET) < STEP_UP_EXTEND_DONE_TOL &&
+                fabsf(chassis_move_control_loop->chassis_right_control.wbr_control.L - STEP_UP_EXTEND_LEG_TARGET) < STEP_UP_EXTEND_DONE_TOL)
+            {
+                if (STEP_UP_REQUIRED_COUNT >= 2)
+                {
+                    // 需要上第二级，进入第二级检测
+                    chassis_move_control_loop->step_up_phase = STEP_UP_DETECT_2ND;
+                    chassis_move_control_loop->step_up_phase_ticks = 0;
+                }
+                else
+                {
+                    // 只上一级，完成
+                    chassis_move_control_loop->step_up_phase = STEP_UP_DONE;
+                    chassis_move_control_loop->pending_state = CHASSIS_NORMAL;
+                }
+            }
+            break;
+
+        // ============ 第二级台阶 ============
+        case STEP_UP_DETECT_2ND:
+            if (chassis_move_control_loop->chassis_gimbal_data->protocol_valid &&
+                chassis_move_control_loop->chassis_gimbal_data->step_enable)
+            {
+                const fp32 left_theta  = chassis_move_control_loop->chassis_left_control.theta_l;
+                const fp32 left_Tbl_r  = chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_r;
+                const fp32 right_theta = chassis_move_control_loop->chassis_right_control.theta_l;
+                const fp32 right_Tbl_r = chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_r;
+
+                if ((left_theta <= STEP_UP_ANGLE_THRESHOLD_2ND && fabs(left_Tbl_r) >= STEP_UP_TORQUE_THRESHOLD_2ND) ||
+                    (right_theta <= STEP_UP_ANGLE_THRESHOLD_2ND && fabs(right_Tbl_r) >= STEP_UP_TORQUE_THRESHOLD_2ND))
+                {
+                    chassis_move_control_loop->step_up_phase = STEP_UP_CONTACT_2ND;
+                    chassis_move_control_loop->step_up_phase_ticks = 0;
+                }
+            }
+            break;
+
+        case STEP_UP_CONTACT_2ND:
+            // 第二级不需要等 theta 摆到目标，延时完直接下一步
+            if (chassis_move_control_loop->step_up_phase_ticks >= STEP_UP_CONTACT_MIN_TICKS)
+            {
+                chassis_move_control_loop->step_up_phase = STEP_UP_RETRACT_2ND;
+                chassis_move_control_loop->step_up_phase_ticks = 0;
+                chassis_reset_leg_pid_state(chassis_move_control_loop);
+            }
+            break;
+
+        case STEP_UP_RETRACT_2ND:
+            if (fabsf(chassis_move_control_loop->chassis_left_control.theta_l) < STEP_UP_RETRACT_THETA_THRESHOLD &&
+                fabsf(chassis_move_control_loop->chassis_right_control.theta_l) < STEP_UP_RETRACT_THETA_THRESHOLD &&
+                chassis_move_control_loop->chassis_left_control.wbr_control.L <= STEP_UP_RETRACT_DONE_L &&
+                chassis_move_control_loop->chassis_right_control.wbr_control.L <= STEP_UP_RETRACT_DONE_L)
+            {
+                chassis_move_control_loop->step_up_phase = STEP_UP_STAND_2ND;
+                chassis_move_control_loop->step_up_phase_ticks = 0;
+                chassis_move_control_loop->chassis_leg_set = CHASSIS_NORMAL_LEG_TARGET;
+                chassis_move_control_loop->chassis_leg_filter_set.out = CHASSIS_NORMAL_LEG_TARGET;
+                chassis_reset_leg_pid_state(chassis_move_control_loop);
+                chassis_move_control_loop->posture_stable_ticks = 0;
+            }
+            break;
+
+        case STEP_UP_STAND_2ND:
         {
             const fp32 left_theta  = chassis_move_control_loop->chassis_left_control.theta_l;
             const fp32 left_d_theta = chassis_move_control_loop->chassis_left_control.d_theta_l;
@@ -1619,16 +1690,15 @@ extern "C"
 
             if (theta_stable && d_theta_stable)
             {
-                if (chassis_move_control_loop->posture_stable_ticks < STEP_UP_STAND_STABLE_TICKS)
+                if (chassis_move_control_loop->posture_stable_ticks < STEP_UP_STAND_2ND_TICKS)
                 {
                     chassis_move_control_loop->posture_stable_ticks++;
                 }
                 else
                 {
-                    chassis_move_control_loop->step_up_phase = STEP_UP_EXTEND;
-                    chassis_move_control_loop->step_up_phase_ticks = 0;
-                    chassis_move_control_loop->posture_stable_ticks = 0;
-                    chassis_reset_leg_pid_state(chassis_move_control_loop);
+                    // 第二级站稳，完成
+                    chassis_move_control_loop->step_up_phase = STEP_UP_DONE;
+                    chassis_move_control_loop->pending_state = CHASSIS_NORMAL;
                 }
             }
             else
@@ -1637,15 +1707,6 @@ extern "C"
             }
             break;
         }
-
-        case STEP_UP_EXTEND:
-            if (fabsf(chassis_move_control_loop->chassis_left_control.wbr_control.L - STEP_UP_EXTEND_LEG_TARGET) < STEP_UP_EXTEND_DONE_TOL &&
-                fabsf(chassis_move_control_loop->chassis_right_control.wbr_control.L - STEP_UP_EXTEND_LEG_TARGET) < STEP_UP_EXTEND_DONE_TOL)
-            {
-                chassis_move_control_loop->step_up_phase = STEP_UP_DETECT;
-                chassis_move_control_loop->step_up_phase_ticks = 0;
-            }
-            break;
 
         case STEP_UP_DONE:
         default:
@@ -1657,7 +1718,6 @@ extern "C"
     {
         chassis_move_control_loop->step_up_phase = STEP_UP_DETECT;
         chassis_move_control_loop->step_up_phase_ticks = 0;
-        chassis_move_control_loop->step_up_count = 0;
     }
 
     /**
@@ -1769,7 +1829,8 @@ extern "C"
             (chassis_move_control_loop->state == CHASSIS_INIT &&
              chassis_move_control_loop->init_phase == CHASSIS_INIT_RETRACT) ||
             (chassis_is_balancing_state(chassis_move_control_loop->state) &&
-             chassis_move_control_loop->step_up_phase == STEP_UP_RETRACT);
+             (chassis_move_control_loop->step_up_phase == STEP_UP_RETRACT ||
+              chassis_move_control_loop->step_up_phase == STEP_UP_RETRACT_2ND));
 
         const bool_t jump_takeoff_force =
             chassis_move_control_loop->state == CHASSIS_JUMP &&
@@ -1860,7 +1921,8 @@ extern "C"
         }
 
         if (chassis_is_balancing_state(chassis_move_control_loop->state) &&
-            chassis_move_control_loop->step_up_phase == STEP_UP_RETRACT)
+            (chassis_move_control_loop->step_up_phase == STEP_UP_RETRACT ||
+             chassis_move_control_loop->step_up_phase == STEP_UP_RETRACT_2ND))
         {
             return CHASSIS_OUTPUT_MODE_RETRACT_LEG_ONLY;
         }
@@ -1900,7 +1962,8 @@ extern "C"
                 (chassis_move_control_loop->state == CHASSIS_INIT &&
                  chassis_move_control_loop->init_phase == CHASSIS_INIT_RETRACT);
             const bool_t step_up_retract_tbl =
-                chassis_move_control_loop->step_up_phase == STEP_UP_RETRACT &&
+                (chassis_move_control_loop->step_up_phase == STEP_UP_RETRACT ||
+                 chassis_move_control_loop->step_up_phase == STEP_UP_RETRACT_2ND) &&
                 (chassis_move_control_loop->chassis_left_control.wbr_control.L < STEP_UP_RETRACT_TBL_L_THRESHOLD ||
                  chassis_move_control_loop->chassis_right_control.wbr_control.L < STEP_UP_RETRACT_TBL_L_THRESHOLD);
 
@@ -1949,7 +2012,8 @@ extern "C"
             if (chassis_move_control_loop->state != CHASSIS_INIT)
             {
                 const bool_t step_up_contact =
-                    (chassis_move_control_loop->step_up_phase == STEP_UP_CONTACT);
+                    (chassis_move_control_loop->step_up_phase == STEP_UP_CONTACT) ||
+                    (chassis_move_control_loop->step_up_phase == STEP_UP_CONTACT_2ND);
                 const bool_t left_off_ground = step_up_contact ||
                     (chassis_move_control_loop->chassis_left_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND);
                 const bool_t right_off_ground = step_up_contact ||
@@ -1985,13 +2049,15 @@ extern "C"
 
                 if (step_up_contact)
                 {
-                    if (chassis_move_control_loop->step_up_count >= 1)
+                    if (chassis_move_control_loop->step_up_phase == STEP_UP_CONTACT_2ND)
                     {
+                        // 第二级：Tbl 清零，无反向轮力矩
                         chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t = 0.0f;
                         chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t = 0.0f;
                     }
                     else
                     {
+                        // 第一级：Tbl 缩放 + 反向轮力矩防滑
                         chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t *= STEP_UP_CONTACT_TBL_SCALE;
                         chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t *= STEP_UP_CONTACT_TBL_SCALE;
                         chassis_move_control_loop->chassis_wheel[0].wheel_T = -STEP_UP_CONTACT_REVERSE_WHEEL_T;

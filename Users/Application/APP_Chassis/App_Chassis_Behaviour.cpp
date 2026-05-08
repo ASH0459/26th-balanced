@@ -269,7 +269,11 @@ static void chassis_normal_control(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set,
 
     if (chassis_move_rc_to_vector->state == CHASSIS_LEG_2 || chassis_move_rc_to_vector->state == CHASSIS_LEG_1)
     {
-        target_vx = clamp_abs_fp32(raw_target_vx, CHASSIS_LEG_MAX_SPEED);
+        // 腿长最长时限速到 0.9m/s
+        const fp32 leg_avg = 0.5f * (chassis_move_rc_to_vector->chassis_left_control.wbr_control.L +
+                                      chassis_move_rc_to_vector->chassis_right_control.wbr_control.L);
+        const fp32 speed_limit = (leg_avg >= CHASSIS_LEG_MAX - 0.01f) ? 0.9f : CHASSIS_LEG_MAX_SPEED;
+        target_vx = clamp_abs_fp32(raw_target_vx, speed_limit);
     }
     else
     {
@@ -389,6 +393,7 @@ static void chassis_control_leg_step_up(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw
 
     switch (phase)
     {
+    // 第一级台阶
     case STEP_UP_DETECT:
     case STEP_UP_DONE:
         // 正常受控，按默认 LEG 目标输出
@@ -397,7 +402,7 @@ static void chassis_control_leg_step_up(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw
         break;
 
     case STEP_UP_CONTACT:
-        // 撞台阶：保持速度/yaw 受控，腿长维持当前 LEG 目标
+        // 撞台阶：速度归零，腿长维持当前 LEG 目标
         *vx_set = 0.0f;
         *leg_set = chassis_ramp_leg_target(chassis_move_rc_to_vector,
                                            default_leg_target,
@@ -413,7 +418,7 @@ static void chassis_control_leg_step_up(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw
         break;
 
     case STEP_UP_STAND:
-        // 0.165站稳等theta摆正，速度回零
+        // 站稳，速度回零
         *vx_set = 0.0f;
         *leg_set = chassis_ramp_leg_target(chassis_move_rc_to_vector,
                                            CHASSIS_NORMAL_LEG_TARGET,
@@ -424,6 +429,37 @@ static void chassis_control_leg_step_up(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw
         // 伸腿，允许遥控正常移动
         chassis_normal_control(vx_set, yaw_set, d_yaw_set, leg_set,
                                chassis_move_rc_to_vector, STEP_UP_EXTEND_LEG_TARGET);
+        break;
+
+    // 第二级台阶
+    case STEP_UP_DETECT_2ND:
+        // 检测第二级，正常受控
+        chassis_normal_control(vx_set, yaw_set, d_yaw_set, leg_set,
+                               chassis_move_rc_to_vector, STEP_UP_EXTEND_LEG_TARGET);
+        break;
+
+    case STEP_UP_CONTACT_2ND:
+        // 撞第二级：速度归零，腿长维持
+        *vx_set = 0.0f;
+        *leg_set = chassis_ramp_leg_target(chassis_move_rc_to_vector,
+                                           STEP_UP_EXTEND_LEG_TARGET,
+                                           CHASSIS_LEG_STEP_RAMP_SPEED);
+        break;
+
+    case STEP_UP_RETRACT_2ND:
+        // 收腿
+        *vx_set = 0.0f;
+        *leg_set = chassis_ramp_leg_target(chassis_move_rc_to_vector,
+                                           CHASSIS_NORMAL_LEG_TARGET,
+                                           CHASSIS_LEG_STEP_RAMP_SPEED);
+        break;
+
+    case STEP_UP_STAND_2ND:
+        // 站稳
+        *vx_set = 0.0f;
+        *leg_set = chassis_ramp_leg_target(chassis_move_rc_to_vector,
+                                           CHASSIS_NORMAL_LEG_TARGET,
+                                           CHASSIS_LEG_STEP_RAMP_SPEED);
         break;
 
     default:
@@ -562,12 +598,12 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
             break;
 
         case CHASSIS_LEG_1:
-            if (chassis_move_mode->step_up_phase == STEP_UP_DONE &&
-                chassis_move_mode->step_up_count >= STEP_UP_REQUIRED_COUNT)
+            if (chassis_move_mode->step_up_phase == STEP_UP_DONE)
             {
                 chassis_move_mode->state = CHASSIS_NORMAL;
             }
             else if (chassis_move_mode->step_up_phase != STEP_UP_DETECT &&
+                     chassis_move_mode->step_up_phase != STEP_UP_DETECT_2ND &&
                      chassis_move_mode->step_up_phase != STEP_UP_DONE)
             {
                 // 上台阶进行中，阻塞模式切换
@@ -583,12 +619,12 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
             break;
 
         case CHASSIS_LEG_2:
-            if (chassis_move_mode->step_up_phase == STEP_UP_DONE &&
-                chassis_move_mode->step_up_count >= STEP_UP_REQUIRED_COUNT)
+            if (chassis_move_mode->step_up_phase == STEP_UP_DONE)
             {
                 chassis_move_mode->state = CHASSIS_NORMAL;
             }
             else if (chassis_move_mode->step_up_phase != STEP_UP_DETECT &&
+                     chassis_move_mode->step_up_phase != STEP_UP_DETECT_2ND &&
                      chassis_move_mode->step_up_phase != STEP_UP_DONE)
             {
                 // 上台阶进行中，阻塞模式切换
