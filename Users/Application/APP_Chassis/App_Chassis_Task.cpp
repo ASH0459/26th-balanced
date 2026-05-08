@@ -1559,8 +1559,8 @@ extern "C"
                 const fp32 right_theta = chassis_move_control_loop->chassis_right_control.theta_l;
                 const fp32 right_Tbl_r = chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_r;
 
-                if ((fabsf(left_theta) >= angle_threshold && fabsf(left_Tbl_r) >= torque_threshold) ||
-                    (fabsf(right_theta) >= angle_threshold && fabsf(right_Tbl_r) >= torque_threshold))
+                if ((left_theta <= angle_threshold && left_Tbl_r >= torque_threshold) ||
+                    (right_theta <= angle_threshold && right_Tbl_r >= torque_threshold))
                 {
                     chassis_move_control_loop->step_up_phase = STEP_UP_CONTACT;
                     chassis_move_control_loop->step_up_phase_ticks = 0;
@@ -1580,7 +1580,9 @@ extern "C"
             break;
 
         case STEP_UP_RETRACT:
-            if (chassis_move_control_loop->chassis_left_control.wbr_control.L <= STEP_UP_RETRACT_DONE_L &&
+            if (fabsf(chassis_move_control_loop->chassis_left_control.theta_l) < STEP_UP_RETRACT_THETA_THRESHOLD &&
+                fabsf(chassis_move_control_loop->chassis_right_control.theta_l) < STEP_UP_RETRACT_THETA_THRESHOLD &&
+                chassis_move_control_loop->chassis_left_control.wbr_control.L <= STEP_UP_RETRACT_DONE_L &&
                 chassis_move_control_loop->chassis_right_control.wbr_control.L <= STEP_UP_RETRACT_DONE_L)
             {
                 chassis_move_control_loop->step_up_phase = STEP_UP_STAND;
@@ -1593,10 +1595,39 @@ extern "C"
             break;
 
         case STEP_UP_STAND:
-            chassis_move_control_loop->step_up_phase = STEP_UP_EXTEND;
-            chassis_move_control_loop->step_up_phase_ticks = 0;
-            chassis_reset_leg_pid_state(chassis_move_control_loop);
+        {
+            const fp32 left_theta  = chassis_move_control_loop->chassis_left_control.theta_l;
+            const fp32 left_d_theta = chassis_move_control_loop->chassis_left_control.d_theta_l;
+            const fp32 right_theta = chassis_move_control_loop->chassis_right_control.theta_l;
+            const fp32 right_d_theta = chassis_move_control_loop->chassis_right_control.d_theta_l;
+
+            const bool_t theta_stable =
+                (fabsf(left_theta) < STEP_UP_STAND_ANGLE_TOL) &&
+                (fabsf(right_theta) < STEP_UP_STAND_ANGLE_TOL);
+            const bool_t d_theta_stable =
+                (fabsf(left_d_theta) < STEP_UP_STAND_D_THETA_TOL) &&
+                (fabsf(right_d_theta) < STEP_UP_STAND_D_THETA_TOL);
+
+            if (theta_stable && d_theta_stable)
+            {
+                if (chassis_move_control_loop->posture_stable_ticks < STEP_UP_STAND_STABLE_TICKS)
+                {
+                    chassis_move_control_loop->posture_stable_ticks++;
+                }
+                else
+                {
+                    chassis_move_control_loop->step_up_phase = STEP_UP_EXTEND;
+                    chassis_move_control_loop->step_up_phase_ticks = 0;
+                    chassis_move_control_loop->posture_stable_ticks = 0;
+                    chassis_reset_leg_pid_state(chassis_move_control_loop);
+                }
+            }
+            else
+            {
+                chassis_move_control_loop->posture_stable_ticks = 0;
+            }
             break;
+        }
 
         case STEP_UP_EXTEND:
             if (fabsf(chassis_move_control_loop->chassis_left_control.wbr_control.L - STEP_UP_EXTEND_LEG_TARGET) < STEP_UP_EXTEND_DONE_TOL &&
@@ -1865,10 +1896,17 @@ extern "C"
             chassis_move_control_loop->chassis_wheel[0].wheel_T = 0.0f;
             chassis_move_control_loop->chassis_wheel[1].wheel_T = 0.0f;
 
-            if (chassis_move_control_loop->state == CHASSIS_INIT &&
-                chassis_move_control_loop->init_phase == CHASSIS_INIT_RETRACT)
+            const bool_t init_retract_tbl =
+                (chassis_move_control_loop->state == CHASSIS_INIT &&
+                 chassis_move_control_loop->init_phase == CHASSIS_INIT_RETRACT);
+            const bool_t step_up_retract_tbl =
+                chassis_move_control_loop->step_up_phase == STEP_UP_RETRACT &&
+                (chassis_move_control_loop->chassis_left_control.wbr_control.L < STEP_UP_RETRACT_TBL_L_THRESHOLD ||
+                 chassis_move_control_loop->chassis_right_control.wbr_control.L < STEP_UP_RETRACT_TBL_L_THRESHOLD);
+
+            if (init_retract_tbl || step_up_retract_tbl)
             {
-                // INIT收腿时保留theta控制Tbl（类似离地），缩小系数在映射输出时乘入
+                // 收腿时保留theta控制Tbl（类似离地），缩小系数在映射输出时乘入
                 chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t =
                     LQR_K[2][4] * chassis_move_control_loop->chassis_left_control.theta_l +
                     LQR_K[2][5] * chassis_move_control_loop->chassis_left_control.d_theta_l +
@@ -1956,9 +1994,9 @@ extern "C"
                     {
                         chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t *= STEP_UP_CONTACT_TBL_SCALE;
                         chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t *= STEP_UP_CONTACT_TBL_SCALE;
+                        chassis_move_control_loop->chassis_wheel[0].wheel_T = -STEP_UP_CONTACT_REVERSE_WHEEL_T;
+                        chassis_move_control_loop->chassis_wheel[1].wheel_T = -STEP_UP_CONTACT_REVERSE_WHEEL_T;
                     }
-                    chassis_move_control_loop->chassis_wheel[0].wheel_T = -STEP_UP_CONTACT_REVERSE_WHEEL_T;
-                    chassis_move_control_loop->chassis_wheel[1].wheel_T = -STEP_UP_CONTACT_REVERSE_WHEEL_T;
                 }
             }
 

@@ -107,7 +107,7 @@ void MX_FREERTOS_Init(void) {
   xTaskCreate(Detect_Task, "Detect_Task", 512, NULL, osPriorityNormal, NULL);
 
   /* 创建底盘任务 */
-  xTaskCreate(Chassis_Task, "Chassis_Task", 2048, NULL, osPriorityHigh, NULL);
+  xTaskCreate(Chassis_Task, "Chassis_Task", 2048, NULL, osPriorityNormal, NULL);
 
   /* 创建IMU解算任务 */
   xTaskCreate(INS_task, "INS_Task", 1024, NULL, osPriorityRealtime, NULL);
