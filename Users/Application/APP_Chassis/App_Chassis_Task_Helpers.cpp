@@ -125,7 +125,7 @@ void chassis_update_leg_angle_signals(leg_control *leg, const fp32 *f_theta, uin
 
     bool_t chassis_is_init_like_state(Chassis_State_e state)
     {
-        return state == CHASSIS_INIT || state == CHASSIS_FLIP;
+        return state == CHASSIS_INIT || state == CHASSIS_FLIP || state == CHASSIS_RESERVED;
     }
 
     bool_t chassis_should_reset_small_gyro_translation(const Chassis_Move *chassis_move_control)

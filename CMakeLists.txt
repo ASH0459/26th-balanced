@@ -107,6 +107,7 @@ add_executable(${CMAKE_PROJECT_NAME}
         Users/Bsp/Bsp_Boards/Board_USART/Board_USART.h
         Users/Application/App_Referee/App_Referee_Task.c
         Users/Bsp/Bsp_Device/Dev_Referee/Dev_Referee.c
+        Users/Bsp/Bsp_Device/Dev_LiDAR/Dev_LiDAR.c
         Users/Algorithm/Alg_wbr/wbr.c
         Users/0-APL/APL_PowerLimitator/APL_PowerLimitator.cpp
         Users/0-APL/APL_PowerLimitator/APL_PowerLimitator.hpp
@@ -154,7 +155,7 @@ include_directories(Users/Bsp/Bsp_Boards/Board_Buzzer Users/Bsp/Bsp_Boards/Board
 include_directories(Users/Bsp/Bsp_Boards/Bsp_Led Users/Application/APP_INS Users/Application/APP_LED Users/Application/APP_Buzzer Users/Bsp/Bsp_Boards/Board_Dwt)
 include_directories(Core/Inc Drivers/STM32H7xx_HAL_Driver/Inc Drivers/STM32H7xx_HAL_Driver/Inc/Legacy Drivers/CMSIS/Device/ST/STM32H7xx/Include Drivers/CMSIS/Include DSP_LIB/Include)
 include_directories(Middlewares/ST/ARM/DSP/Inc Users/Bsp/Bsp_Support/Sp_CRC8_CRC16 Users/Bsp/Bsp_Support/Sp_FIFO Users/Bsp/Bsp_Support/Sp_MEM_MANG Users/Bsp/Bsp_Support/)
-include_directories(Users/Bsp/Bsp_Device/Dev_Referee Users/Application/App_Referee Users/Bsp/Bsp_Boards/Board_USART Users/Algorithm/Alg_wbr  Users/Algorithm/Alg_EKF/kalman)
+include_directories(Users/Bsp/Bsp_Device/Dev_Referee Users/Bsp/Bsp_Device/Dev_LiDAR Users/Application/App_Referee Users/Bsp/Bsp_Boards/Board_USART Users/Algorithm/Alg_wbr  Users/Algorithm/Alg_EKF/kalman)
 include_directories(Users/0-APL/APL_SuperCap Users/0-APL/APL_PowerLimitator Users/2-HDL/HDL_PowerLimitator Users/2-HDL/HDL_SuperCap)
 include_directories(Users/Application/App_UI Users/Application/App_UI/UI_Frames)
 # Add project symbols (macros)

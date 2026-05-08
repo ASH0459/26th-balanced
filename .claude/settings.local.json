@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(cmake --build build/Debug)"
+      "Bash(cmake --build build/Debug)",
+      "Bash(git ls-tree *)",
+      "Bash(ninja)"
     ]
   }
 }

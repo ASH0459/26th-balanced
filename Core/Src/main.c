@@ -34,6 +34,7 @@
 #include "BMI088driver.h"
 #include "bsp_dwt.h"
 #include "Dev_Referee.h"
+#include "Dev_LiDAR.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -121,12 +122,14 @@ int main(void)
   MX_ADC1_Init();
   MX_CRC_Init();
   MX_USART10_UART_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
   DWT_Init(480);
   can_filter_init();
   BMI088_Init(&hspi2, 0);
   Referee_Init();
+  LiDAR_Init();
   /* USER CODE END 2 */
 
   /* Init scheduler */
