@@ -87,6 +87,7 @@
 #define RESERVED_LEG_ANGLE_PID_KD 10.0f
 #define RESERVED_LEG_ANGLE_PID_MAX_OUT 20.0f
 #define RESERVED_LEG_ANGLE_PID_MAX_IOUT 0.0f
+#define CHASSIS_RESERVED_LEG_ANGLE_ERR_MAX 0.5f  // 腿角度误差限幅 (rad)，防止卡住时力矩过大
 
 // 机体pitch角度正常水平阈值 (rad)
 #define CHASSIS_PITCH_LEVEL_THRESHOLD 0.7f

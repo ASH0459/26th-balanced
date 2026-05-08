@@ -1351,9 +1351,11 @@ extern "C"
             ramp_calc(&chassis_move_control_loop->chassis_right_control.init_angle_ramp, -rotate_speed);
         }
 
-        // PID 计算腿角度力矩
+        // PID 计算腿角度力矩（限幅防止卡住时误差过大）
         fp32 left_error = chassis_move_control_loop->chassis_left_control.init_angle_ramp.out - left_theta_360;
         fp32 right_error = chassis_move_control_loop->chassis_right_control.init_angle_ramp.out - right_theta_360;
+        left_error = float_constrain(left_error, -CHASSIS_RESERVED_LEG_ANGLE_ERR_MAX, CHASSIS_RESERVED_LEG_ANGLE_ERR_MAX);
+        right_error = float_constrain(right_error, -CHASSIS_RESERVED_LEG_ANGLE_ERR_MAX, CHASSIS_RESERVED_LEG_ANGLE_ERR_MAX);
 
         fp32 left_torque = PID_Calc(&chassis_move_control_loop->chassis_left_control.reserved_leg_angle_pid,
                                     0.0f, left_error);
