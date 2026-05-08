@@ -244,6 +244,12 @@ void get_shoot_cooling_value1(uint16_t *cooling_value)
     *cooling_value = robot_state.shooter_barrel_cooling_value;
 }
 
+/* 获取最近一次射击弹丸初速度，单位 m/s。 */
+void get_bullet_speed(float *speed)
+{
+    *speed = shoot_data_t.bullet_speed;
+}
+
 /* 获取 42mm 发射机构热量上限和当前热量。
  * 当前工程仍复用统一的 shooter_barrel_heat_limit。 */
 void get_shoot_heat2_limit_and_heat2(uint16_t *heat2_limit, uint16_t *heat2)

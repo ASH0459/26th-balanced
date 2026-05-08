@@ -170,19 +170,26 @@ void CAN_cmd_wheel(const fp32 motor1, const fp32 motor2)
 {
 	int16_t motor1_current = (int16_t)(motor1 * CONSTANT_OF_TORQUE);
 	int16_t motor2_current = (int16_t)(motor2 * CONSTANT_OF_TORQUE);
-	const uint16_t shoot_heat = power_heat_data_t.shooter_17mm_barrel_heat;
-	const uint16_t shoot_heat_limit = robot_state.shooter_barrel_heat_limit;
-	const uint16_t shoot_cooling_value = robot_state.shooter_barrel_cooling_value;
 
-	const uint16_t packed_heat = (shoot_heat > 0x0FFFU) ? 0x0FFFU : shoot_heat;
-	const uint16_t packed_heat_limit = (shoot_heat_limit > 0x0FFFU) ? 0x0FFFU : shoot_heat_limit;
+	uint16_t shoot_heat = 0;
+	uint16_t shoot_heat_limit = 0;
+	uint16_t shoot_cooling_value = 0;
+	float bullet_speed_f = 0.0f;
+	get_shoot_heat1_limit_and_heat1(&shoot_heat_limit, &shoot_heat);
+	get_shoot_cooling_value1(&shoot_cooling_value);
+	get_bullet_speed(&bullet_speed_f);
+
+	const uint16_t packed_heat = (shoot_heat > 0x01FFU) ? 0x01FFU : shoot_heat;
+	const uint16_t packed_heat_limit = (shoot_heat_limit > 0x01FFU) ? 0x01FFU : shoot_heat_limit;
+	const uint16_t packed_bullet_speed = ((uint16_t)(bullet_speed_f * 5.0f) > 0x00FFU) ? 0x00FFU : (uint16_t)(bullet_speed_f * 5.0f);
 	const uint8_t packed_cooling_value =
-		(shoot_cooling_value > 0x00FFU) ? 0x00FFU : (uint8_t)shoot_cooling_value;
+		(shoot_cooling_value > 0x003FU) ? 0x003FU : (uint8_t)shoot_cooling_value;
 
-	// bytes[4..7] bit layout: [heat(12b) | heat_limit(12b) | cooling_value(8b)]
+	// bytes[4..7] bit layout: [heat_limit(9b) | heat(9b) | bullet_speed(8b, x0.2m/s) | cooling_value(6b)]
 	const uint32_t heat_payload =
-		(((uint32_t)packed_heat) << 20) |
-		(((uint32_t)packed_heat_limit) << 8) |
+		(((uint32_t)packed_heat_limit) << 23) |
+		(((uint32_t)packed_heat) << 14) |
+		(((uint32_t)packed_bullet_speed) << 6) |
 		((uint32_t)packed_cooling_value);
 
 	FDCAN_TxHeaderTypeDef TxHeader;

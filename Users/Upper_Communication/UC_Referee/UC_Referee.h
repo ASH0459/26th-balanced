@@ -338,6 +338,9 @@ extern "C"
     /* 获取射击热量每秒冷却值。 */
     extern void get_shoot_cooling_value1(uint16_t *cooling_value);
 
+    /* 获取最近一次射击弹丸初速度，单位 m/s。 */
+    extern void get_bullet_speed(float *speed);
+
     /* 获取最近一次伤害事件中的装甲 ID 和扣血原因。 */
     extern void get_robot_hurt(uint8_t *armor_id, uint8_t *hurt_type);
 
