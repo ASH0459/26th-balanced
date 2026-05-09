@@ -937,8 +937,6 @@ extern "C"
 
         CLAMP_FILTER_NAN(chassis_move_update->chassis_left_control.dd_L_lowpass_filter.out);
         CLAMP_FILTER_NAN(chassis_move_update->chassis_right_control.dd_L_lowpass_filter.out);
-        CLAMP_FILTER_NAN(chassis_move_update->chassis_left_control.dd_L_lowpass_filter.out);
-        CLAMP_FILTER_NAN(chassis_move_update->chassis_right_control.dd_L_lowpass_filter.out);
 
         // 计算腿长加速度的低通滤波值
         first_order_filter_cali(&chassis_move_update->chassis_left_control.dd_L_lowpass_filter, left_dd_L_raw);
@@ -1878,7 +1876,7 @@ extern "C"
             chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t = -chassis_move_control_loop->chassis_left_control.fd_roll - chassis_move_control_loop->chassis_left_control.fd_leg - chassis_move_control_loop->chassis_left_control.Fbl_inertial + chassis_move_control_loop->chassis_left_control.Fbl_spring - chassis_move_control_loop->chassis_left_control.Fbl_gravity;
 
             // -重力补偿 - 侧向惯性力矩补偿 + 右腿腿长PID + 右腿roll轴补偿PID + 弹簧补偿
-            chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t = +chassis_move_control_loop->chassis_right_control.fd_roll - chassis_move_control_loop->chassis_right_control.fd_leg + chassis_move_control_loop->chassis_right_control.Fbl_inertial + chassis_move_control_loop->chassis_right_control.Fbl_spring - chassis_move_control_loop->chassis_left_control.Fbl_gravity;
+            chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t = +chassis_move_control_loop->chassis_right_control.fd_roll - chassis_move_control_loop->chassis_right_control.fd_leg + chassis_move_control_loop->chassis_right_control.Fbl_inertial + chassis_move_control_loop->chassis_right_control.Fbl_spring - chassis_move_control_loop->chassis_right_control.Fbl_gravity;
             // JUMP→NORMAL 落地保护倒计时递减
             if (chassis_move_control_loop->jump_landing_cooldown_ticks > 0U)
             {
