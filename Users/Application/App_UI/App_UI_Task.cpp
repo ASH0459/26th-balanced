@@ -52,8 +52,6 @@ extern "C" void _ui_init_normal_DynamicTextGroup1_5(void);
 extern "C" void _ui_remove_normal_DynamicTextGroup1_5(void);
 extern "C" void _ui_init_normal_DynamicTextGroup1_6(void);
 extern "C" void _ui_remove_normal_DynamicTextGroup1_6(void);
-extern "C" void _ui_init_normal_DynamicTextGroup1_7(void);
-extern "C" void _ui_remove_normal_DynamicTextGroup1_7(void);
 extern "C" void _ui_init_normal_StaticTextGroup1_0(void);
 extern "C" void _ui_init_normal_StaticTextGroup1_1(void);
 extern "C" void _ui_init_normal_StaticTextGroup1_2(void);
@@ -100,7 +98,6 @@ static const UI_Action k_ui_remove_normal_dynamic_text_group1_actions[] = {
     _ui_remove_normal_DynamicTextGroup1_4,
     _ui_remove_normal_DynamicTextGroup1_5,
     _ui_remove_normal_DynamicTextGroup1_6,
-    _ui_remove_normal_DynamicTextGroup1_7,
 };
 
 static const UI_Action k_ui_init_normal_static_text_group1_actions[] = {
@@ -817,13 +814,12 @@ static void Device_Offline_Warnings_Update(void)
 
   // 这些动态文字在UI里共用相近位置；同一时刻只显示优先级最高的一条，避免重叠。
   static const UI_Offline_Warning_t warnings[] = {
-      {VT_TOE, _ui_init_normal_DynamicTextGroup1_1, _ui_remove_normal_DynamicTextGroup1_1},
-      {CHASSIS_JOINT1_TOE, _ui_init_normal_DynamicTextGroup1_2, _ui_remove_normal_DynamicTextGroup1_2},
-      {CHASSIS_JOINT2_TOE, _ui_init_normal_DynamicTextGroup1_3, _ui_remove_normal_DynamicTextGroup1_3},
-      {CHASSIS_JOINT3_TOE, _ui_init_normal_DynamicTextGroup1_4, _ui_remove_normal_DynamicTextGroup1_4},
-      {CHASSIS_JOINT4_TOE, _ui_init_normal_DynamicTextGroup1_5, _ui_remove_normal_DynamicTextGroup1_5},
-      {CHASSIS_WHEEL1_TOE, _ui_init_normal_DynamicTextGroup1_6, _ui_remove_normal_DynamicTextGroup1_6},
-      {CHASSIS_WHEEL2_TOE, _ui_init_normal_DynamicTextGroup1_7, _ui_remove_normal_DynamicTextGroup1_7},
+      {CHASSIS_JOINT1_TOE, _ui_init_normal_DynamicTextGroup1_1, _ui_remove_normal_DynamicTextGroup1_1},
+      {CHASSIS_JOINT2_TOE, _ui_init_normal_DynamicTextGroup1_2, _ui_remove_normal_DynamicTextGroup1_2},
+      {CHASSIS_JOINT3_TOE, _ui_init_normal_DynamicTextGroup1_3, _ui_remove_normal_DynamicTextGroup1_3},
+      {CHASSIS_JOINT4_TOE, _ui_init_normal_DynamicTextGroup1_4, _ui_remove_normal_DynamicTextGroup1_4},
+      {CHASSIS_WHEEL1_TOE, _ui_init_normal_DynamicTextGroup1_5, _ui_remove_normal_DynamicTextGroup1_5},
+      {CHASSIS_WHEEL2_TOE, _ui_init_normal_DynamicTextGroup1_6, _ui_remove_normal_DynamicTextGroup1_6},
   };
   uint8_t selected_index = 0xFFU;
   const uint8_t warning_count = (uint8_t)(sizeof(warnings) / sizeof(warnings[0]));
