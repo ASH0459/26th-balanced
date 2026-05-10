@@ -713,13 +713,13 @@ static void chassis_reserved_behaviour_control(fp32 *vx_set, fp32 *yaw_set, fp32
     }
     *d_yaw_set = turn;
 
-    // ---- 高字节 bit6/7: 左腿伸长/缩短 ----
+    // ---- 低字节 bit6/7: 左腿伸长/缩短 ----
     fp32 left_leg_offset = 0.0f;
-    if ((hi & 0x40U) != 0U)
+    if ((lo & 0x40U) != 0U)
     {
         left_leg_offset = CHASSIS_RESERVED_LEG_INC_STEP;
     }
-    else if ((hi & 0x80U) != 0U)
+    else if ((lo & 0x80U) != 0U)
     {
         left_leg_offset = -CHASSIS_RESERVED_LEG_INC_STEP;
     }

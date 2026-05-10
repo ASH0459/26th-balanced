@@ -764,15 +764,15 @@ extern "C"
             chassis_reset_leg_pid_state(chassis_move_transit);
             chassis_move_transit->reserved_angle_init_done = 1;
 
-            // 腿长从当前实际长度进入，避免突变
-            const fp32 reserved_leg_init =
-                float_constrain(0.5f * (chassis_move_transit->chassis_left_control.wbr_control.L +
-                                        chassis_move_transit->chassis_right_control.wbr_control.L),
+            // 左右腿各自从当前实际腿长进入，独立控制不取平均。
+            chassis_move_transit->chassis_left_leg_set =
+                float_constrain(chassis_move_transit->chassis_left_control.wbr_control.L,
                                 CHASSIS_LEG_MIN, CHASSIS_LEG_MAX);
-            chassis_move_transit->chassis_leg_set = reserved_leg_init;
-            chassis_move_transit->chassis_left_leg_set = reserved_leg_init;
-            chassis_move_transit->chassis_right_leg_set = reserved_leg_init;
-            chassis_move_transit->chassis_leg_filter_set.out = reserved_leg_init;
+            chassis_move_transit->chassis_right_leg_set =
+                float_constrain(chassis_move_transit->chassis_right_control.wbr_control.L,
+                                CHASSIS_LEG_MIN, CHASSIS_LEG_MAX);
+            chassis_move_transit->chassis_leg_set = 0.0f;
+            chassis_move_transit->chassis_leg_filter_set.out = 0.0f;
 
             chassis_move_transit->chassis_v_set = 0.0f;
             chassis_move_transit->chassis_x_set = chassis_move_transit->x_filter;
