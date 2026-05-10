@@ -733,10 +733,27 @@ static void chassis_reserved_behaviour_control(fp32 *vx_set, fp32 *yaw_set, fp32
         right_leg_offset = -CHASSIS_RESERVED_LEG_INC_STEP;
     }
 
-    chassis_move_rc_to_vector->chassis_left_leg_set =
-        clamp_leg_length(chassis_move_rc_to_vector->chassis_left_leg_set + left_leg_offset);
-    chassis_move_rc_to_vector->chassis_right_leg_set =
-        clamp_leg_length(chassis_move_rc_to_vector->chassis_right_leg_set + right_leg_offset);
+    if (left_leg_offset != 0.0f)
+    {
+        chassis_move_rc_to_vector->chassis_left_leg_set =
+            clamp_leg_length(chassis_move_rc_to_vector->chassis_left_leg_set + left_leg_offset);
+    }
+    else
+    {
+        chassis_move_rc_to_vector->chassis_left_leg_set =
+            clamp_leg_length(chassis_move_rc_to_vector->chassis_left_control.wbr_control.L);
+    }
+
+    if (right_leg_offset != 0.0f)
+    {
+        chassis_move_rc_to_vector->chassis_right_leg_set =
+            clamp_leg_length(chassis_move_rc_to_vector->chassis_right_leg_set + right_leg_offset);
+    }
+    else
+    {
+        chassis_move_rc_to_vector->chassis_right_leg_set =
+            clamp_leg_length(chassis_move_rc_to_vector->chassis_right_control.wbr_control.L);
+    }
 
     // RESERVED 模式下左右腿独立控制，chassis_leg_set 保留 0，控制循环只读 left/right_leg_set。
     *leg_set = 0.0f;

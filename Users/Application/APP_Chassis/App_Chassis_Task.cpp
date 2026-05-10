@@ -1366,6 +1366,18 @@ extern "C"
             right_dir = 1.0f;
         }
 
+        // 无方向指令时，ramp 跟踪实际角度，避免 PID 抵抗外力。
+        if (left_dir == 0.0f)
+        {
+            chassis_move_control_loop->chassis_left_control.init_angle_ramp.out = left_theta_360;
+            PID_clear(&chassis_move_control_loop->chassis_left_control.reserved_leg_angle_pid);
+        }
+        if (right_dir == 0.0f)
+        {
+            chassis_move_control_loop->chassis_right_control.init_angle_ramp.out = right_theta_360;
+            PID_clear(&chassis_move_control_loop->chassis_right_control.reserved_leg_angle_pid);
+        }
+
         // 斜坡更新腿角度目标
         fp32 left_target = chassis_move_control_loop->chassis_left_control.init_angle_ramp.out +
                            left_dir * CHASSIS_INIT_LEVEL_ANGLE_STEP;
@@ -1415,10 +1427,14 @@ extern "C"
         const fp32 left_spring = Get_FeedForward_Force(left_L);
         const fp32 right_spring = Get_FeedForward_Force(right_L);
 
-        const fp32 left_leg_target =
-            float_constrain(chassis_move_control_loop->chassis_left_leg_set, CHASSIS_LEG_MIN, CHASSIS_LEG_MAX);
-        const fp32 right_leg_target =
-            float_constrain(chassis_move_control_loop->chassis_right_leg_set, CHASSIS_LEG_MIN, CHASSIS_LEG_MAX);
+        const fp32 left_leg_target = float_constrain(
+            chassis_move_control_loop->chassis_left_leg_set,
+            left_L - CHASSIS_RESERVED_LEG_LENGTH_ERR_MAX,
+            left_L + CHASSIS_RESERVED_LEG_LENGTH_ERR_MAX);
+        const fp32 right_leg_target = float_constrain(
+            chassis_move_control_loop->chassis_right_leg_set,
+            right_L - CHASSIS_RESERVED_LEG_LENGTH_ERR_MAX,
+            right_L + CHASSIS_RESERVED_LEG_LENGTH_ERR_MAX);
         const fp32 left_fd_leg = Leg_PID_Calc(&chassis_move_control_loop->chassis_left_control.leg_pid_control, left_L, left_leg_target);
         const fp32 right_fd_leg = Leg_PID_Calc(&chassis_move_control_loop->chassis_right_control.leg_pid_control, right_L, right_leg_target);
 
