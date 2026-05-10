@@ -1561,7 +1561,7 @@ extern "C"
 
         switch (chassis_move_control_loop->step_up_phase)
         {
-        // ============ 第一级台阶 ============
+        // ============ 第一级台阶（仅高腿长进入） ============
         case STEP_UP_DETECT:
             if (chassis_move_control_loop->chassis_gimbal_data->protocol_valid &&
                 chassis_move_control_loop->chassis_gimbal_data->step_enable)

@@ -433,16 +433,16 @@ static void chassis_control_leg_step_up(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw
 
     // 第二级台阶
     case STEP_UP_DETECT_2ND:
-        // 检测第二级，正常受控
+        // 检测第二级，正常受控，腿长维持当前目标
         chassis_normal_control(vx_set, yaw_set, d_yaw_set, leg_set,
-                               chassis_move_rc_to_vector, STEP_UP_EXTEND_LEG_TARGET);
+                               chassis_move_rc_to_vector, default_leg_target);
         break;
 
     case STEP_UP_CONTACT_2ND:
-        // 撞第二级：速度归零，腿长维持
+        // 撞第二级：速度归零，腿长维持当前目标
         *vx_set = 0.0f;
         *leg_set = chassis_ramp_leg_target(chassis_move_rc_to_vector,
-                                           STEP_UP_EXTEND_LEG_TARGET,
+                                           default_leg_target,
                                            CHASSIS_LEG_STEP_RAMP_SPEED);
         break;
 
@@ -586,10 +586,12 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
             if (step1_edge)
             {
                 chassis_move_mode->state = CHASSIS_LEG_1;
+                chassis_move_mode->step_up_phase = STEP_UP_DETECT_2ND; // 低腿长直接进二级检测
             }
             else if (step2_edge)
             {
                 chassis_move_mode->state = CHASSIS_LEG_2;
+                chassis_move_mode->step_up_phase = STEP_UP_DETECT; // 高腿长进一级检测
             }
             else if (jump_edge)
             {
@@ -615,6 +617,7 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
             else if (step2_edge)
             {
                 chassis_move_mode->state = CHASSIS_LEG_2;
+                chassis_move_mode->step_up_phase = STEP_UP_DETECT;
             }
             break;
 
@@ -636,6 +639,7 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
             else if (step1_edge)
             {
                 chassis_move_mode->state = CHASSIS_LEG_1;
+                chassis_move_mode->step_up_phase = STEP_UP_DETECT_2ND;
             }
             break;
 
