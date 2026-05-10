@@ -121,7 +121,7 @@
 #define STEP_UP_STAND_STABLE_TICKS 500U      // 第一级STAND延时 (ticks @ 1kHz)
 #define STEP_UP_STAND_2ND_TICKS 100U         // 第二级STAND延时 (ticks @ 1kHz)
 #define STEP_UP_CONTACT_TBL_SCALE 0.07f       // CONTACT阶段Tbl_t缩放系数
-#define STEP_UP_CONTACT_REVERSE_WHEEL_T 0.4f // CONTACT阶段反向轮力矩 (Nm)，防止前滑
+#define STEP_UP_CONTACT_REVERSE_WHEEL_T 0.45f // CONTACT阶段反向轮力矩 (Nm)，防止前滑
 #define STEP_UP_EXTEND_LEG_TARGET 0.3 // 上台阶第二级伸腿目标
 
 // 离地检测迟滞阈值：落地阈值需高于离地阈值
