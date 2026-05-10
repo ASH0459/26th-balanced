@@ -872,8 +872,11 @@ extern "C"
             chassis_move_control->chassis_leg_set = chassis_leg_set;
         }
 
-        chassis_move_control->chassis_left_leg_set = chassis_move_control->chassis_leg_set;
-        chassis_move_control->chassis_right_leg_set = chassis_move_control->chassis_leg_set;
+        if (chassis_move_control->state != CHASSIS_RESERVED)
+        {
+            chassis_move_control->chassis_left_leg_set = chassis_move_control->chassis_leg_set;
+            chassis_move_control->chassis_right_leg_set = chassis_move_control->chassis_leg_set;
+        }
         const bool_t leg_off_ground =
             (chassis_move_control->chassis_left_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND) &&
             (chassis_move_control->chassis_right_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND);

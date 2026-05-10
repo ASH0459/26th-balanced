@@ -738,9 +738,8 @@ static void chassis_reserved_behaviour_control(fp32 *vx_set, fp32 *yaw_set, fp32
     chassis_move_rc_to_vector->chassis_right_leg_set =
         clamp_leg_length(chassis_move_rc_to_vector->chassis_right_leg_set + right_leg_offset);
 
-    const fp32 avg_leg = (chassis_move_rc_to_vector->chassis_left_leg_set +
-                          chassis_move_rc_to_vector->chassis_right_leg_set) * 0.5f;
-    *leg_set = chassis_ramp_leg_target(chassis_move_rc_to_vector, avg_leg, CHASSIS_LEG_STEP_RAMP_SPEED);
+    // RESERVED 模式下左右腿独立控制，chassis_leg_set 保留 0，控制循环只读 left/right_leg_set。
+    *leg_set = 0.0f;
 
     *yaw_set = 0.0f;
 }
