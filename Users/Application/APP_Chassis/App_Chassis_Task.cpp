@@ -1662,16 +1662,14 @@ extern "C"
             if (fabsf(chassis_move_control_loop->chassis_left_control.wbr_control.L - STEP_UP_EXTEND_LEG_TARGET) < STEP_UP_EXTEND_DONE_TOL &&
                 fabsf(chassis_move_control_loop->chassis_right_control.wbr_control.L - STEP_UP_EXTEND_LEG_TARGET) < STEP_UP_EXTEND_DONE_TOL)
             {
-                if (STEP_UP_REQUIRED_COUNT >= 2)
+                if (chassis_move_control_loop->chassis_gimbal_data->step_count >= 1)
                 {
-                    // 需要上第二级，进入第二级检测
                     chassis_move_control_loop->step_up_phase = STEP_UP_DETECT_2ND;
                     chassis_move_control_loop->step_up_phase_ticks = 0;
                     chassis_move_control_loop->step_up_from_first_step = 1;
                 }
                 else
                 {
-                    // 只上一级，完成
                     chassis_move_control_loop->step_up_phase = STEP_UP_DONE;
                     chassis_move_control_loop->pending_state = CHASSIS_NORMAL;
                 }

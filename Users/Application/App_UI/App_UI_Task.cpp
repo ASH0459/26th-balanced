@@ -582,8 +582,8 @@ static void Gimbal_Chassis_Relative_Angle_Update(void)
   }
 
   const fp32 relative_angle = chassis_move->chassis_gimbal_data->chassis_relative_angle + PI;
-  const fp32 start_angle = 135.0f + relative_angle * 57.32f;
-  const fp32 end_angle = 225.0f + relative_angle * 57.32f;
+  const fp32 start_angle = 165.0f + relative_angle * 57.32f;
+  const fp32 end_angle = 195.0f + relative_angle * 57.32f;
 
   ui_normal_DynamicGroup1_SpinArc->start_angle = UI_Normalize_Angle_Deg(start_angle);
   ui_normal_DynamicGroup1_SpinArc->end_angle = UI_Normalize_Angle_Deg(end_angle);
@@ -615,24 +615,23 @@ static void UI_Move_Rect_To_Text(ui_interface_rect_t *rect, const ui_interface_s
 
 static uint8_t UI_Get_Step_Mode_Rect_Color(const Chassis_Move *chassis_move)
 {
-  static const uint8_t k_step_cycle_colors[] = {
-      PINK_COLOR,
-      CYAN_COLOR,
-      GREEN_COLOR,
-      YELLOW_COLOR,
-      ORANGE_COLOR,
-      PURPLE_COLOR,
-  };
-
-  if (chassis_move == nullptr || chassis_move->chassis_gimbal_data == nullptr ||
-      chassis_move->chassis_gimbal_data->step_enable == 0U)
+  if (chassis_move == nullptr || chassis_move->chassis_gimbal_data == nullptr)
   {
     return PINK_COLOR;
   }
 
-  const uint32_t color_index =
-      (HAL_GetTick() / 120U) % (sizeof(k_step_cycle_colors) / sizeof(k_step_cycle_colors[0]));
-  return k_step_cycle_colors[color_index];
+  const uint8_t active_color = (chassis_move->chassis_gimbal_data->step_count >= 1)
+      ? PURPLE_COLOR   // 2次台阶: 紫红色
+      : CYAN_COLOR;     // 1次台阶: 青色
+
+  // 关闭上台阶时常亮，开启时 400ms 亮/灭交替闪烁
+  if (chassis_move->chassis_gimbal_data->step_enable == 0U)
+  {
+    return active_color;
+  }
+
+  const uint32_t phase = (HAL_GetTick() / 400U) % 2U;
+  return (phase == 0U) ? active_color : BLACK_COLOR;
 }
 
 /**
