@@ -1649,6 +1649,7 @@ extern "C"
                     (right_theta <= STEP_UP_ANGLE_THRESHOLD_2ND && fabs(right_Tbl_r) >= STEP_UP_TORQUE_THRESHOLD_2ND))
                 {
                     chassis_move_control_loop->step_up_phase = STEP_UP_CONTACT_2ND;
+                    chassis_move_control_loop->chassis_x_set += CHASSIS_X_BACK;
                     chassis_move_control_loop->step_up_phase_ticks = 0;
                 }
             }
