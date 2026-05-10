@@ -485,9 +485,6 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
         return;
     }
 
-    // yaw 轴持续跟踪失败检测：释放 yaw 跟踪，不中断状态机
-    chassis_yaw_stuck_check(chassis_move_mode);
-
     const chassis_mode_e requested_mode = chassis_move_mode->chassis_gimbal_data->chassis_behaviour_mode;
     const bool_t step1_edge = chassis_is_request_rising_edge(chassis_move_mode, CHASSIS_MODE_STEP_1);
     const bool_t step2_edge = chassis_is_request_rising_edge(chassis_move_mode, CHASSIS_MODE_STEP_2);

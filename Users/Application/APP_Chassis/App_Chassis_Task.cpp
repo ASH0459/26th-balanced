@@ -18,6 +18,7 @@
   */
 #include "App_Chassis_Task.h"
 #include "App_Chassis_Behaviour.h"
+#include "App_Chassis_Safety.h"
 #include "App_Chassis_Task_Helpers.h"
 #include "arm_math.h"
 #include "Alg_PID.h"
@@ -842,6 +843,9 @@ extern "C"
             //                                    &chassis_move_control->chassis_left_leg_set,
             //                                    &chassis_move_control->chassis_right_leg_set);
         }
+
+        // yaw 轴持续跟踪失败检测：在行为层设定值之后运行，确保覆盖生效
+        chassis_yaw_stuck_check(chassis_move_control);
     }
 
     /**
