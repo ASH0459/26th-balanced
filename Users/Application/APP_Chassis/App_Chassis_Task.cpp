@@ -1667,6 +1667,7 @@ extern "C"
                     // 需要上第二级，进入第二级检测
                     chassis_move_control_loop->step_up_phase = STEP_UP_DETECT_2ND;
                     chassis_move_control_loop->step_up_phase_ticks = 0;
+                    chassis_move_control_loop->step_up_from_first_step = 1;
                 }
                 else
                 {
@@ -1682,13 +1683,19 @@ extern "C"
             if (chassis_move_control_loop->chassis_gimbal_data->protocol_valid &&
                 chassis_move_control_loop->chassis_gimbal_data->step_enable)
             {
+                // 从一级来用二级阈值，直接从leg1进用更小阈值
+                const fp32 angle_threshold = chassis_move_control_loop->step_up_from_first_step
+                    ? STEP_UP_ANGLE_THRESHOLD_2ND : STEP_UP_ANGLE_THRESHOLD_1;
+                const fp32 torque_threshold = chassis_move_control_loop->step_up_from_first_step
+                    ? STEP_UP_TORQUE_THRESHOLD_2ND : STEP_UP_TORQUE_THRESHOLD_1;
+
                 const fp32 left_theta  = chassis_move_control_loop->chassis_left_control.theta_l;
                 const fp32 left_Tbl_r  = chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_r;
                 const fp32 right_theta = chassis_move_control_loop->chassis_right_control.theta_l;
                 const fp32 right_Tbl_r = chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_r;
 
-                if ((left_theta <= STEP_UP_ANGLE_THRESHOLD_2ND && fabs(left_Tbl_r) >= STEP_UP_TORQUE_THRESHOLD_2ND) ||
-                    (right_theta <= STEP_UP_ANGLE_THRESHOLD_2ND && fabs(right_Tbl_r) >= STEP_UP_TORQUE_THRESHOLD_2ND))
+                if ((left_theta <= angle_threshold && fabs(left_Tbl_r) >= torque_threshold) ||
+                    (right_theta <= angle_threshold && fabs(right_Tbl_r) >= torque_threshold))
                 {
                     chassis_move_control_loop->step_up_phase = STEP_UP_CONTACT_2ND;
                     chassis_move_control_loop->chassis_x_set += CHASSIS_X_BACK;
@@ -1766,6 +1773,7 @@ extern "C"
     {
         chassis_move_control_loop->step_up_phase = STEP_UP_DETECT;
         chassis_move_control_loop->step_up_phase_ticks = 0;
+        chassis_move_control_loop->step_up_from_first_step = 0;
     }
 
     /**

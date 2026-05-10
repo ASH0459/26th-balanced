@@ -94,7 +94,7 @@
 #define CHASSIS_ROLL_LEVEL_THRESHOLD 0.7f
 
 #define CHASSIS_NORMAL_LEG_TARGET CHASSIS_LEG_MIN
-#define CHASSIS_LEG_1_TARGET 0.24f
+#define CHASSIS_LEG_1_TARGET 0.26f
 #define CHASSIS_LEG_2_TARGET CHASSIS_LEG_MAX
 #define CHASSIS_INIT_RETRACT_LEG_TARGET CHASSIS_NORMAL_LEG_TARGET
 #define CHASSIS_JUMP_TAKEOFF_TARGET 0.35f
@@ -107,8 +107,10 @@
 // 上台阶检测与流程参数
 #define STEP_UP_ANGLE_THRESHOLD -0.6f         // |theta_l| 第一级撞台阶角度阈值 (rad).
 #define STEP_UP_TORQUE_THRESHOLD 5.0f        // |Tbl_r| 第一级反向力矩阈值 (Nm)
-#define STEP_UP_ANGLE_THRESHOLD_2ND -0.6f    // |theta_l| 第二级撞台阶角度阈值 (rad)
-#define STEP_UP_TORQUE_THRESHOLD_2ND 4.0f    // |Tbl_r| 第二级反向力矩阈值 (Nm)
+#define STEP_UP_ANGLE_THRESHOLD_2ND -0.6f    // |theta_l| 第二级撞台阶角度阈值 (rad)，从一级来
+#define STEP_UP_TORQUE_THRESHOLD_2ND 4.0f    // |Tbl_r| 第二级反向力矩阈值 (Nm)，从一级来
+#define STEP_UP_ANGLE_THRESHOLD_1 -0.3f      // |theta_l| 二级台阶角度阈值 (rad)，直接从leg1进
+#define STEP_UP_TORQUE_THRESHOLD_1 2.0f      // |Tbl_r| 二级反向力矩阈值 (Nm)，直接从leg1进
 #define STEP_UP_LEG_SWING_TARGET (-0.5f)     // 撞台阶后 theta 被动摆到的目标角度 (rad)
 #define STEP_UP_CONTACT_MIN_TICKS 130U       // 进入CONTACT后强制等待时长 (ticks @ 1kHz = 300ms)
 #define STEP_UP_RETRACT_DONE_L 0.170f        // 收腿到位腿长阈值 (m)
@@ -122,7 +124,7 @@
 #define STEP_UP_STAND_2ND_TICKS 100U         // 第二级STAND延时 (ticks @ 1kHz)
 #define STEP_UP_CONTACT_TBL_SCALE 0.07f       // CONTACT阶段Tbl_t缩放系数
 #define STEP_UP_CONTACT_REVERSE_WHEEL_T 0.45f // CONTACT阶段反向轮力矩 (Nm)，防止前滑
-#define STEP_UP_EXTEND_LEG_TARGET 0.3 // 上台阶第二级伸腿目标
+#define STEP_UP_EXTEND_LEG_TARGET 0.30f // 上台阶第二级伸腿目标
 
 // 离地检测迟滞阈值：落地阈值需高于离地阈值
 #define CHASSIS_OFF_GROUND_FORCE_THRESHOLD 80.0f
@@ -375,6 +377,7 @@ public:
     uint16_t normal_force_touch_ground_ticks = 0;
     uint16_t jump_landing_cooldown_ticks = 0; // JUMP→NORMAL 后的落地保护倒计时 (ms)
     uint32_t step_up_phase_ticks = 0;
+    uint8_t step_up_from_first_step = 0; // 1:从一级来的 0:直接从leg1进
     uint8_t reserved_angle_init_done = 0;
 
     const fp32 *chassis_INS_gyro;       // 机体角速度指针
