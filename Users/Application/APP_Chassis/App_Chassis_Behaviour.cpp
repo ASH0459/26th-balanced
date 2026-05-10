@@ -1,4 +1,5 @@
 #include "App_Chassis_Behaviour.h"
+#include "App_Chassis_Safety.h"
 #include "App_Chassis_Task_Helpers.h"
 
 #include "Alg_UserLib.h"
@@ -476,6 +477,16 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
     {
         return;
     }
+
+    // theta_l 失控保护：优先于一切外部请求
+    if (chassis_theta_loss_of_control_check(chassis_move_mode))
+    {
+        chassis_move_mode->last_request_mode = chassis_move_mode->chassis_gimbal_data->chassis_behaviour_mode;
+        return;
+    }
+
+    // yaw 轴持续跟踪失败检测：释放 yaw 跟踪，不中断状态机
+    chassis_yaw_stuck_check(chassis_move_mode);
 
     const chassis_mode_e requested_mode = chassis_move_mode->chassis_gimbal_data->chassis_behaviour_mode;
     const bool_t step1_edge = chassis_is_request_rising_edge(chassis_move_mode, CHASSIS_MODE_STEP_1);

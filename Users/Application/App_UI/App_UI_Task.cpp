@@ -413,7 +413,7 @@ static void UI_data_update(void)
   Fric_State_Rect_Update();
   Fric_Target_Color_Update();
   Low_Ammo_Warning_Update();
-  Device_Offline_Warnings_Update();
+  // Device_Offline_Warnings_Update();
   Leg_Position_Update();
 }
 

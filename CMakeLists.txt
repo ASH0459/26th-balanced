@@ -60,6 +60,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         Users/Application/APP_Chassis/App_Chassis_Behaviour.h
         Users/Application/APP_Chassis/App_Chassis_Task.cpp
         Users/Application/APP_Chassis/App_Chassis_Task.h
+        Users/Application/APP_Chassis/App_Chassis_Safety.cpp
+        Users/Application/APP_Chassis/App_Chassis_Safety.h
         Users/Application/APP_Chassis/App_Chassis_Task_Helpers.cpp
         Users/Application/APP_Chassis/App_Chassis_Task_Helpers.h
         Users/Application/App_Detect/App_Detect_Task.c
