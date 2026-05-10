@@ -95,7 +95,7 @@ void WheelLeggedPowerLimitator::Init() {
 void WheelLeggedPowerLimitator::Update_Power_Loop(float referee_limit, float cap_energy, bool is_cap_online) {
     if (is_cap_online) {
         // 定义期望剩余能量 E_target
-        float buffSet = (mode == BATTERY) ? (100.0f * 0.1f) : (100.0f * 0.1f);
+        float buffSet = (mode == BATTERY) ? (100.0f * 0.3f) : (100.0f * 0.3f);
 
         // P_max = P_r - PD(sqrt(E_target), sqrt(E_current))
         // 使用能量的平方根进行PID计算以防止非线性突变
@@ -183,10 +183,10 @@ void WheelLeggedPowerLimitator::Calculate_Decay(float Uspeed, float Uyaw,
 
         // 计算衰减比例并限幅
         float tempDecayUspeed = (fabs(Uspeed) > 1e-5f) ? (restrictedUspeed / Uspeed) : 0.01f;
-        float tempDecayUyaw   = (fabs(Uyaw) > 1e-5f)   ? (restrictedUyaw / Uyaw) : 0.6f;
+        float tempDecayUyaw   = (fabs(Uyaw) > 1e-5f)   ? (restrictedUyaw / Uyaw) : 0.01f;
 
         tempDecayUspeed = CLAMP(tempDecayUspeed, 0.01f, 1.0f);
-        tempDecayUyaw   = CLAMP(tempDecayUyaw, 0.6f, 1.0f);
+        tempDecayUyaw   = CLAMP(tempDecayUyaw, 0.01f, 1.0f);
 
         // 低通滤波平滑输出衰减因子，防止控制突变导致机体抖动
         decayUspeed = tempDecayUspeed * 0.1f + decayUspeed * 0.9f;
@@ -244,6 +244,6 @@ void PowerLimitator_Task(void *pvParameters) {
 
         // WL_PowerManager.Calculate_Decay(U_speed, U_yaw, U_else_L, U_else_R, w_L, w_R);
 
-        osDelay(2); // 2ms 周期，与底盘控制任务同频
+        osDelay(1); // 2ms 周期，与底盘控制任务同频
     }
 }

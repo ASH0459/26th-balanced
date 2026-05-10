@@ -3,6 +3,7 @@
 
 #include "Alg_UserLib.h"
 #include "arm_math.h"
+#include "UC_Referee.h"
 
 // 按对称限幅裁剪标量。
 static fp32 clamp_abs_fp32(fp32 value, fp32 limit)
@@ -186,7 +187,7 @@ static fp32 chassis_update_vx_ramp(fp32 target_vx, bool_t hard_reset)
     }
     else if (current * target < 0.0f)
     {
-        // 方向反转时，先用刹车斜坡减到0，再用加速斜坡进入反向目标，避免“反向起步过猛”。
+        // 方向反转时，先用刹车斜坡减到0，再用加速斜坡进入反向目标，避免“反向起步过猛”.
         vx_ramp.out = chassis_ramp_to_target(current, 0.0f, brake_step);
 
         if (fabsf(vx_ramp.out) <= 1e-6f)
@@ -213,7 +214,8 @@ static fp32 chassis_update_vx_ramp(fp32 target_vx, bool_t hard_reset)
 static fp32 chassis_update_small_gyro_d_yaw(bool_t small_gyro_enable, bool_t hard_reset)
 {
     static fp32 small_gyro_d_yaw = 0.0f;
-    const fp32 target_d_yaw = clamp_abs_fp32(CHASSIS_SMALL_GYRO_D_YAW_SET, CHASSIS_D_YAW_MAX);
+    fp32 chassis_small_gyro_d_yaw_set = robot_state.chassis_power_limit * CHASSIS_POWER_D_YAW_RATE;
+    const fp32 target_d_yaw = clamp_abs_fp32(chassis_small_gyro_d_yaw_set, CHASSIS_D_YAW_MAX);
 
     if (hard_reset)
     {

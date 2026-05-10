@@ -128,7 +128,7 @@ void MX_FREERTOS_Init(void) {
   xTaskCreate(UI_Task, "UI_Task", 512, NULL, osPriorityNormal, NULL);
 
   /*创建功率控制任务*/
-  xTaskCreate(PowerLimitator_Task, "PowerLimitator_Task", 1024, NULL, osPriorityNormal, NULL);
+  xTaskCreate(PowerLimitator_Task, "PowerLimitator_Task", 512, NULL, osPriorityNormal, NULL);
 
   /*创建超级电容任务*/
   xTaskCreate(SuperCap_Task, "SuperCap_Task", 256, NULL, osPriorityNormal, NULL);
