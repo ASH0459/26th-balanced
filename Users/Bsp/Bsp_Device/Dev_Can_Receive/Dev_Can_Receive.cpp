@@ -204,6 +204,8 @@ void CAN_cmd_gimbal_receive(const uint8_t *received_data)
         ((frame.chassis_feature_flags & CHASSIS_FEATURE_FLAG_GYRO_ENABLE) != 0U) ? 1U : 0U;
     gimbal_data.step_enable =
         ((frame.chassis_feature_flags & CHASSIS_FEATURE_FLAG_STEP) != 0U) ? 1U : 0U;
+    gimbal_data.step_count =
+        ((frame.chassis_feature_flags & CHASSIS_FEATURE_FLAG_STEP_COUNT) != 0U) ? 1U : 0U;
     gimbal_data.chassis_behaviour_mode =
         mode_valid ? static_cast<chassis_mode_e>(frame.mode) : CHASSIS_MODE_NO_FORCE;
     gimbal_data.fric_state = fric_state;
@@ -228,6 +230,7 @@ void CAN_cmd_gimbal_receive(const uint8_t *received_data)
         gimbal_data.chassis_feature_flags = 0U;
         gimbal_data.gyro_enable = 0U;
         gimbal_data.step_enable = 0U;
+        gimbal_data.step_count = 0U;
         gimbal_data.chassis_behaviour_mode = CHASSIS_MODE_NO_FORCE;
     }
 }

@@ -40,20 +40,6 @@ static inline uint32_t UI_SuperCap_Bar_End_X(void)
 // ui_normal.c由UI工具生成，头文件只暴露整组接口；这里单独调用某个字符串的新增/删除接口显示告警。
 extern "C" void _ui_init_normal_DynamicTextGroup1_0(void);
 extern "C" void _ui_remove_normal_DynamicTextGroup1_0(void);
-extern "C" void _ui_init_normal_DynamicTextGroup1_1(void);
-extern "C" void _ui_remove_normal_DynamicTextGroup1_1(void);
-extern "C" void _ui_init_normal_DynamicTextGroup1_2(void);
-extern "C" void _ui_remove_normal_DynamicTextGroup1_2(void);
-extern "C" void _ui_init_normal_DynamicTextGroup1_3(void);
-extern "C" void _ui_remove_normal_DynamicTextGroup1_3(void);
-extern "C" void _ui_init_normal_DynamicTextGroup1_4(void);
-extern "C" void _ui_remove_normal_DynamicTextGroup1_4(void);
-extern "C" void _ui_init_normal_DynamicTextGroup1_5(void);
-extern "C" void _ui_remove_normal_DynamicTextGroup1_5(void);
-extern "C" void _ui_init_normal_DynamicTextGroup1_6(void);
-extern "C" void _ui_remove_normal_DynamicTextGroup1_6(void);
-extern "C" void _ui_init_normal_DynamicTextGroup1_7(void);
-extern "C" void _ui_remove_normal_DynamicTextGroup1_7(void);
 extern "C" void _ui_init_normal_StaticTextGroup1_0(void);
 extern "C" void _ui_init_normal_StaticTextGroup1_1(void);
 extern "C" void _ui_init_normal_StaticTextGroup1_2(void);
@@ -84,24 +70,6 @@ extern "C" void _ui_remove_start_RobotZ_G7_7_5(void);
 extern "C" void _ui_remove_start_RobotZ_G7_7_6(void);
 
 typedef void (*UI_Action)(void);
-
-typedef struct
-{
-  uint8_t toe;          // detect模块里的设备编号
-  UI_Action show; // 发送该设备掉线文字
-  UI_Action hide; // 删除该设备掉线文字
-} UI_Offline_Warning_t;
-
-static const UI_Action k_ui_remove_normal_dynamic_text_group1_actions[] = {
-    _ui_remove_normal_DynamicTextGroup1_0,
-    _ui_remove_normal_DynamicTextGroup1_1,
-    _ui_remove_normal_DynamicTextGroup1_2,
-    _ui_remove_normal_DynamicTextGroup1_3,
-    _ui_remove_normal_DynamicTextGroup1_4,
-    _ui_remove_normal_DynamicTextGroup1_5,
-    _ui_remove_normal_DynamicTextGroup1_6,
-    _ui_remove_normal_DynamicTextGroup1_7,
-};
 
 static const UI_Action k_ui_init_normal_static_text_group1_actions[] = {
     _ui_init_normal_StaticTextGroup1_0,
@@ -162,10 +130,7 @@ static const UI_Action k_ui_remove_start_text_actions[] = {
 };
 
 static uint8_t g_ui_low_ammo_warning_visible = 0U;
-static uint8_t g_ui_offline_warning_visible = 0U;
-static uint8_t g_ui_offline_active_index = 0xFFU;
 static uint8_t g_ui_reset_mode_latched = 0U;
-static const error_t *error_list_ui = nullptr; // 设备离线检测错误列表指针，由 get_error_list_point() 获取
 static uint32_t g_ui_text_next_send_tick = 0U;
 
 static void UI_Run_Startup_Sequence(void);
@@ -186,14 +151,12 @@ static void UI_Init_Start_Text(void);
 static void UI_Remove_Start_Text(void);
 static void UI_Init_Normal_StaticTextGroup1(void);
 static void UI_Remove_Normal_StaticTextGroup1(void);
-static void UI_Remove_Normal_DynamicTextGroup1(void);
 static void cap_energy_Update(void);
 static void Gimbal_Chassis_Relative_Angle_Update(void);
 static void Chassis_State_Rect_Update(void);
 static void Fric_State_Rect_Update(void);
 static void Fric_Target_Color_Update(void);
 static void Low_Ammo_Warning_Update(void);
-static void Device_Offline_Warnings_Update(void);
 static void Leg_Position_Update(void);
 static uint32_t UI_Limit_Coord(fp32 value);
 static uint32_t UI_Normalize_Angle_Deg(fp32 angle);
@@ -394,13 +357,6 @@ static void UI_Remove_Normal_StaticTextGroup1(void)
                           sizeof(k_ui_remove_normal_static_text_group1_actions[0]));
 }
 
-static void UI_Remove_Normal_DynamicTextGroup1(void)
-{
-  UI_Run_Text_Actions(k_ui_remove_normal_dynamic_text_group1_actions,
-                      sizeof(k_ui_remove_normal_dynamic_text_group1_actions) /
-                          sizeof(k_ui_remove_normal_dynamic_text_group1_actions[0]));
-}
-
 /**
  * @brief 汇总更新所有会随机器人状态变化的UI数据。
  * @note 该函数只修改本地UI帧数据，真正发送由UI_updata()完成；动态文字告警会在各自函数中单独发送。
@@ -413,7 +369,6 @@ static void UI_data_update(void)
   Fric_State_Rect_Update();
   Fric_Target_Color_Update();
   Low_Ammo_Warning_Update();
-  // Device_Offline_Warnings_Update();
   Leg_Position_Update();
 }
 
@@ -482,11 +437,8 @@ static void UI_Clear_All(void)
  */
 static void UI_Reset_Dynamic_Warnings(void)
 {
-  UI_Remove_Normal_DynamicTextGroup1();
-
+  _ui_remove_normal_DynamicTextGroup1_0();
   g_ui_low_ammo_warning_visible = 0U;
-  g_ui_offline_warning_visible = 0U;
-  g_ui_offline_active_index = 0xFFU;
 }
 
 /**
@@ -582,8 +534,8 @@ static void Gimbal_Chassis_Relative_Angle_Update(void)
   }
 
   const fp32 relative_angle = chassis_move->chassis_gimbal_data->chassis_relative_angle + PI;
-  const fp32 start_angle = 135.0f + relative_angle * 57.32f;
-  const fp32 end_angle = 225.0f + relative_angle * 57.32f;
+  const fp32 start_angle = 165.0f + relative_angle * 57.32f;
+  const fp32 end_angle = 195.0f + relative_angle * 57.32f;
 
   ui_normal_DynamicGroup1_SpinArc->start_angle = UI_Normalize_Angle_Deg(start_angle);
   ui_normal_DynamicGroup1_SpinArc->end_angle = UI_Normalize_Angle_Deg(end_angle);
@@ -615,24 +567,23 @@ static void UI_Move_Rect_To_Text(ui_interface_rect_t *rect, const ui_interface_s
 
 static uint8_t UI_Get_Step_Mode_Rect_Color(const Chassis_Move *chassis_move)
 {
-  static const uint8_t k_step_cycle_colors[] = {
-      PINK_COLOR,
-      CYAN_COLOR,
-      GREEN_COLOR,
-      YELLOW_COLOR,
-      ORANGE_COLOR,
-      PURPLE_COLOR,
-  };
-
-  if (chassis_move == nullptr || chassis_move->chassis_gimbal_data == nullptr ||
-      chassis_move->chassis_gimbal_data->step_enable == 0U)
+  if (chassis_move == nullptr || chassis_move->chassis_gimbal_data == nullptr)
   {
     return PINK_COLOR;
   }
 
-  const uint32_t color_index =
-      (HAL_GetTick() / 120U) % (sizeof(k_step_cycle_colors) / sizeof(k_step_cycle_colors[0]));
-  return k_step_cycle_colors[color_index];
+  const uint8_t active_color = (chassis_move->chassis_gimbal_data->step_count >= 1)
+      ? PURPLE_COLOR   // 2次台阶: 紫红色
+      : CYAN_COLOR;     // 1次台阶: 青色
+
+  // 关闭上台阶时常亮，开启时 400ms 亮/灭交替闪烁
+  if (chassis_move->chassis_gimbal_data->step_enable == 0U)
+  {
+    return active_color;
+  }
+
+  const uint32_t phase = (HAL_GetTick() / 400U) % 2U;
+  return (phase == 0U) ? active_color : BLACK_COLOR;
 }
 
 /**
@@ -802,63 +753,6 @@ static void Low_Ammo_Warning_Update(void)
                       _ui_init_normal_DynamicTextGroup1_0,
                       _ui_remove_normal_DynamicTextGroup1_0,
                       &g_ui_low_ammo_warning_visible);
-}
-
-/**
- * @brief 根据detect模块掉线状态更新设备掉线告警。
- * @note 多个设备同时掉线时只显示优先级最高的一条，优先级由warnings表顺序决定。
- */
-static void Device_Offline_Warnings_Update(void)
-{
-  // 首次调用时获取错误列表指针，后续直接访问，避免重复调用函数。
-  if (error_list_ui == nullptr)
-  {
-    error_list_ui = get_error_list_point();
-  }
-
-  // 这些动态文字在UI里共用相近位置；同一时刻只显示优先级最高的一条，避免重叠。
-  static const UI_Offline_Warning_t warnings[] = {
-      {VT_TOE, _ui_init_normal_DynamicTextGroup1_1, _ui_remove_normal_DynamicTextGroup1_1},
-      {CHASSIS_JOINT1_TOE, _ui_init_normal_DynamicTextGroup1_2, _ui_remove_normal_DynamicTextGroup1_2},
-      {CHASSIS_JOINT2_TOE, _ui_init_normal_DynamicTextGroup1_3, _ui_remove_normal_DynamicTextGroup1_3},
-      {CHASSIS_JOINT3_TOE, _ui_init_normal_DynamicTextGroup1_4, _ui_remove_normal_DynamicTextGroup1_4},
-      {CHASSIS_JOINT4_TOE, _ui_init_normal_DynamicTextGroup1_5, _ui_remove_normal_DynamicTextGroup1_5},
-      {CHASSIS_WHEEL1_TOE, _ui_init_normal_DynamicTextGroup1_6, _ui_remove_normal_DynamicTextGroup1_6},
-      {CHASSIS_WHEEL2_TOE, _ui_init_normal_DynamicTextGroup1_7, _ui_remove_normal_DynamicTextGroup1_7},
-  };
-  uint8_t selected_index = 0xFFU;
-  const uint8_t warning_count = (uint8_t)(sizeof(warnings) / sizeof(warnings[0]));
-
-  // 按表顺序选择第一个掉线设备，表顺序就是显示优先级。
-  // 直接访问 error_exist 字段，比调用 toe_is_error() 更高效。
-  for (uint8_t i = 0U; i < warning_count; ++i)
-  {
-    if (error_list_ui[warnings[i].toe].error_exist)
-    {
-      selected_index = i;
-      break;
-    }
-  }
-
-  if (g_ui_offline_active_index != selected_index)
-  {
-    // 切换告警对象前删除上一条可见文字，并重置显示状态。
-    if (g_ui_offline_active_index < warning_count && g_ui_offline_warning_visible != 0U)
-    {
-      warnings[g_ui_offline_active_index].hide();
-    }
-
-    g_ui_offline_active_index = selected_index;
-    g_ui_offline_warning_visible = 0U;
-  }
-
-  if (selected_index < warning_count)
-  {
-    UI_Set_Warning_Text(1U,
-                        warnings[selected_index].show,
-                        warnings[selected_index].hide,
-                        &g_ui_offline_warning_visible);
-  }
 }
 
 /**

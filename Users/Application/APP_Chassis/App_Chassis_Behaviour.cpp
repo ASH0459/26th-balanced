@@ -4,6 +4,7 @@
 
 #include "Alg_UserLib.h"
 #include "arm_math.h"
+#include "UC_Referee.h"
 
 // 按对称限幅裁剪标量。
 static fp32 clamp_abs_fp32(fp32 value, fp32 limit)
@@ -187,7 +188,7 @@ static fp32 chassis_update_vx_ramp(fp32 target_vx, bool_t hard_reset)
     }
     else if (current * target < 0.0f)
     {
-        // 方向反转时，先用刹车斜坡减到0，再用加速斜坡进入反向目标，避免“反向起步过猛”。
+        // 方向反转时，先用刹车斜坡减到0，再用加速斜坡进入反向目标，避免“反向起步过猛”.
         vx_ramp.out = chassis_ramp_to_target(current, 0.0f, brake_step);
 
         if (fabsf(vx_ramp.out) <= 1e-6f)
@@ -214,7 +215,8 @@ static fp32 chassis_update_vx_ramp(fp32 target_vx, bool_t hard_reset)
 static fp32 chassis_update_small_gyro_d_yaw(bool_t small_gyro_enable, bool_t hard_reset)
 {
     static fp32 small_gyro_d_yaw = 0.0f;
-    const fp32 target_d_yaw = clamp_abs_fp32(CHASSIS_SMALL_GYRO_D_YAW_SET, CHASSIS_D_YAW_MAX);
+    fp32 chassis_small_gyro_d_yaw_set = robot_state.chassis_power_limit * CHASSIS_POWER_D_YAW_RATE;
+    const fp32 target_d_yaw = clamp_abs_fp32(chassis_small_gyro_d_yaw_set, CHASSIS_D_YAW_MAX);
 
     if (hard_reset)
     {
@@ -719,13 +721,13 @@ static void chassis_reserved_behaviour_control(fp32 *vx_set, fp32 *yaw_set, fp32
     }
     *d_yaw_set = turn;
 
-    // ---- 高字节 bit6/7: 左腿伸长/缩短 ----
+    // ---- 低字节 bit6/7: 左腿伸长/缩短 ----
     fp32 left_leg_offset = 0.0f;
-    if ((hi & 0x40U) != 0U)
+    if ((lo & 0x40U) != 0U)
     {
         left_leg_offset = CHASSIS_RESERVED_LEG_INC_STEP;
     }
-    else if ((hi & 0x80U) != 0U)
+    else if ((lo & 0x80U) != 0U)
     {
         left_leg_offset = -CHASSIS_RESERVED_LEG_INC_STEP;
     }
@@ -741,14 +743,30 @@ static void chassis_reserved_behaviour_control(fp32 *vx_set, fp32 *yaw_set, fp32
         right_leg_offset = -CHASSIS_RESERVED_LEG_INC_STEP;
     }
 
-    chassis_move_rc_to_vector->chassis_left_leg_set =
-        clamp_leg_length(chassis_move_rc_to_vector->chassis_left_leg_set + left_leg_offset);
-    chassis_move_rc_to_vector->chassis_right_leg_set =
-        clamp_leg_length(chassis_move_rc_to_vector->chassis_right_leg_set + right_leg_offset);
+    if (left_leg_offset != 0.0f)
+    {
+        chassis_move_rc_to_vector->chassis_left_leg_set =
+            clamp_leg_length(chassis_move_rc_to_vector->chassis_left_leg_set + left_leg_offset);
+    }
+    else
+    {
+        chassis_move_rc_to_vector->chassis_left_leg_set =
+            clamp_leg_length(chassis_move_rc_to_vector->chassis_left_control.wbr_control.L);
+    }
 
-    const fp32 avg_leg = (chassis_move_rc_to_vector->chassis_left_leg_set +
-                          chassis_move_rc_to_vector->chassis_right_leg_set) * 0.5f;
-    *leg_set = chassis_ramp_leg_target(chassis_move_rc_to_vector, avg_leg, CHASSIS_LEG_STEP_RAMP_SPEED);
+    if (right_leg_offset != 0.0f)
+    {
+        chassis_move_rc_to_vector->chassis_right_leg_set =
+            clamp_leg_length(chassis_move_rc_to_vector->chassis_right_leg_set + right_leg_offset);
+    }
+    else
+    {
+        chassis_move_rc_to_vector->chassis_right_leg_set =
+            clamp_leg_length(chassis_move_rc_to_vector->chassis_right_control.wbr_control.L);
+    }
+
+    // RESERVED 模式下左右腿独立控制，chassis_leg_set 保留 0，控制循环只读 left/right_leg_set。
+    *leg_set = 0.0f;
 
     *yaw_set = 0.0f;
 }
