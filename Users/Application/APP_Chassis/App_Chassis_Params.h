@@ -60,8 +60,9 @@
 
 /* -------------------- 小陀螺参数 -------------------- */
 // gyro_enable=1 时，底盘以恒定角速度旋转；正负号决定旋转方向。
-#define CHASSIS_SMALL_GYRO_D_YAW_SET 40.0f
-
+//#define CHASSIS_SMALL_GYRO_D_YAW_SET 55.0f
+// 功率和小陀螺转速比
+#define CHASSIS_POWER_D_YAW_RATE 0.6f
 // 小陀螺启停斜坡速率（rad/s^2）。
 #define CHASSIS_SMALL_GYRO_RAMP_UP_RATE 40.0f
 #define CHASSIS_SMALL_GYRO_RAMP_DOWN_RATE 40.0f
@@ -80,7 +81,7 @@
 // 小陀螺平移控制：将标量 v_tmp 按当前 relative_angle 投影到期望平移方向。
 // 约定：小陀螺开启时，yaw_set 作为“期望平移方向”使用。
 #define CHASSIS_SMALL_GYRO_MOVE_GAIN  1.0f
-#define CHASSIS_SMALL_GYRO_MOVE_PHASE 0.0f
+#define CHASSIS_SMALL_GYRO_MOVE_PHASE 1.7f
 #define CHASSIS_SMALL_GYRO_MOVE_SPEED_SCALE 0.45f
 
 // 行为层 v_set 滤波使用的线速度加速/制动斜坡。
