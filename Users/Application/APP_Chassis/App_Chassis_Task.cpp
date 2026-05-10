@@ -891,6 +891,9 @@ extern "C"
 
         // yaw 轴持续跟踪失败检测：在行为层设定值之后运行，确保覆盖生效
         chassis_yaw_stuck_check(chassis_move_control);
+
+        // 卡墙角/障碍物检测：切断"前倾→前追→卡住"的正反馈
+        chassis_stuck_push_check(chassis_move_control);
     }
 
     /**
