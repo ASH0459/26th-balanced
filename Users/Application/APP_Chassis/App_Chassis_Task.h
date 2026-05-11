@@ -126,6 +126,7 @@
 #define STEP_UP_CONTACT_TBL_SCALE 0.07f       // CONTACT阶段Tbl_t缩放系数
 #define STEP_UP_CONTACT_REVERSE_WHEEL_T 0.45f // CONTACT阶段反向轮力矩 (Nm)，防止前滑
 #define STEP_UP_EXTEND_LEG_TARGET 0.30f // 上台阶第二级伸腿目标
+#define STEP_UP_EXTEND_VX_OFFSET 0.0f   // EXTEND 阶段在当前 v_set 上叠加的前向速度 (m/s)
 
 // 离地检测迟滞阈值：落地阈值需高于离地阈值
 #define CHASSIS_OFF_GROUND_FORCE_THRESHOLD 80.0f

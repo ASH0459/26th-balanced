@@ -100,6 +100,7 @@ typedef enum
     CHASSIS_FEATURE_FLAG_STEP = 0x02,
     CHASSIS_FEATURE_FLAG_UI_RESET = 0x04,
     CHASSIS_FEATURE_FLAG_STEP_COUNT = 0x08, // 0=1次, 1=2次
+    CHASSIS_FEATURE_FLAG_CHASSIS_RESET = 0x10, // 底盘reset，stop模式下按fn2置位
 } chassis_feature_flag_e;
 
 /** * @brief 结构体 */
@@ -184,6 +185,7 @@ public:
     uint8_t gyro_enable;
     uint8_t step_enable;
     uint8_t step_count;       // bit3: 0=1次, 1=2次
+    uint8_t chassis_reset;    // bit4: 底盘reset，stop模式下按fn2置位
     uint8_t protocol_valid;
     Fric_State_e fric_state;
     chassis_mode_e chassis_behaviour_mode;

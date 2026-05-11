@@ -1558,7 +1558,7 @@ HAL_StatusTypeDef HAL_SPI_TransmitReceive(SPI_HandleTypeDef *hspi, const uint8_t
       temp_sr_reg = hspi->Instance->SR;
 
       if (initial_RxXferCount > 0UL)
-      {
+      { 
         /* Check the RXP flag */
         if (__HAL_SPI_GET_FLAG(hspi, SPI_FLAG_RXP))
         {

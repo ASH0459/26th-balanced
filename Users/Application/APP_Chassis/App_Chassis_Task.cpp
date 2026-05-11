@@ -889,6 +889,12 @@ extern "C"
             //                                    &chassis_move_control->chassis_right_leg_set);
         }
 
+        // 一级台阶 EXTEND 阶段：x_set 冻结不积分，配合行为层固定 0.1 m/s 前推
+        if (chassis_move_control->step_up_phase == STEP_UP_EXTEND)
+        {
+            chassis_move_control->chassis_x_set = chassis_move_control->x_filter;
+        }
+
         // yaw 轴持续跟踪失败检测：在行为层设定值之后运行，确保覆盖生效
         chassis_yaw_stuck_check(chassis_move_control);
 
@@ -944,6 +950,20 @@ extern "C"
             chassis_move_update->init_phase != CHASSIS_INIT_DONE)
         {
             chassis_move_update->x_filter = chassis_move_update->x_filter_last;
+        }
+
+        // 上台阶 CONTACT / RETRACT 阶段冻结 x_filter 和 v_filter，
+        // 避免撞台阶轮子打滑或收腿动作引入虚假值进入 LQR
+        if ((chassis_move_update->state == CHASSIS_LEG_1 ||
+             chassis_move_update->state == CHASSIS_LEG_2))
+        {
+            const Chassis_StepUp_Phase_e phase = chassis_move_update->step_up_phase;
+            if (phase == STEP_UP_CONTACT || phase == STEP_UP_RETRACT ||
+                phase == STEP_UP_CONTACT_2ND || phase == STEP_UP_RETRACT_2ND)
+            {
+                chassis_move_update->x_filter = chassis_move_update->x_filter_last;
+                chassis_move_update->v_filter = chassis_move_update->v_filter_last;
+            }
         }
 
         // 姿态角速度更新。当前底盘 yaw 角速度固定使用 IMU 陀螺仪读数。

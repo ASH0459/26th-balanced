@@ -126,6 +126,20 @@ bool_t chassis_stuck_push_check(Chassis_Move *chassis_move)
         return 0;
     }
 
+    // 上台阶活跃阶段 skip，同 theta_l 检测
+    {
+        const Chassis_StepUp_Phase_e phase = chassis_move->step_up_phase;
+        if (phase == STEP_UP_CONTACT || phase == STEP_UP_RETRACT ||
+            phase == STEP_UP_STAND || phase == STEP_UP_EXTEND ||
+            phase == STEP_UP_CONTACT_2ND || phase == STEP_UP_RETRACT_2ND ||
+            phase == STEP_UP_STAND_2ND)
+        {
+            stuck_ticks = 0;
+            cooldown_ticks = 0;
+            return 0;
+        }
+    }
+
     // 冷却期内持续清零 v_set 和位移积分，避免刚释放又触发
     if (cooldown_ticks > 0U)
     {

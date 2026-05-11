@@ -429,9 +429,10 @@ static void chassis_control_leg_step_up(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw
         break;
 
     case STEP_UP_EXTEND:
-        // 伸腿，允许遥控正常移动
+        // 伸腿，正常遥控速度 + 固定前向偏移，x_set 由 task 层冻结不积分
         chassis_normal_control(vx_set, yaw_set, d_yaw_set, leg_set,
                                chassis_move_rc_to_vector, STEP_UP_EXTEND_LEG_TARGET);
+        *vx_set += STEP_UP_EXTEND_VX_OFFSET;
         break;
 
     // 第二级台阶
@@ -512,6 +513,10 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
 
     if (requested_mode == CHASSIS_MODE_NO_FORCE)
     {
+        if (chassis_move_mode->chassis_gimbal_data->chassis_reset)
+        {
+            NVIC_SystemReset();
+        }
         chassis_move_mode->pending_state = CHASSIS_NORMAL;
         chassis_move_mode->state = CHASSIS_STOP;
         chassis_move_mode->init_phase = CHASSIS_INIT_FOLD;
@@ -531,11 +536,7 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
         switch (chassis_move_mode->state)
         {
         case CHASSIS_STOP:
-            if (jump_edge)
-            {
-                // NVIC_SystemReset();
-            }
-            else if (requested_mode == CHASSIS_MODE_NORMAL)
+            if (requested_mode == CHASSIS_MODE_NORMAL)
             {
                 chassis_move_mode->pending_state = chassis_requested_mode_to_pending_state(requested_mode);
 #if CHASSIS_BYPASS_INIT_MODE
