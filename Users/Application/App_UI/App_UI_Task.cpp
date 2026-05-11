@@ -170,8 +170,6 @@ static void UI_Update_Leg(ui_interface_line_t *upper_line,
                           fp32 theta,
                           fp32 leg_length_m,
                           fp32 knee_side_sign);
-static void UI_Update_Chassis_Pitch_Line(ui_interface_line_t *pitch_line, fp32 pitch);
-
 /**
  * @brief UI任务主循环。
  * @param argument FreeRTOS任务参数，当前未使用。
@@ -565,27 +563,6 @@ static void UI_Move_Rect_To_Text(ui_interface_rect_t *rect, const ui_interface_s
   rect->end_y = text->start_y + padding_bottom;
 }
 
-static uint8_t UI_Get_Step_Mode_Rect_Color(const Chassis_Move *chassis_move)
-{
-  if (chassis_move == nullptr || chassis_move->chassis_gimbal_data == nullptr)
-  {
-    return PINK_COLOR;
-  }
-
-  const uint8_t active_color = (chassis_move->chassis_gimbal_data->step_count >= 1)
-      ? PURPLE_COLOR   // 2次台阶: 紫红色
-      : CYAN_COLOR;     // 1次台阶: 青色
-
-  // 关闭上台阶时常亮，开启时 400ms 亮/灭交替闪烁
-  if (chassis_move->chassis_gimbal_data->step_enable == 0U)
-  {
-    return active_color;
-  }
-
-  const uint32_t phase = (HAL_GetTick() / 400U) % 2U;
-  return (phase == 0U) ? active_color : BLACK_COLOR;
-}
-
 /**
  * @brief 根据底盘状态移动底盘状态框。
  * @note NORMAL、STEP1、STEP2、JUMP分别映射到对应文字，其它状态归为STOP显示。
@@ -626,7 +603,16 @@ static void Chassis_State_Rect_Update(void)
     break;
   }
 
-  ui_normal_DynamicGroup1_ChassisStateRect->color = UI_Get_Step_Mode_Rect_Color(chassis_move);
+  if (chassis_move->chassis_gimbal_data != nullptr &&
+      chassis_move->chassis_gimbal_data->step_enable != 0U)
+  {
+    const uint32_t phase = (HAL_GetTick() / 400U) % 2U;
+    ui_normal_DynamicGroup1_ChassisStateRect->color = (phase == 0U) ? CYAN_COLOR : BLACK_COLOR;
+  }
+  else
+  {
+    ui_normal_DynamicGroup1_ChassisStateRect->color = CYAN_COLOR;
+  }
   UI_Move_Rect_To_Text(ui_normal_DynamicGroup1_ChassisStateRect, target_text);
 }
 
@@ -817,37 +803,6 @@ static void UI_Update_Leg(ui_interface_line_t *upper_line,
   lower_line->end_y = UI_Limit_Coord(foot_y);
 }
 
-/**
- * @brief 根据底盘pitch角更新机体姿态线。
- * @param pitch_line 表示底盘姿态的线段对象。
- * @param pitch 底盘pitch角，单位为弧度。
- * @note 第一次调用时记录线段中心和半长，后续只旋转线段端点。
- */
-static void UI_Update_Chassis_Pitch_Line(ui_interface_line_t *pitch_line, fp32 pitch)
-{
-  pitch = -pitch;
-
-  static fp32 center_x = 0.0f;
-  static fp32 center_y = 0.0f;
-  static fp32 half_length = 0.0f;
-  static uint8_t init_done = 0U;
-
-  if (init_done == 0U)
-  {
-    const fp32 dx = (fp32)pitch_line->start_x - (fp32)pitch_line->end_x;
-    const fp32 dy = (fp32)pitch_line->start_y - (fp32)pitch_line->end_y;
-
-    center_x = ((fp32)pitch_line->start_x + (fp32)pitch_line->end_x) * 0.5f;
-    center_y = ((fp32)pitch_line->start_y + (fp32)pitch_line->end_y) * 0.5f;
-    half_length = sqrtf(dx * dx + dy * dy) * 0.5f;
-    init_done = 1U;
-  }
-
-  pitch_line->start_x = UI_Limit_Coord(center_x + half_length * cosf(pitch));
-  pitch_line->start_y = UI_Limit_Coord(center_y - half_length * sinf(pitch));
-  pitch_line->end_x = UI_Limit_Coord(center_x - half_length * cosf(pitch));
-  pitch_line->end_y = UI_Limit_Coord(center_y + half_length * sinf(pitch));
-}
 
 /**
  * @brief 更新左右腿连杆和底盘pitch线的UI显示。
@@ -869,6 +824,8 @@ static void Leg_Position_Update(void)
                 chassis_move->chassis_right_control.wbr_control.L,
                 1.0f);
 
-  UI_Update_Chassis_Pitch_Line(ui_normal_LegDynamicGroup_ChassisPitch,
-                               chassis_move->chassis_pitch);
+  // 上台阶次数：云台 step_count 0=1次, 1=2次，显示 1 或 2。
+  ui_normal_LegDynamicGroup_step_up_number->number =
+      (int32_t)chassis_move->chassis_gimbal_data->step_count + 1;
+
 }
