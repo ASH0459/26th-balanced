@@ -88,9 +88,9 @@ $normalGate = $beh -match 'requested_mode\s*==\s*CHASSIS_MODE_NORMAL\s*&&\s*prot
 $nonNormalHold = $beh -match 'chassis_action_hold_control\('
 $stepUpNoJumpEntry = -not ($beh -match 'jump_edge')
 $stepUpFromLegDetect = $task -match 'chassis_move_control_loop->chassis_gimbal_data->step_enable'
-$uiResetFromFlags = $ui -match 'CHASSIS_FEATURE_FLAG_UI_RESET'
+$autoAimTargetFlag = $canh -match 'CHASSIS_FEATURE_FLAG_AUTO_AIM_TARGET'
 $protocolPass = $featureFlagsParsed -and $autoAimParsed -and $gyroFlagDecoded -and $stepFlagDecoded -and
-                $normalGate -and $nonNormalHold -and $stepUpNoJumpEntry -and $stepUpFromLegDetect -and $uiResetFromFlags
+                $normalGate -and $nonNormalHold -and $stepUpNoJumpEntry -and $stepUpFromLegDetect -and $autoAimTargetFlag
 
 $timeoutBranch = $task -match 'toe_is_error\(VT_TOE\)'
 $jointZero = $task -match 'chassis_move\.chassis_joint\[i\]\.joint_T\s*=\s*0\.0f'
