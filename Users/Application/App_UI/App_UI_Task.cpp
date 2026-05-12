@@ -130,7 +130,6 @@ static const UI_Action k_ui_remove_start_text_actions[] = {
 };
 
 static uint8_t g_ui_low_ammo_warning_visible = 0U;
-static uint8_t g_ui_reset_mode_latched = 0U;
 static uint32_t g_ui_text_next_send_tick = 0U;
 
 static void UI_Run_Startup_Sequence(void);
@@ -139,7 +138,6 @@ static void UI_Init(void);
 static void UI_Sync_Self_Id_From_Referee(void);
 static void UI_data_update(void);
 static void UI_updata(void);
-static void UI_Handle_Reset_Request(void);
 static void UI_Clear_All(void);
 static void UI_Reset_Dynamic_Warnings(void);
 static void UI_Run_Action_Sequence(const UI_Action *actions,
@@ -184,7 +182,6 @@ void UI_Task(void *argument)
   while (1)
   {
     UI_Sync_Self_Id_From_Referee();
-    UI_Handle_Reset_Request();
     UI_data_update();
     UI_updata();
   }
@@ -380,31 +377,6 @@ static void UI_updata(void)
   osDelay(50);
   ui_update_normal_LegDynamicGroup();
   osDelay(50);
-}
-
-/**
- * @brief 检查云台下发的UI重置标志并在上升沿重新初始化UI。
- * @note 仅在 feature_flags.bit2 从0切到1时触发一次，避免持续重入初始化。
- */
-static void UI_Handle_Reset_Request(void)
-{
-  Chassis_Move *chassis_move = Get_Chassis_Move_Point();
-  uint8_t reset_request = 0U;
-
-  if (chassis_move != nullptr &&
-      chassis_move->chassis_gimbal_data != nullptr)
-  {
-    reset_request =
-        ((chassis_move->chassis_gimbal_data->chassis_feature_flags & CHASSIS_FEATURE_FLAG_UI_RESET) != 0U) ? 1U : 0U;
-  }
-
-  if (reset_request != 0U && g_ui_reset_mode_latched == 0U)
-  {
-    UI_Clear_All();
-    UI_Run_Startup_Sequence();
-  }
-
-  g_ui_reset_mode_latched = reset_request;
 }
 
 /**
@@ -618,7 +590,7 @@ static void Chassis_State_Rect_Update(void)
 
 /**
  * @brief 根据摩擦轮状态移动右侧摩擦轮状态框。
- * @note 新协议下自瞄状态由 auto_aim_state 独立承载，摩擦轮状态框仅显示 OFF/ON/ERROR。
+ * @note 自瞄目标为能量机关时摩擦轮状态框闪烁。
  */
 static void Fric_State_Rect_Update(void)
 {
@@ -644,6 +616,16 @@ static void Fric_State_Rect_Update(void)
   default:
     target_text = ui_normal_StaticTextGroup1_FricErrorText;
     break;
+  }
+
+  if ((chassis_move->chassis_gimbal_data->chassis_feature_flags & CHASSIS_FEATURE_FLAG_AUTO_AIM_TARGET) != 0U)
+  {
+    const uint32_t phase = (HAL_GetTick() / 400U) % 2U;
+    ui_normal_DynamicGroup1_FricStateRect->color = (phase == 0U) ? CYAN_COLOR : BLACK_COLOR;
+  }
+  else
+  {
+    ui_normal_DynamicGroup1_FricStateRect->color = CYAN_COLOR;
   }
 
   UI_Move_Rect_To_Text(ui_normal_DynamicGroup1_FricStateRect, target_text);

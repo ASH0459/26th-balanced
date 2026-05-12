@@ -98,7 +98,7 @@ typedef enum
 {
     CHASSIS_FEATURE_FLAG_GYRO_ENABLE = 0x01,
     CHASSIS_FEATURE_FLAG_STEP = 0x02,
-    CHASSIS_FEATURE_FLAG_UI_RESET = 0x04,
+    CHASSIS_FEATURE_FLAG_AUTO_AIM_TARGET = 0x04, // 自瞄目标切换：0=普通，1=能量机关
     CHASSIS_FEATURE_FLAG_STEP_COUNT = 0x08, // 0=1次, 1=2次
     CHASSIS_FEATURE_FLAG_CHASSIS_RESET = 0x10, // 底盘reset，stop模式下按fn2置位
 } chassis_feature_flag_e;
