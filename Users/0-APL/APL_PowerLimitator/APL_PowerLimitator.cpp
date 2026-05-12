@@ -123,7 +123,7 @@ void WheelLeggedPowerLimitator::Calculate_Decay(float Uspeed, float Uyaw,
         K = Uspeed / Uyaw;
     }
 
-    // 计算当前需求扭矩 (注意正负号：Tl = Uspeed - Uyaw + Uelse)
+    // 计算当前需求扭矩 (注意正负号：Tl = Uspeed - Uyaw + Uelse)1
     float leftTotalTorque  = Uspeed + Uyaw + leftUelse;
     float rightTotalTorque = Uspeed - Uyaw + rightUelse;
 
