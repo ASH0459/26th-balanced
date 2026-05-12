@@ -3,7 +3,7 @@
 #include "math.h"
 
 // theta_l 失控阈值 (rad)，任一腿超过则触发 INIT/FLIP 恢复。
-#define CHASSIS_THETA_LOSS_THRESHOLD 1.0f
+#define CHASSIS_THETA_LOSS_THRESHOLD 1.3f
 
 bool_t chassis_theta_loss_of_control_check(Chassis_Move *chassis_move)
 {

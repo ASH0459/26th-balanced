@@ -216,6 +216,9 @@ static fp32 chassis_update_small_gyro_d_yaw(bool_t small_gyro_enable, bool_t har
 {
     static fp32 small_gyro_d_yaw = 0.0f;
     fp32 chassis_small_gyro_d_yaw_set = robot_state.chassis_power_limit * CHASSIS_POWER_D_YAW_RATE;
+    if(chassis_small_gyro_d_yaw_set <= 40.0f) {
+        chassis_small_gyro_d_yaw_set = 40.0f;
+    }
     const fp32 target_d_yaw = clamp_abs_fp32(chassis_small_gyro_d_yaw_set, CHASSIS_D_YAW_MAX);
 
     if (hard_reset)

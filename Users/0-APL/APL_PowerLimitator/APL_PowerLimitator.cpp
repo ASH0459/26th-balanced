@@ -84,8 +84,8 @@ static inline bool float_Equal(float a, float b) { return fabs(a - b) < 1e-5f; }
 
 void WheelLeggedPowerLimitator::Init() {
     // 初始化能量环 PID (PD 控制, 参数需根据实车调节)
-    const float energy_pid_params[3] = {100.0f, 0.0f, 3.0f}; // Kp, Ki, Kd
-    PID_init(&energy_pid, PID_POSITION, energy_pid_params, 500.0f, 0.0f);
+    const float energy_pid_params[3] = {30.0f, 0.0f, 0.1f}; // Kp, Ki, Kd
+    PID_init(&energy_pid, PID_POSITION, energy_pid_params, 300.0f, 0.0f);
 
     decayUspeed = 1.0f;
     decayUyaw = 1.0f;
@@ -95,7 +95,7 @@ void WheelLeggedPowerLimitator::Init() {
 void WheelLeggedPowerLimitator::Update_Power_Loop(float referee_limit, float cap_energy, bool is_cap_online) {
     if (is_cap_online) {
         // 定义期望剩余能量 E_target
-        float buffSet = (mode == BATTERY) ? (100.0f * 0.3f) : (100.0f * 0.3f);
+        float buffSet = (mode == BATTERY) ? (100.0f * 0.4f) : (100.0f * 0.4f);
 
         // P_max = P_r - PD(sqrt(E_target), sqrt(E_current))
         // 使用能量的平方根进行PID计算以防止非线性突变
@@ -123,7 +123,7 @@ void WheelLeggedPowerLimitator::Calculate_Decay(float Uspeed, float Uyaw,
         K = Uspeed / Uyaw;
     }
 
-    // 计算当前需求扭矩 (注意正负号：Tl = Uspeed - Uyaw + Uelse)1
+    // 计算当前需求扭矩 (注意正负号：Tl = Uspeed - Uyaw + Uelse)
     float leftTotalTorque  = Uspeed + Uyaw + leftUelse;
     float rightTotalTorque = Uspeed - Uyaw + rightUelse;
 
@@ -173,7 +173,7 @@ void WheelLeggedPowerLimitator::Calculate_Decay(float Uspeed, float Uyaw,
                 restrictedUyaw = 0.0f;
             }
         }
-        else {
+        else if (Delta < 0.0f) {
             // 无实数解 (Delta < 0)，取顶点
             float tempUyaw = (-B) / (2.0f * A);
             restrictedUyaw = (tempUyaw * Uyaw > 0.0f) ? tempUyaw : 0.0f;
@@ -182,11 +182,12 @@ void WheelLeggedPowerLimitator::Calculate_Decay(float Uspeed, float Uyaw,
         restrictedUspeed = K * restrictedUyaw;
 
         // 计算衰减比例并限幅
+
         float tempDecayUspeed = (fabs(Uspeed) > 1e-5f) ? (restrictedUspeed / Uspeed) : 0.01f;
-        float tempDecayUyaw   = (fabs(Uyaw) > 1e-5f)   ? (restrictedUyaw / Uyaw) : 0.01f;
+        float tempDecayUyaw   = (fabs(Uyaw) > 1e-5f)   ? (restrictedUyaw / Uyaw) : 0.5f;
 
         tempDecayUspeed = CLAMP(tempDecayUspeed, 0.01f, 1.0f);
-        tempDecayUyaw   = CLAMP(tempDecayUyaw, 0.01f, 1.0f);
+        tempDecayUyaw   = CLAMP(tempDecayUyaw, 0.5f, 1.0f);
 
         // 低通滤波平滑输出衰减因子，防止控制突变导致机体抖动
         decayUspeed = tempDecayUspeed * 0.1f + decayUspeed * 0.9f;
