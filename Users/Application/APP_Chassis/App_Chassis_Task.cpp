@@ -383,6 +383,11 @@ extern "C"
     static void chassis_update_step_up_phase(Chassis_Move *chassis_move_control_loop);
 
     /**
+     * @brief          更新下台阶子状态机
+     */
+    static void chassis_update_step_down_phase(Chassis_Move *chassis_move_control_loop);
+
+    /**
      * @brief          重置上台阶子状态机
      */
     static void chassis_reset_step_up_state(Chassis_Move *chassis_move_control_loop);
@@ -1314,6 +1319,7 @@ extern "C"
 
         chassis_update_jump_phase(chassis_move_control_loop);
         chassis_update_step_up_phase(chassis_move_control_loop);
+        chassis_update_step_down_phase(chassis_move_control_loop);
         if (chassis_move_control_loop->state == CHASSIS_INIT)
         {
             chassis_init_standup(chassis_move_control_loop);
@@ -1639,6 +1645,27 @@ extern "C"
             return;
         }
 
+        // CHASSIS_LEG_1 下台阶碰撞检测（step_enable 开启时）
+        if (chassis_move_control_loop->state == CHASSIS_LEG_1 &&
+            chassis_move_control_loop->chassis_gimbal_data->protocol_valid &&
+            chassis_move_control_loop->chassis_gimbal_data->step_enable)
+        {
+            const fp32 left_theta  = chassis_move_control_loop->chassis_left_control.theta_l;
+            const fp32 left_Tbl_r  = chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_r;
+            const fp32 right_theta = chassis_move_control_loop->chassis_right_control.theta_l;
+            const fp32 right_Tbl_r = chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_r;
+
+            if ((left_theta <= STEP_DOWN_ANGLE_THRESHOLD && fabs(left_Tbl_r) >= STEP_DOWN_TORQUE_THRESHOLD) ||
+                (right_theta <= STEP_DOWN_ANGLE_THRESHOLD && fabs(right_Tbl_r) >= STEP_DOWN_TORQUE_THRESHOLD))
+            {
+                chassis_move_control_loop->state = CHASSIS_LEG_1_STEP_DOWN;
+                chassis_move_control_loop->step_down_phase = STEP_DOWN_FREEFALL;
+                chassis_move_control_loop->step_down_phase_ticks = 0;
+                chassis_reset_leg_pid_state(chassis_move_control_loop);
+                return;
+            }
+        }
+
         switch (chassis_move_control_loop->step_up_phase)
         {
         // ============ 第一级台阶（仅高腿长进入） ============
@@ -1704,7 +1731,6 @@ extern "C"
                 {
                     chassis_move_control_loop->step_up_phase = STEP_UP_DETECT_2ND;
                     chassis_move_control_loop->step_up_phase_ticks = 0;
-                    chassis_move_control_loop->step_up_from_first_step = 1;
                 }
                 else
                 {
@@ -1719,11 +1745,8 @@ extern "C"
             if (chassis_move_control_loop->chassis_gimbal_data->protocol_valid &&
                 chassis_move_control_loop->chassis_gimbal_data->step_enable)
             {
-                // 从一级来用二级阈值，直接从leg1进用更小阈值
-                const fp32 angle_threshold = chassis_move_control_loop->step_up_from_first_step
-                    ? STEP_UP_ANGLE_THRESHOLD_2ND : STEP_UP_ANGLE_THRESHOLD_1;
-                const fp32 torque_threshold = chassis_move_control_loop->step_up_from_first_step
-                    ? STEP_UP_TORQUE_THRESHOLD_2ND : STEP_UP_TORQUE_THRESHOLD_1;
+                const fp32 angle_threshold = STEP_UP_ANGLE_THRESHOLD_2ND;
+                const fp32 torque_threshold = STEP_UP_TORQUE_THRESHOLD_2ND;
 
                 const fp32 left_theta  = chassis_move_control_loop->chassis_left_control.theta_l;
                 const fp32 left_Tbl_r  = chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_r;
@@ -1809,7 +1832,44 @@ extern "C"
     {
         chassis_move_control_loop->step_up_phase = STEP_UP_DETECT;
         chassis_move_control_loop->step_up_phase_ticks = 0;
-        chassis_move_control_loop->step_up_from_first_step = 0;
+    }
+
+
+
+    static void chassis_update_step_down_phase(Chassis_Move *chassis_move_control_loop)
+    {
+        if (chassis_move_control_loop->state != CHASSIS_LEG_1_STEP_DOWN)
+        {
+            return;
+        }
+
+        chassis_move_control_loop->step_down_phase_ticks++;
+
+        // step_enable / protocol 失效时退出
+        if (!chassis_move_control_loop->chassis_gimbal_data->protocol_valid ||
+            !chassis_move_control_loop->chassis_gimbal_data->step_enable)
+        {
+            chassis_move_control_loop->state = CHASSIS_INIT;
+            chassis_move_control_loop->init_phase = CHASSIS_INIT_FOLD;
+            chassis_move_control_loop->pending_state = CHASSIS_NORMAL;
+            return;
+        }
+
+        switch (chassis_move_control_loop->step_down_phase)
+        {
+        case STEP_DOWN_FREEFALL:
+            if (chassis_move_control_loop->step_down_phase_ticks >= STEP_DOWN_FREEFALL_TICKS)
+            {
+                chassis_move_control_loop->state = CHASSIS_INIT;
+                chassis_move_control_loop->init_phase = CHASSIS_INIT_FOLD;
+                chassis_move_control_loop->pending_state = CHASSIS_NORMAL;
+                chassis_reset_leg_pid_state(chassis_move_control_loop);
+            }
+            break;
+
+        default:
+            break;
+        }
     }
 
     /**
@@ -2037,6 +2097,20 @@ extern "C"
         // {
         //     chassis_apply_init_wheel_theta_gate(chassis_move_control_loop);
         // }
+
+        // 下台阶 FREEFALL：纯自然状态，取消 Tbl + Fbl + wheel_T，腿被动摆动
+        if (chassis_move_control_loop->state == CHASSIS_LEG_1_STEP_DOWN &&
+            chassis_move_control_loop->step_down_phase == STEP_DOWN_FREEFALL)
+        {
+            chassis_move_control_loop->chassis_wheel[0].wheel_T = 0.0f;
+            chassis_move_control_loop->chassis_wheel[1].wheel_T = 0.0f;
+            chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t = 0.0f;
+            chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t = 0.0f;
+            chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t = 0.0f;
+            chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t = 0.0f;
+            APPLY_WBR_JOINT_OUTPUT(chassis_move_control_loop, 0.0f, 0.0f, 0.0f, 0.0f);
+            return;
+        }
 
         switch (output_mode)
         {

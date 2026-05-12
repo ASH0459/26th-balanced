@@ -120,7 +120,7 @@ void chassis_update_leg_angle_signals(leg_control *leg, const fp32 *f_theta, uin
 
     bool_t chassis_is_balancing_state(Chassis_State_e state)
     {
-        return state == CHASSIS_NORMAL || state == CHASSIS_LEG_1 || state == CHASSIS_LEG_2;
+        return state == CHASSIS_NORMAL || state == CHASSIS_LEG_1 || state == CHASSIS_LEG_2 || state == CHASSIS_LEG_1_STEP_DOWN;
     }
 
     bool_t chassis_is_init_like_state(Chassis_State_e state)

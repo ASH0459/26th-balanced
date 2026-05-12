@@ -492,6 +492,32 @@ static void chassis_control_leg_step_up(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw
     }
 }
 
+// LEG_1_STEP_DOWN 下的下台阶行为输出：按 step_down_phase 分派速度和腿长策略。
+static void chassis_control_leg_step_down(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set, fp32 *leg_set,
+                                          Chassis_Move *chassis_move_rc_to_vector)
+{
+    const Chassis_StepDown_Phase_e phase = chassis_move_rc_to_vector->step_down_phase;
+    const fp32 yaw_target = wrap_to_pi(chassis_move_rc_to_vector->chassis_gimbal_data->yaw_set);
+    const fp32 yaw_pid = chassis_follow_yaw_control(yaw_target, chassis_move_rc_to_vector);
+    *yaw_set = yaw_target;
+    *d_yaw_set = clamp_abs_fp32(yaw_pid, CHASSIS_D_YAW_MAX);
+
+    switch (phase)
+    {
+    case STEP_DOWN_FREEFALL:
+        // 纯自然状态：取消所有力矩，不收腿，维持 LEG_1 腿长
+        *vx_set = 0.0f;
+        *leg_set = CHASSIS_LEG_1_TARGET;
+        break;
+
+    default:
+        // 未知阶段：正常控制
+        chassis_normal_control(vx_set, yaw_set, d_yaw_set, leg_set,
+                               chassis_move_rc_to_vector, CHASSIS_NORMAL_LEG_TARGET);
+        break;
+    }
+}
+
 // 更新底盘行为状态机：根据外部请求和当前姿态决定 state / pending_state。
 void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
 {
@@ -616,8 +642,7 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
             if (step1_edge)
             {
                 chassis_move_mode->state = CHASSIS_LEG_1;
-                chassis_move_mode->step_up_phase = STEP_UP_DETECT_2ND; // 低腿长直接进二级检测
-                chassis_move_mode->step_up_from_first_step = 0;
+                chassis_move_mode->step_up_phase = STEP_UP_DONE; // LEG_1 不做上台阶，由下台阶检测接管
             }
             else if (step2_edge)
             {
@@ -670,8 +695,7 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
             else if (step1_edge)
             {
                 chassis_move_mode->state = CHASSIS_LEG_1;
-                chassis_move_mode->step_up_phase = STEP_UP_DETECT_2ND;
-                chassis_move_mode->step_up_from_first_step = 0;
+                chassis_move_mode->step_up_phase = STEP_UP_DONE;
             }
             break;
 
@@ -680,6 +704,17 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
             {
                 chassis_move_mode->state = CHASSIS_NORMAL;
             }
+            break;
+
+        case CHASSIS_LEG_1_STEP_DOWN:
+            if (chassis_move_mode->step_down_phase != STEP_DOWN_FREEFALL)
+            {
+                // 未知阶段，走 INIT 起身回 NORMAL
+                chassis_move_mode->state = CHASSIS_INIT;
+                chassis_move_mode->init_phase = CHASSIS_INIT_FOLD;
+                chassis_move_mode->pending_state = CHASSIS_NORMAL;
+            }
+            // FREEFALL 进行中：阻塞模式切换（step1/step2 不响应）
             break;
 
         default:
@@ -836,6 +871,20 @@ void chassis_behaviour_control_set(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set,
         break;
     case CHASSIS_JUMP:
         chassis_jump_control(vx_set, yaw_set, d_yaw_set, leg_set, chassis_move_rc_to_vector);
+        break;
+    case CHASSIS_LEG_1_STEP_DOWN:
+        if (protocol_valid)
+        {
+            chassis_control_leg_step_down(vx_set, yaw_set, d_yaw_set, leg_set,
+                                          chassis_move_rc_to_vector);
+        }
+        else
+        {
+            // 协议无效：走 INIT 起身回 NORMAL
+            chassis_move_rc_to_vector->state = CHASSIS_INIT;
+            chassis_move_rc_to_vector->init_phase = CHASSIS_INIT_FOLD;
+            chassis_move_rc_to_vector->pending_state = CHASSIS_NORMAL;
+        }
         break;
     case CHASSIS_LEG_1:
         if (protocol_valid)

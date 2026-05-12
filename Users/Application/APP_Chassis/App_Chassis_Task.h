@@ -36,7 +36,7 @@
 #define INIT_LQR_VAL 1.0f
 
 // 初始化腿旋转速度
-#define ROTATE_SPEED 1.3f
+#define ROTATE_SPEED 2.5f
 
 // 重力加速度
 #define GRAVITY_ACCELERATION 9.81f
@@ -110,8 +110,6 @@
 #define STEP_UP_TORQUE_THRESHOLD 5.0f        // |Tbl_r| 第一级反向力矩阈值 (Nm)
 #define STEP_UP_ANGLE_THRESHOLD_2ND -0.7f    // |theta_l| 第二级撞台阶角度阈值 (rad)，从一级来
 #define STEP_UP_TORQUE_THRESHOLD_2ND 4.0f    // |Tbl_r| 第二级反向力矩阈值 (Nm)，从一级来
-#define STEP_UP_ANGLE_THRESHOLD_1 -0.5f      // |theta_l| 二级台阶角度阈值 (rad)，直接从leg1进
-#define STEP_UP_TORQUE_THRESHOLD_1 4.0f      // |Tbl_r| 二级反向力矩阈值 (Nm)，直接从leg1进
 #define STEP_UP_LEG_SWING_TARGET (-0.5f)     // 撞台阶后 theta 被动摆到的目标角度 (rad)
 #define STEP_UP_CONTACT_MIN_TICKS 130U       // 进入CONTACT后强制等待时长 (ticks @ 1kHz = 300ms)
 #define STEP_UP_RETRACT_DONE_L 0.170f        // 收腿到位腿长阈值 (m)
@@ -127,6 +125,11 @@
 #define STEP_UP_CONTACT_REVERSE_WHEEL_T 0.45f // CONTACT阶段反向轮力矩 (Nm)，防止前滑
 #define STEP_UP_EXTEND_LEG_TARGET 0.30f // 上台阶第二级伸腿目标
 #define STEP_UP_EXTEND_VX_OFFSET 0.0f   // EXTEND 阶段在当前 v_set 上叠加的前向速度 (m/s)
+
+// 下台阶检测与流程参数
+#define STEP_DOWN_ANGLE_THRESHOLD  -0.4f   // |theta_l| 下台阶碰撞角度阈值 (rad)
+#define STEP_DOWN_TORQUE_THRESHOLD  3.0f   // |Tbl_r| 下台阶反向力矩阈值 (Nm)
+#define STEP_DOWN_FREEFALL_TICKS 1000U     // FREEFALL 延时 (ticks @ 1kHz = 200ms)
 
 // 离地检测迟滞阈值：落地阈值需高于离地阈值
 #define CHASSIS_OFF_GROUND_FORCE_THRESHOLD 80.0f
@@ -247,6 +250,7 @@ typedef enum
     CHASSIS_LEG_1,
     CHASSIS_LEG_2,
     CHASSIS_JUMP,
+    CHASSIS_LEG_1_STEP_DOWN,
     CHASSIS_RESERVED,
 } Chassis_State_e;
 
@@ -287,6 +291,11 @@ typedef enum
     // 完成
     STEP_UP_DONE,       // 上台阶流程完成
 } Chassis_StepUp_Phase_e;
+
+typedef enum
+{
+    STEP_DOWN_FREEFALL = 0,  // 纯自然状态，取消所有力矩
+} Chassis_StepDown_Phase_e;
 
 typedef enum
 {
@@ -373,13 +382,15 @@ public:
     Chassis_Init_Phase_e init_phase = CHASSIS_INIT_FOLD;
     Chassis_Jump_Phase_e jump_phase = CHASSIS_JUMP_DONE;
     Chassis_StepUp_Phase_e step_up_phase = STEP_UP_DETECT;
+    Chassis_StepDown_Phase_e step_down_phase = STEP_DOWN_FREEFALL;
     chassis_mode_e last_request_mode = CHASSIS_MODE_RESERVED;
     uint16_t jump_phase_ticks = 0;
     uint16_t posture_stable_ticks = 0;
     uint16_t normal_force_touch_ground_ticks = 0;
     uint16_t jump_landing_cooldown_ticks = 0; // JUMP→NORMAL 后的落地保护倒计时 (ms)
     uint32_t step_up_phase_ticks = 0;
-    uint8_t step_up_from_first_step = 0; // 1:从一级来的 0:直接从leg1进
+    uint32_t step_down_phase_ticks = 0;
+
     uint8_t reserved_angle_init_done = 0;
 
     const fp32 *chassis_INS_gyro;       // 机体角速度指针
