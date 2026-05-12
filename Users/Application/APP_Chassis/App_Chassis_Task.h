@@ -95,23 +95,23 @@
 #define CHASSIS_ROLL_LEVEL_THRESHOLD 0.7f
 
 #define CHASSIS_NORMAL_LEG_TARGET CHASSIS_LEG_MIN
-#define CHASSIS_LEG_1_TARGET 0.26f
+#define CHASSIS_LEG_1_TARGET 0.25f
 #define CHASSIS_LEG_2_TARGET CHASSIS_LEG_MAX
 #define CHASSIS_INIT_RETRACT_LEG_TARGET CHASSIS_NORMAL_LEG_TARGET
 #define CHASSIS_JUMP_TAKEOFF_TARGET 0.35f
-#define CHASSIS_JUMP_AIRBORNE_TARGET 0.16f
+#define CHASSIS_JUMP_AIRBORNE_TARGET 0.17f
 #define CHASSIS_JUMP_LAND_TARGET CHASSIS_JUMP_AIRBORNE_TARGET
-#define CHASSIS_JUMP_TAKEOFF_FORCE_BONUS 150.0f
+#define CHASSIS_JUMP_TAKEOFF_FORCE_BONUS 100.0f
 #define CHASSIS_JUMP_LAND_TICKS 400U
 #define CHASSIS_POSTURE_STABLE_TICKS 50U
 
 // 上台阶检测与流程参数
 #define STEP_UP_ANGLE_THRESHOLD -0.6f         // |theta_l| 第一级撞台阶角度阈值 (rad).
 #define STEP_UP_TORQUE_THRESHOLD 5.0f        // |Tbl_r| 第一级反向力矩阈值 (Nm)
-#define STEP_UP_ANGLE_THRESHOLD_2ND -0.6f    // |theta_l| 第二级撞台阶角度阈值 (rad)，从一级来
+#define STEP_UP_ANGLE_THRESHOLD_2ND -0.7f    // |theta_l| 第二级撞台阶角度阈值 (rad)，从一级来
 #define STEP_UP_TORQUE_THRESHOLD_2ND 4.0f    // |Tbl_r| 第二级反向力矩阈值 (Nm)，从一级来
-#define STEP_UP_ANGLE_THRESHOLD_1 -0.3f      // |theta_l| 二级台阶角度阈值 (rad)，直接从leg1进
-#define STEP_UP_TORQUE_THRESHOLD_1 2.0f      // |Tbl_r| 二级反向力矩阈值 (Nm)，直接从leg1进
+#define STEP_UP_ANGLE_THRESHOLD_1 -0.5f      // |theta_l| 二级台阶角度阈值 (rad)，直接从leg1进
+#define STEP_UP_TORQUE_THRESHOLD_1 4.0f      // |Tbl_r| 二级反向力矩阈值 (Nm)，直接从leg1进
 #define STEP_UP_LEG_SWING_TARGET (-0.5f)     // 撞台阶后 theta 被动摆到的目标角度 (rad)
 #define STEP_UP_CONTACT_MIN_TICKS 130U       // 进入CONTACT后强制等待时长 (ticks @ 1kHz = 300ms)
 #define STEP_UP_RETRACT_DONE_L 0.170f        // 收腿到位腿长阈值 (m)

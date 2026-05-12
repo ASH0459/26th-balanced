@@ -62,7 +62,7 @@
 // gyro_enable=1 时，底盘以恒定角速度旋转；正负号决定旋转方向。
 //#define CHASSIS_SMALL_GYRO_D_YAW_SET 55.0f
 // 功率和小陀螺转速比
-#define CHASSIS_POWER_D_YAW_RATE 0.6f
+#define CHASSIS_POWER_D_YAW_RATE 0.7f
 // 小陀螺启停斜坡速率（rad/s^2）。
 #define CHASSIS_SMALL_GYRO_RAMP_UP_RATE 40.0f
 #define CHASSIS_SMALL_GYRO_RAMP_DOWN_RATE 40.0f
