@@ -504,22 +504,13 @@ static void chassis_control_leg_step_down(fp32 *vx_set, fp32 *yaw_set, fp32 *d_y
     switch (phase)
     {
     case STEP_DOWN_FREEFALL:
-        // 取消 Tbl + 收腿到正常腿长
+        // 纯自然状态：取消所有力矩，不收腿，维持 LEG_1 腿长
         *vx_set = 0.0f;
-        *leg_set = chassis_ramp_leg_target(chassis_move_rc_to_vector,
-                                           CHASSIS_NORMAL_LEG_TARGET,
-                                           CHASSIS_LEG_STEP_RAMP_SPEED);
+        *leg_set = CHASSIS_LEG_1_TARGET;
         break;
 
-    case STEP_DOWN_LANDING:
-        // 离地检测阶段：速度归零，维持短腿
-        *vx_set = 0.0f;
-        *leg_set = CHASSIS_NORMAL_LEG_TARGET;
-        break;
-
-    case STEP_DOWN_DONE:
     default:
-        // 完成：正常控制，恢复腿长
+        // 未知阶段：正常控制
         chassis_normal_control(vx_set, yaw_set, d_yaw_set, leg_set,
                                chassis_move_rc_to_vector, CHASSIS_NORMAL_LEG_TARGET);
         break;
@@ -715,17 +706,14 @@ void Chassis_Behaviour_Mode_Set(Chassis_Move *chassis_move_mode)
             break;
 
         case CHASSIS_LEG_1_STEP_DOWN:
-            if (chassis_move_mode->step_down_phase == STEP_DOWN_DONE)
+            if (chassis_move_mode->step_down_phase != STEP_DOWN_FREEFALL)
             {
-                chassis_move_mode->state = CHASSIS_NORMAL;
+                // 未知阶段，走 INIT 起身回 NORMAL
+                chassis_move_mode->state = CHASSIS_INIT;
+                chassis_move_mode->init_phase = CHASSIS_INIT_FOLD;
+                chassis_move_mode->pending_state = CHASSIS_NORMAL;
             }
-            else if (chassis_move_mode->step_down_phase != STEP_DOWN_FREEFALL &&
-                     chassis_move_mode->step_down_phase != STEP_DOWN_LANDING)
-            {
-                // 未知阶段，回 NORMAL
-                chassis_move_mode->state = CHASSIS_NORMAL;
-            }
-            // FREEFALL / LANDING 进行中：阻塞模式切换（step1/step2 不响应）
+            // FREEFALL 进行中：阻塞模式切换（step1/step2 不响应）
             break;
 
         default:
@@ -891,9 +879,10 @@ void chassis_behaviour_control_set(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set,
         }
         else
         {
-            // 协议无效：回 NORMAL
-            chassis_move_rc_to_vector->step_down_phase = STEP_DOWN_DONE;
-            chassis_move_rc_to_vector->state = CHASSIS_NORMAL;
+            // 协议无效：走 INIT 起身回 NORMAL
+            chassis_move_rc_to_vector->state = CHASSIS_INIT;
+            chassis_move_rc_to_vector->init_phase = CHASSIS_INIT_FOLD;
+            chassis_move_rc_to_vector->pending_state = CHASSIS_NORMAL;
         }
         break;
     case CHASSIS_LEG_1:

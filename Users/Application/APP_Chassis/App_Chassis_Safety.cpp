@@ -32,10 +32,9 @@ bool_t chassis_theta_loss_of_control_check(Chassis_Move *chassis_move)
         }
     }
 
-    // 下台阶活跃阶段：同样跳过 theta 失控检测
+    // 下台阶 FREEFALL 阶段：跳过 theta 失控检测
     if (chassis_move->state == CHASSIS_LEG_1_STEP_DOWN &&
-        (chassis_move->step_down_phase == STEP_DOWN_FREEFALL ||
-         chassis_move->step_down_phase == STEP_DOWN_LANDING))
+        chassis_move->step_down_phase == STEP_DOWN_FREEFALL)
     {
         return 0;
     }

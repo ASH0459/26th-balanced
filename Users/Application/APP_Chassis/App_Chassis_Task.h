@@ -36,7 +36,7 @@
 #define INIT_LQR_VAL 1.0f
 
 // 初始化腿旋转速度
-#define ROTATE_SPEED 1.5f
+#define ROTATE_SPEED 2.5f
 
 // 重力加速度
 #define GRAVITY_ACCELERATION 9.81f
@@ -128,10 +128,8 @@
 
 // 下台阶检测与流程参数
 #define STEP_DOWN_ANGLE_THRESHOLD  -0.4f   // |theta_l| 下台阶碰撞角度阈值 (rad)
-#define STEP_DOWN_TORQUE_THRESHOLD  2.0f   // |Tbl_r| 下台阶反向力矩阈值 (Nm)
-#define STEP_DOWN_RETRACT_THETA_THRESHOLD 0.4f  // 收腿退出 theta 阈值 (rad)
-#define STEP_DOWN_RETRACT_DONE_L    0.170f // 收腿到位腿长阈值 (m)
-#define STEP_DOWN_LANDING_MIN_TICKS 50U    // landing 最短等待 (ticks @ 1kHz)
+#define STEP_DOWN_TORQUE_THRESHOLD  3.0f   // |Tbl_r| 下台阶反向力矩阈值 (Nm)
+#define STEP_DOWN_FREEFALL_TICKS 1000U     // FREEFALL 延时 (ticks @ 1kHz = 200ms)
 
 // 离地检测迟滞阈值：落地阈值需高于离地阈值
 #define CHASSIS_OFF_GROUND_FORCE_THRESHOLD 80.0f
@@ -296,9 +294,7 @@ typedef enum
 
 typedef enum
 {
-    STEP_DOWN_FREEFALL = 0,  // 取消 Tbl + 收腿到正常腿长
-    STEP_DOWN_LANDING,        // 离地检测，等落地
-    STEP_DOWN_DONE,           // 下台阶流程完成
+    STEP_DOWN_FREEFALL = 0,  // 纯自然状态，取消所有力矩
 } Chassis_StepDown_Phase_e;
 
 typedef enum

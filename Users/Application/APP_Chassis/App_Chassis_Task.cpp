@@ -1150,15 +1150,6 @@ extern "C"
             return;
         }
 
-        // 下台阶 LANDING 阶段强制离地，冻结速度/位移
-        if (chassis_move_prediction->state == CHASSIS_LEG_1_STEP_DOWN &&
-            chassis_move_prediction->step_down_phase == STEP_DOWN_LANDING)
-        {
-            chassis_move_prediction->chassis_left_control.chassis_off_ground_detection = CHASSIS_OFF_GROUND;
-            chassis_move_prediction->chassis_right_control.chassis_off_ground_detection = CHASSIS_OFF_GROUND;
-            return;
-        }
-
         if (chassis_move_prediction->state == CHASSIS_NORMAL)
         {
             chassis_move_prediction->chassis_left_control.chassis_off_ground_detection = CHASSIS_TOUCH_GROUND;
@@ -1864,48 +1855,24 @@ extern "C"
         if (!chassis_move_control_loop->chassis_gimbal_data->protocol_valid ||
             !chassis_move_control_loop->chassis_gimbal_data->step_enable)
         {
-            chassis_move_control_loop->step_down_phase = STEP_DOWN_DONE;
-            chassis_move_control_loop->state = CHASSIS_NORMAL;
+            chassis_move_control_loop->state = CHASSIS_INIT;
+            chassis_move_control_loop->init_phase = CHASSIS_INIT_FOLD;
+            chassis_move_control_loop->pending_state = CHASSIS_NORMAL;
             return;
         }
 
         switch (chassis_move_control_loop->step_down_phase)
         {
         case STEP_DOWN_FREEFALL:
-            // 收腿到位：theta 回正 + 腿长到位
-            if (fabsf(chassis_move_control_loop->chassis_left_control.theta_l) < STEP_DOWN_RETRACT_THETA_THRESHOLD &&
-                fabsf(chassis_move_control_loop->chassis_right_control.theta_l) < STEP_DOWN_RETRACT_THETA_THRESHOLD &&
-                chassis_move_control_loop->chassis_left_control.wbr_control.L <= STEP_DOWN_RETRACT_DONE_L + 0.02 &&
-                chassis_move_control_loop->chassis_right_control.wbr_control.L <= STEP_DOWN_RETRACT_DONE_L + 0.02)
+            if (chassis_move_control_loop->step_down_phase_ticks >= STEP_DOWN_FREEFALL_TICKS)
             {
-                chassis_move_control_loop->step_down_phase = STEP_DOWN_LANDING;
-                chassis_move_control_loop->step_down_phase_ticks = 0;
-                chassis_move_control_loop->chassis_left_control.chassis_off_ground_detection = CHASSIS_OFF_GROUND;
-                chassis_move_control_loop->chassis_right_control.chassis_off_ground_detection = CHASSIS_OFF_GROUND;
+                chassis_move_control_loop->state = CHASSIS_INIT;
+                chassis_move_control_loop->init_phase = CHASSIS_INIT_FOLD;
+                chassis_move_control_loop->pending_state = CHASSIS_NORMAL;
                 chassis_reset_leg_pid_state(chassis_move_control_loop);
             }
             break;
 
-        case STEP_DOWN_LANDING:
-            // 每周期强制离地
-            chassis_move_control_loop->chassis_left_control.chassis_off_ground_detection = CHASSIS_OFF_GROUND;
-            chassis_move_control_loop->chassis_right_control.chassis_off_ground_detection = CHASSIS_OFF_GROUND;
-
-            if (chassis_move_control_loop->step_down_phase_ticks >= STEP_DOWN_LANDING_MIN_TICKS)
-            {
-                if (chassis_move_control_loop->chassis_left_control.Fwn >= CHASSIS_TOUCH_GROUND_FORCE_THRESHOLD ||
-                    chassis_move_control_loop->chassis_right_control.Fwn >= CHASSIS_TOUCH_GROUND_FORCE_THRESHOLD)
-                {
-                    chassis_move_control_loop->step_down_phase = STEP_DOWN_DONE;
-                    chassis_move_control_loop->step_down_phase_ticks = 0;
-                    chassis_move_control_loop->chassis_leg_set = CHASSIS_NORMAL_LEG_TARGET;
-                    chassis_move_control_loop->chassis_leg_filter_set.out = CHASSIS_NORMAL_LEG_TARGET;
-                    chassis_reset_leg_pid_state(chassis_move_control_loop);
-                }
-            }
-            break;
-
-        case STEP_DOWN_DONE:
         default:
             break;
         }
@@ -2118,13 +2085,6 @@ extern "C"
             return CHASSIS_OUTPUT_MODE_RETRACT_LEG_ONLY;
         }
 
-        // 下台阶 FREEFALL 阶段：取消 Tbl + 收腿
-        if (chassis_move_control_loop->state == CHASSIS_LEG_1_STEP_DOWN &&
-            chassis_move_control_loop->step_down_phase == STEP_DOWN_FREEFALL)
-        {
-            return CHASSIS_OUTPUT_MODE_RETRACT_LEG_ONLY;
-        }
-
         // CHASSIS_JUMP 虽然会改变支持力策略，但最终仍走标准 WBR 输出映射，
         // 因此不需要单独拆一个输出模式。
         return CHASSIS_OUTPUT_MODE_NORMAL_WBR;
@@ -2148,6 +2108,20 @@ extern "C"
         // {
         //     chassis_apply_init_wheel_theta_gate(chassis_move_control_loop);
         // }
+
+        // 下台阶 FREEFALL：纯自然状态，取消 Tbl + Fbl + wheel_T，腿被动摆动
+        if (chassis_move_control_loop->state == CHASSIS_LEG_1_STEP_DOWN &&
+            chassis_move_control_loop->step_down_phase == STEP_DOWN_FREEFALL)
+        {
+            chassis_move_control_loop->chassis_wheel[0].wheel_T = 0.0f;
+            chassis_move_control_loop->chassis_wheel[1].wheel_T = 0.0f;
+            chassis_move_control_loop->chassis_left_control.wbr_control.Tbl_t = 0.0f;
+            chassis_move_control_loop->chassis_right_control.wbr_control.Tbl_t = 0.0f;
+            chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t = 0.0f;
+            chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t = 0.0f;
+            APPLY_WBR_JOINT_OUTPUT(chassis_move_control_loop, 0.0f, 0.0f, 0.0f, 0.0f);
+            return;
+        }
 
         switch (output_mode)
         {
