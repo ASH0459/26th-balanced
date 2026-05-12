@@ -370,12 +370,13 @@ static void chassis_jump_control(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set, f
         break;
     case CHASSIS_JUMP_READYLAND:
         // 空中瞬间收到最短腿长，不用斜坡，避免空中伸腿
-        chassis_move_rc_to_vector->chassis_leg_filter_set.out = CHASSIS_LEG_MIN;
-        chassis_move_rc_to_vector->chassis_left_leg_set = CHASSIS_LEG_MIN;
-        chassis_move_rc_to_vector->chassis_right_leg_set = CHASSIS_LEG_MIN;
-        *leg_set = CHASSIS_LEG_MIN;
+        chassis_move_rc_to_vector->chassis_leg_filter_set.out = CHASSIS_JUMP_AIRBORNE_TARGET;
+        chassis_move_rc_to_vector->chassis_left_leg_set = CHASSIS_JUMP_AIRBORNE_TARGET;
+        chassis_move_rc_to_vector->chassis_right_leg_set = CHASSIS_JUMP_AIRBORNE_TARGET;
+        *leg_set = CHASSIS_JUMP_AIRBORNE_TARGET;
         break;
     case CHASSIS_JUMP_DONE:
+        break;
     default:
         *leg_set = chassis_ramp_leg_target(chassis_move_rc_to_vector,
                                            CHASSIS_NORMAL_LEG_TARGET,

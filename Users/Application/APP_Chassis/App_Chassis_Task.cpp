@@ -1145,13 +1145,6 @@ extern "C"
             return;
         }
 
-        if (chassis_move_prediction->state == CHASSIS_NORMAL)
-        {
-            chassis_move_prediction->chassis_left_control.chassis_off_ground_detection = CHASSIS_TOUCH_GROUND;
-            chassis_move_prediction->chassis_right_control.chassis_off_ground_detection = CHASSIS_TOUCH_GROUND;
-            return;
-        }
-
         // 采用离地/落地双阈值迟滞，避免支持力在单阈值附近抖动导致状态翻转
         if (chassis_move_prediction->chassis_left_control.chassis_off_ground_detection ==
             CHASSIS_OFF_GROUND)
@@ -1973,14 +1966,9 @@ extern "C"
 
             // -重力补偿 - 侧向惯性力矩补偿 + 右腿腿长PID + 右腿roll轴补偿PID + 弹簧补偿
             chassis_move_control_loop->chassis_right_control.wbr_control.Fbl_t = +chassis_move_control_loop->chassis_right_control.fd_roll - chassis_move_control_loop->chassis_right_control.fd_leg + chassis_move_control_loop->chassis_right_control.Fbl_inertial + chassis_move_control_loop->chassis_right_control.Fbl_spring - chassis_move_control_loop->chassis_right_control.Fbl_gravity;
-            // JUMP→NORMAL 落地保护倒计时递减
-            if (chassis_move_control_loop->jump_landing_cooldown_ticks > 0U)
-            {
-                chassis_move_control_loop->jump_landing_cooldown_ticks--;
-            }
+
             // 双腿离地且不在落地保护期内，限制支持力
-            if (chassis_move_control_loop->jump_landing_cooldown_ticks == 0U &&
-                chassis_move_control_loop->chassis_left_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND && chassis_move_control_loop->chassis_right_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND)
+            if (chassis_move_control_loop->chassis_left_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND && chassis_move_control_loop->chassis_right_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND)
             {
                 if (chassis_move_control_loop->chassis_left_control.wbr_control.Fbl_t > chassis_move_control_loop->chassis_left_control.Fbl_spring - 40.0f)
                 {
