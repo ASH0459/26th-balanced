@@ -108,7 +108,7 @@
 // 上台阶检测与流程参数
 #define STEP_UP_ANGLE_THRESHOLD -0.6f         // |theta_l| 第一级撞台阶角度阈值 (rad).
 #define STEP_UP_TORQUE_THRESHOLD 5.0f        // |Tbl_r| 第一级反向力矩阈值 (Nm)
-#define STEP_UP_ANGLE_THRESHOLD_2ND -0.7f    // |theta_l| 第二级撞台阶角度阈值 (rad)，从一级来
+#define STEP_UP_ANGLE_THRESHOLD_2ND -0.8f    // |theta_l| 第二级撞台阶角度阈值 (rad)，从一级来
 #define STEP_UP_TORQUE_THRESHOLD_2ND 4.0f    // |Tbl_r| 第二级反向力矩阈值 (Nm)，从一级来
 #define STEP_UP_LEG_SWING_TARGET (-0.5f)     // 撞台阶后 theta 被动摆到的目标角度 (rad)
 #define STEP_UP_CONTACT_MIN_TICKS 130U       // 进入CONTACT后强制等待时长 (ticks @ 1kHz = 300ms)
@@ -132,7 +132,7 @@
 #define STEP_DOWN_FREEFALL_TICKS 1000U     // FREEFALL 延时 (ticks @ 1kHz = 200ms)
 
 // 离地检测迟滞阈值：落地阈值需高于离地阈值
-#define CHASSIS_OFF_GROUND_FORCE_THRESHOLD 80.0f
+#define CHASSIS_OFF_GROUND_FORCE_THRESHOLD 60.0f
 #define CHASSIS_TOUCH_GROUND_FORCE_THRESHOLD 85.0f
 
 // 初始化时机体未水平的自扶正腿部旋转参数
@@ -159,9 +159,8 @@
 #define ROLL_PID_KI 0.0f
 #define ROLL_PID_MAX_OUT 200.0f
 #define ROLL_PID_MAX_IOUT 0.0f
-
 #define CHASSIS_X_BACK 0.0f
-#define UP_X_FORWARD 0.2f
+#define UP_X_FORWARD 0.0
 // 左右腿长度PID
 #define LEG_PID_KP 2500.0f
 #define LEG_PID_KI 4.8f

@@ -140,7 +140,7 @@ static Chassis_State_e chassis_sanitize_pending_state(Chassis_State_e pending_st
 #endif
 
 // 计算 vx 加速阶段本拍允许增长的步长。
-static fp32 chassis_calc_vx_accel_step(fp32 current_vx, fp32 target_vx)
+static fp32 chassis_calc_vx_accel_step(fp32 current_vx, fp32 target_vx, fp32 switch_speed)
 {
     const fp32 accel_base_step = CHASSIS_DIRECTION_VX_ACCEL * CHASSIS_CONTROL_TIME;
     const fp32 abs_target = fabsf(target_vx);
@@ -150,18 +150,25 @@ static fp32 chassis_calc_vx_accel_step(fp32 current_vx, fp32 target_vx)
         return accel_base_step;
     }
 
-    fp32 progress = fabsf(current_vx) / abs_target;
-    progress = float_constrain(progress, 0.0f, 1.0f);
-
-    const fp32 fast_gain = float_constrain(CHASSIS_DIRECTION_VX_ACCEL_FAST_GAIN, 0.0f, 10.0f);
-    const fp32 slow_gain = float_constrain(CHASSIS_DIRECTION_VX_ACCEL_SLOW_GAIN, 0.0f, 10.0f);
-    const fp32 gain = slow_gain + (1.0f - progress) * (fast_gain - slow_gain);
+    const fp32 abs_current = fabsf(current_vx);
+    const fp32 fast_gain = float_constrain(CHASSIS_DIRECTION_VX_ACCEL_FAST_GAIN, 0.0f, CHASSIS_DIRECTION_VX_ACCEL_FAST_GAIN);
+    const fp32 slow_gain = float_constrain(CHASSIS_DIRECTION_VX_ACCEL_SLOW_GAIN, 0.0f, CHASSIS_DIRECTION_VX_ACCEL_SLOW_GAIN);
+    // 按绝对速度切换增益：低于阈值用快速增益，高于阈值用慢速增益
+    fp32 gain;
+    if (abs_current < switch_speed)
+    {
+        gain = fast_gain;
+    }
+    else
+    {
+        gain = slow_gain;
+    }
 
     return accel_base_step * gain;
 }
 
 // 更新 vx 斜坡，负责起步、刹车和反向切换。
-static fp32 chassis_update_vx_ramp(fp32 target_vx, bool_t hard_reset)
+static fp32 chassis_update_vx_ramp(fp32 target_vx, bool_t hard_reset, fp32 switch_speed)
 {
     static ramp_function_source_t vx_ramp;
     static uint8_t ramp_init_flag = 0;
@@ -184,7 +191,8 @@ static fp32 chassis_update_vx_ramp(fp32 target_vx, bool_t hard_reset)
 
     if (fabsf(target) < 1e-6f)
     {
-        vx_ramp.out = chassis_ramp_to_target(vx_ramp.out, 0.0f, brake_step);
+        // 无速度输入时直接归零，快速刹车
+        vx_ramp.out = 0.0f;
     }
     else if (current * target < 0.0f)
     {
@@ -193,13 +201,13 @@ static fp32 chassis_update_vx_ramp(fp32 target_vx, bool_t hard_reset)
 
         if (fabsf(vx_ramp.out) <= 1e-6f)
         {
-            const fp32 accel_step = chassis_calc_vx_accel_step(vx_ramp.out, target);
+            const fp32 accel_step = chassis_calc_vx_accel_step(vx_ramp.out, target, switch_speed);
             vx_ramp.out = chassis_ramp_to_target(vx_ramp.out, target, accel_step);
         }
     }
     else
     {
-        const fp32 step = (fabsf(target) < fabsf(current)) ? brake_step : chassis_calc_vx_accel_step(current, target);
+        const fp32 step = (fabsf(target) < fabsf(current)) ? brake_step : chassis_calc_vx_accel_step(current, target, switch_speed);
         vx_ramp.out = chassis_ramp_to_target(vx_ramp.out, target, step);
 
         if (fabsf(vx_ramp.out - target) <= 1e-6f)
@@ -258,7 +266,7 @@ static fp32 chassis_follow_yaw_control(const fp32 target_relative_yaw,
 static void chassis_action_hold_control(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set, fp32 *leg_set,
                                         Chassis_Move *chassis_move_rc_to_vector, fp32 target_leg_length)
 {
-    *vx_set = chassis_update_vx_ramp(0.0f, 0);
+    *vx_set = chassis_update_vx_ramp(0.0f, 0, CHASSIS_VX_ACCEL_SWITCH_SPEED);
     const fp32 yaw_target = wrap_to_pi(chassis_move_rc_to_vector->chassis_gimbal_data->yaw_set);
     const fp32 yaw_pid = chassis_follow_yaw_control(yaw_target, chassis_move_rc_to_vector);
     *yaw_set = yaw_target;
@@ -293,8 +301,11 @@ static void chassis_normal_control(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set,
         }
     }
 
-    //*vx_set = chassis_update_vx_ramp(target_vx, 0);
-    *vx_set = target_vx;
+    const fp32 vx_switch_speed = (chassis_move_rc_to_vector->state == CHASSIS_LEG_1 ||
+                                   chassis_move_rc_to_vector->state == CHASSIS_LEG_2)
+                                      ? CHASSIS_VX_ACCEL_LEG_SWITCH_SPEED
+                                      : CHASSIS_VX_ACCEL_SWITCH_SPEED;
+    *vx_set = chassis_update_vx_ramp(target_vx, 0, vx_switch_speed);
 
     const bool_t small_gyro_enable =
         (chassis_move_rc_to_vector->chassis_gimbal_data != NULL) &&
@@ -356,7 +367,7 @@ static void chassis_init_control(fp32 *vx_set, fp32 *d_yaw_set, fp32 *leg_set, C
 static void chassis_jump_control(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set, fp32 *leg_set,
                                  Chassis_Move *chassis_move_rc_to_vector)
 {
-    *vx_set = chassis_update_vx_ramp(0.0f, 0);
+    *vx_set = chassis_update_vx_ramp(0.0f, 0, CHASSIS_VX_ACCEL_SWITCH_SPEED);
     const fp32 yaw_target = wrap_to_pi(chassis_move_rc_to_vector->chassis_gimbal_data->yaw_set);
     const fp32 yaw_pid = chassis_follow_yaw_control(yaw_target, chassis_move_rc_to_vector);
     *yaw_set = yaw_target;
@@ -837,7 +848,7 @@ void chassis_behaviour_control_set(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set,
     {
     case CHASSIS_STOP:
         chassis_zero_force_control(vx_set, d_yaw_set, leg_set);
-        chassis_update_vx_ramp(0.0f, 1);
+        chassis_update_vx_ramp(0.0f, 1, 0.0f);
         chassis_update_small_gyro_d_yaw(0, 1);
         break;
 
@@ -847,13 +858,13 @@ void chassis_behaviour_control_set(fp32 *vx_set, fp32 *yaw_set, fp32 *d_yaw_set,
         *leg_set = chassis_ramp_leg_target(chassis_move_rc_to_vector,
                                            CHASSIS_LEG_MAX,
                                            CHASSIS_LEG_STEP_RAMP_SPEED);
-        chassis_update_vx_ramp(0.0f, 1);
+        chassis_update_vx_ramp(0.0f, 1, 0.0f);
         chassis_update_small_gyro_d_yaw(0, 1);
         break;
 
     case CHASSIS_INIT:
         chassis_init_control(vx_set, d_yaw_set, leg_set, chassis_move_rc_to_vector);
-        chassis_update_vx_ramp(0.0f, 1);
+        chassis_update_vx_ramp(0.0f, 1, 0.0f);
         chassis_update_small_gyro_d_yaw(0, 1);
         break;
 

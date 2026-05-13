@@ -184,10 +184,10 @@ void WheelLeggedPowerLimitator::Calculate_Decay(float Uspeed, float Uyaw,
         // 计算衰减比例并限幅
 
         float tempDecayUspeed = (fabs(Uspeed) > 1e-5f) ? (restrictedUspeed / Uspeed) : 0.01f;
-        float tempDecayUyaw   = (fabs(Uyaw) > 1e-5f)   ? (restrictedUyaw / Uyaw) : 0.5f;
+        float tempDecayUyaw   = (fabs(Uyaw) > 1e-5f)   ? (restrictedUyaw / Uyaw) : 0.8f;
 
         tempDecayUspeed = CLAMP(tempDecayUspeed, 0.01f, 1.0f);
-        tempDecayUyaw   = CLAMP(tempDecayUyaw, 0.5f, 1.0f);
+        tempDecayUyaw   = CLAMP(tempDecayUyaw, 0.8f, 1.0f);
 
         // 低通滤波平滑输出衰减因子，防止控制突变导致机体抖动
         decayUspeed = tempDecayUspeed * 0.1f + decayUspeed * 0.9f;

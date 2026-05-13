@@ -18,8 +18,8 @@
 
 /* -------------------- 指令速度配置 -------------------- */
 // 行为层 v_set 目标的主限幅。
-#define CHASSIS_KEY_MAX_SPEED 1.8f
-#define CHASSIS_KEY_BACK_MAX_SPEED 1.5f
+#define CHASSIS_KEY_MAX_SPEED 2.0f
+#define CHASSIS_KEY_BACK_MAX_SPEED 2.0f
 #define CHASSIS_LEG_MAX_SPEED 1.5f
 
 /* -------------------- 腿长斜坡参数 -------------------- */
@@ -62,7 +62,7 @@
 // gyro_enable=1 时，底盘以恒定角速度旋转；正负号决定旋转方向。
 //#define CHASSIS_SMALL_GYRO_D_YAW_SET 55.0f
 // 功率和小陀螺转速比
-#define CHASSIS_POWER_D_YAW_RATE 0.55f
+#define CHASSIS_POWER_D_YAW_RATE 0.5f
 // 小陀螺启停斜坡速率（rad/s^2）。
 #define CHASSIS_SMALL_GYRO_RAMP_UP_RATE 40.0f
 #define CHASSIS_SMALL_GYRO_RAMP_DOWN_RATE 40.0f
@@ -86,11 +86,14 @@
 
 // 行为层 v_set 滤波使用的线速度加速/制动斜坡。
 #define CHASSIS_DIRECTION_VX_ACCEL 0.5f
-#define CHASSIS_DIRECTION_VX_BRAKE_ACCEL 3.0f
+#define CHASSIS_DIRECTION_VX_BRAKE_ACCEL 5.0f
 
 // v_set 加速阶段增益: 先急后缓（起步用 FAST，接近目标逐步过渡到 SLOW）。
-#define CHASSIS_DIRECTION_VX_ACCEL_FAST_GAIN 10.0f
-#define CHASSIS_DIRECTION_VX_ACCEL_SLOW_GAIN 0.5f
+#define CHASSIS_DIRECTION_VX_ACCEL_FAST_GAIN 30.0f
+#define CHASSIS_DIRECTION_VX_ACCEL_SLOW_GAIN 1.0f
+// 加速增益切换速度阈值：低于此值用 FAST_GAIN，高于此值用 SLOW_GAIN。
+#define CHASSIS_VX_ACCEL_SWITCH_SPEED 1.5f
+#define CHASSIS_VX_ACCEL_LEG_SWITCH_SPEED 1.0f
 
 /* -------------------- RESERVED 模式标志位控制参数 -------------------- */
 // 标志位为 1 时的前进/后退目标速度 (m/s)。
@@ -104,7 +107,7 @@
 #define CHASSIS_RESERVED_TURN_SPEED 1.0f
 
 // 腿角度斜坡速率 (rad/s)，复用 INIT 级别。
-#define CHASSIS_RESERVED_LEG_ANGLE_SPEED 1.0f
+#define CHASSIS_RESERVED_LEG_ANGLE_SPEED 1.8f
 
 /* -------------------- 兼容保留（当前代码未引用） -------------------- */
 // 以下参数在当前控制链路中未被代码直接使用，保留用于旧逻辑兼容或后续扩展。
