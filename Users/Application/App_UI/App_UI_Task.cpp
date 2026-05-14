@@ -237,6 +237,8 @@ static void UI_Init(void)
   osDelay(500);
   ui_init_normal_LegDynamicGroup();
   osDelay(500);
+  ui_init_normal_offset_text();
+  osDelay(500);
 }
 
 /**
@@ -387,6 +389,7 @@ static void UI_Clear_All(void)
 {
   UI_Reset_Dynamic_Warnings();
   UI_Remove_Normal_StaticTextGroup1();
+  ui_remove_normal_offset_text();
   ui_remove_normal_LegDynamicGroup();
   ui_remove_normal_DynamicGroup1();
   ui_remove_normal_StaticGroup1();
