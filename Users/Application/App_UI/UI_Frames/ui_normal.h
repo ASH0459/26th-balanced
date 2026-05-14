@@ -60,5 +60,12 @@ void ui_init_normal_StaticTextGroup1();
 void ui_update_normal_StaticTextGroup1();
 void ui_remove_normal_StaticTextGroup1();
 
+extern ui_interface_string_t *ui_normal_offset_text_yaw_offset_text;
+extern ui_interface_string_t *ui_normal_offset_text_pit_offset_text;
+
+void ui_init_normal_offset_text();
+void ui_update_normal_offset_text();
+void ui_remove_normal_offset_text();
+
 
 #endif // UI_normal_H
