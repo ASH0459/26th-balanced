@@ -111,6 +111,8 @@ typedef struct
     uint8_t chassis_feature_flags;
     uint8_t mode;
     uint8_t fric_state;
+    int8_t yaw_offset;   // signed 4bit, ÷10 = 0.1°
+    int8_t pitch_offset; // signed 4bit, ÷10 = 0.1°
     int16_t turn_set;
 } gimbal_can_cmd_frame_t;
 
@@ -189,6 +191,8 @@ public:
     uint8_t protocol_valid;
     Fric_State_e fric_state;
     chassis_mode_e chassis_behaviour_mode;
+    fp32 yaw_offset;          // 单位: 度 (°)
+    fp32 pitch_offset;        // 单位: 度 (°)
     uint16_t reserved_flags;  // 高字节: Byte0, 低字节: Byte1
 
     const Gimbal_Data *get_gimbal_point() const

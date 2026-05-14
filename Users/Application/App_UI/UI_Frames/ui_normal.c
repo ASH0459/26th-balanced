@@ -166,22 +166,24 @@ void ui_remove_normal_DynamicTextGroup1() {
     _ui_remove_normal_DynamicTextGroup1_0();
 }
 
-ui_5_frame_t ui_normal_LegDynamicGroup_0;
+ui_7_frame_t ui_normal_LegDynamicGroup_0;
 
 ui_interface_line_t *ui_normal_LegDynamicGroup_L1U_left = (ui_interface_line_t*)&(ui_normal_LegDynamicGroup_0.data[0]);
 ui_interface_line_t *ui_normal_LegDynamicGroup_L1D_left = (ui_interface_line_t*)&(ui_normal_LegDynamicGroup_0.data[1]);
 ui_interface_line_t *ui_normal_LegDynamicGroup_L2U_right = (ui_interface_line_t*)&(ui_normal_LegDynamicGroup_0.data[2]);
 ui_interface_line_t *ui_normal_LegDynamicGroup_L2D_right = (ui_interface_line_t*)&(ui_normal_LegDynamicGroup_0.data[3]);
 ui_interface_number_t *ui_normal_LegDynamicGroup_step_up_number = (ui_interface_number_t*)&(ui_normal_LegDynamicGroup_0.data[4]);
+ui_interface_number_t *ui_normal_LegDynamicGroup_yaw_offset = (ui_interface_number_t*)&(ui_normal_LegDynamicGroup_0.data[5]);
+ui_interface_number_t *ui_normal_LegDynamicGroup_pitch_offset = (ui_interface_number_t*)&(ui_normal_LegDynamicGroup_0.data[6]);
 
 void _ui_init_normal_LegDynamicGroup_0() {
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 7; i++) {
         ui_normal_LegDynamicGroup_0.data[i].figure_name[0] = 1;
         ui_normal_LegDynamicGroup_0.data[i].figure_name[1] = 2;
         ui_normal_LegDynamicGroup_0.data[i].figure_name[2] = i + 0;
         ui_normal_LegDynamicGroup_0.data[i].operate_type = 1;
     }
-    for (int i = 5; i < 5; i++) {
+    for (int i = 7; i < 7; i++) {
         ui_normal_LegDynamicGroup_0.data[i].operate_type = 0;
     }
 
@@ -235,26 +237,46 @@ void _ui_init_normal_LegDynamicGroup_0() {
     ui_normal_LegDynamicGroup_step_up_number->font_size = 20;
     ui_normal_LegDynamicGroup_step_up_number->number = 1;
 
+    ui_normal_LegDynamicGroup_yaw_offset->figure_type = 5;
+    ui_normal_LegDynamicGroup_yaw_offset->operate_type = 1;
+    ui_normal_LegDynamicGroup_yaw_offset->layer = 0;
+    ui_normal_LegDynamicGroup_yaw_offset->color = 2;
+    ui_normal_LegDynamicGroup_yaw_offset->start_x = 1596;
+    ui_normal_LegDynamicGroup_yaw_offset->start_y = 683;
+    ui_normal_LegDynamicGroup_yaw_offset->width = 2;
+    ui_normal_LegDynamicGroup_yaw_offset->font_size = 20;
+    ui_normal_LegDynamicGroup_yaw_offset->number = 100;
 
-    ui_proc_5_frame(&ui_normal_LegDynamicGroup_0);
+    ui_normal_LegDynamicGroup_pitch_offset->figure_type = 5;
+    ui_normal_LegDynamicGroup_pitch_offset->operate_type = 1;
+    ui_normal_LegDynamicGroup_pitch_offset->layer = 0;
+    ui_normal_LegDynamicGroup_pitch_offset->color = 2;
+    ui_normal_LegDynamicGroup_pitch_offset->start_x = 1781;
+    ui_normal_LegDynamicGroup_pitch_offset->start_y = 683;
+    ui_normal_LegDynamicGroup_pitch_offset->width = 2;
+    ui_normal_LegDynamicGroup_pitch_offset->font_size = 20;
+    ui_normal_LegDynamicGroup_pitch_offset->number = 100;
+
+
+    ui_proc_7_frame(&ui_normal_LegDynamicGroup_0);
     SEND_MESSAGE((uint8_t *) &ui_normal_LegDynamicGroup_0, sizeof(ui_normal_LegDynamicGroup_0));
 }
 
 void _ui_update_normal_LegDynamicGroup_0() {
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 7; i++) {
         ui_normal_LegDynamicGroup_0.data[i].operate_type = 2;
     }
 
-    ui_proc_5_frame(&ui_normal_LegDynamicGroup_0);
+    ui_proc_7_frame(&ui_normal_LegDynamicGroup_0);
     SEND_MESSAGE((uint8_t *) &ui_normal_LegDynamicGroup_0, sizeof(ui_normal_LegDynamicGroup_0));
 }
 
 void _ui_remove_normal_LegDynamicGroup_0() {
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 7; i++) {
         ui_normal_LegDynamicGroup_0.data[i].operate_type = 3;
     }
 
-    ui_proc_5_frame(&ui_normal_LegDynamicGroup_0);
+    ui_proc_7_frame(&ui_normal_LegDynamicGroup_0);
     SEND_MESSAGE((uint8_t *) &ui_normal_LegDynamicGroup_0, sizeof(ui_normal_LegDynamicGroup_0));
 }
 

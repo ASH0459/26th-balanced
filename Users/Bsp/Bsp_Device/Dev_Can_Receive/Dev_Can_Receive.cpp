@@ -42,6 +42,12 @@ static uint16_t float_to_uint(fp32 x_float, fp32 x_min, fp32 x_max, uint16_t bit
     return (int32_t)((x_float - offset) * (fp32)((1 << bits) - 1) / span);
 }
 
+// 将 4 位无符号值符号扩展为 int8_t (0x0~0xF -> -8~7)
+static int8_t sign_extend_4bit(uint8_t val4)
+{
+    return static_cast<int8_t>(val4 | ((val4 & 0x08) ? 0xF0 : 0x00));
+}
+
 /******************************* 类方法实现 *******************************/
 
 void Wheel_Motor_Measure::get_motor_measure(uint8_t data[8])
@@ -170,8 +176,10 @@ void CAN_cmd_gimbal_receive(const uint8_t *received_data)
     frame.v_set = static_cast<int16_t>((received_data[0] << 8) | received_data[1]);
     frame.auto_aim_state = received_data[2];
     frame.chassis_feature_flags = received_data[3];
-    frame.mode = received_data[4];
-    frame.fric_state = received_data[5];
+    frame.mode = (received_data[4] >> 4) & 0x0F;
+    frame.fric_state = received_data[4] & 0x0F;
+    frame.yaw_offset = sign_extend_4bit((received_data[5] >> 4) & 0x0F);
+    frame.pitch_offset = sign_extend_4bit(received_data[5] & 0x0F);
     frame.turn_set = static_cast<int16_t>((received_data[6] << 8) | received_data[7]);
 
     const bool_t mode_valid = chassis_mode_is_valid(frame.mode);
@@ -211,6 +219,8 @@ void CAN_cmd_gimbal_receive(const uint8_t *received_data)
     gimbal_data.chassis_behaviour_mode =
         mode_valid ? static_cast<chassis_mode_e>(frame.mode) : CHASSIS_MODE_NO_FORCE;
     gimbal_data.fric_state = fric_state;
+    gimbal_data.yaw_offset = static_cast<fp32>(frame.yaw_offset) / 10.0f;
+    gimbal_data.pitch_offset = static_cast<fp32>(frame.pitch_offset) / 10.0f;
 
     // RESERVED 模式：v_set 拆成两个标志字节，速度/转向/腿长由行为层根据标志位生成。
     if (gimbal_data.chassis_behaviour_mode == CHASSIS_MODE_RESERVED)

@@ -29,6 +29,8 @@ extern ui_interface_line_t *ui_normal_LegDynamicGroup_L1D_left;
 extern ui_interface_line_t *ui_normal_LegDynamicGroup_L2U_right;
 extern ui_interface_line_t *ui_normal_LegDynamicGroup_L2D_right;
 extern ui_interface_number_t *ui_normal_LegDynamicGroup_step_up_number;
+extern ui_interface_number_t *ui_normal_LegDynamicGroup_yaw_offset;
+extern ui_interface_number_t *ui_normal_LegDynamicGroup_pitch_offset;
 
 void ui_init_normal_LegDynamicGroup();
 void ui_update_normal_LegDynamicGroup();

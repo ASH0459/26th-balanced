@@ -810,4 +810,10 @@ static void Leg_Position_Update(void)
   ui_normal_LegDynamicGroup_step_up_number->number =
       (int32_t)chassis_move->chassis_gimbal_data->step_count + 1;
 
+  // 云台角度偏移量（UI比例1000，0.1°→100）
+  ui_normal_LegDynamicGroup_yaw_offset->number =
+      (int32_t)(chassis_move->chassis_gimbal_data->yaw_offset * 1000.0f);
+  ui_normal_LegDynamicGroup_pitch_offset->number =
+      (int32_t)(chassis_move->chassis_gimbal_data->pitch_offset * 1000.0f);
+
 }
