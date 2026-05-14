@@ -176,10 +176,12 @@ void CAN_cmd_gimbal_receive(const uint8_t *received_data)
     frame.v_set = static_cast<int16_t>((received_data[0] << 8) | received_data[1]);
     frame.auto_aim_state = received_data[2];
     frame.chassis_feature_flags = received_data[3];
-    frame.mode = (received_data[4] >> 4) & 0x0F;
-    frame.fric_state = received_data[4] & 0x0F;
-    frame.yaw_offset = sign_extend_4bit((received_data[5] >> 4) & 0x0F);
-    frame.pitch_offset = sign_extend_4bit(received_data[5] & 0x0F);
+    // frame.mode = (received_data[4] >> 4) & 0x0F;
+    // frame.fric_state = received_data[4] & 0x0F;
+    // frame.yaw_offset = sign_extend_4bit((received_data[5] >> 4) & 0x0F);
+    // frame.pitch_offset = sign_extend_4bit(received_data[5] & 0x0F);
+	frame.mode = received_data[4];
+	frame.fric_state = received_data[5];
     frame.turn_set = static_cast<int16_t>((received_data[6] << 8) | received_data[7]);
 
     const bool_t mode_valid = chassis_mode_is_valid(frame.mode);

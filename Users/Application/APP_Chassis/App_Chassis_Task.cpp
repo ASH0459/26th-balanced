@@ -896,50 +896,64 @@ fp32 fitted_matrix_K[40][6] = {{
         }
 
         // 离地→触地边沿检测：落地后斜坡收腿到最短，维持落地平衡
-        {
-            static bool_t prev_left_off = false;
-            static bool_t prev_right_off = false;
-            static bool_t landing_retract_active = false;
-            const bool_t cur_left_off =
-                (chassis_move_control->chassis_left_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND);
-            const bool_t cur_right_off =
-                (chassis_move_control->chassis_right_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND);
-
-            // 任一腿从离地变为触地，激活落地收腿
-            if ((prev_left_off && !cur_left_off) || (prev_right_off && !cur_right_off))
-            {
-                landing_retract_active = true;
-            }
-
-            // 斜坡收腿：逐步逼近最短腿长
-            if (landing_retract_active)
-            {
-                const fp32 max_step = CHASSIS_LEG_RETRACT_RAMP_SPEED * CHASSIS_CONTROL_TIME;
-                fp32 current = chassis_move_control->chassis_leg_filter_set.out;
-                if (current > CHASSIS_LEG_MIN)
-                {
-                    current -= max_step;
-                    if (current < CHASSIS_LEG_MIN)
-                    {
-                        current = CHASSIS_LEG_MIN;
-                    }
-                }
-                chassis_move_control->chassis_leg_filter_set.out = current;
-                chassis_move_control->chassis_leg_set = current;
-                chassis_move_control->chassis_left_leg_set = current;
-                chassis_move_control->chassis_right_leg_set = current;
-
-                // 到达最短后停止
-                if (current <= CHASSIS_LEG_MIN + 0.01)
-                {
-                    landing_retract_active = false;
-                    chassis_move_control->state = CHASSIS_NORMAL;
-                }
-            }
-
-            prev_left_off = cur_left_off;
-            prev_right_off = cur_right_off;
-        }
+        // {
+        //     static bool_t prev_left_off = false;
+        //     static bool_t prev_right_off = false;
+        //     static bool_t landing_retract_active = false;
+        //     const bool_t cur_left_off =
+        //         (chassis_move_control->chassis_left_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND);
+        //     const bool_t cur_right_off =
+        //         (chassis_move_control->chassis_right_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND);
+        //
+        //     // 任一腿从离地变为触地，激活落地收腿
+        //     if ((prev_left_off && !cur_left_off) || (prev_right_off && !cur_right_off))
+        //     {
+        //         landing_retract_active = true;
+        //     }
+        //
+        //     // 斜坡收腿：逐步逼近最短腿长
+        //     if (landing_retract_active)
+        //     {
+        //         const fp32 max_step = CHASSIS_LEG_RETRACT_RAMP_SPEED * CHASSIS_CONTROL_TIME;
+        //         fp32 current = chassis_move_control->chassis_leg_filter_set.out;
+        //         if (current > CHASSIS_LEG_MIN)
+        //         {
+        //             current -= max_step;
+        //             if (current < CHASSIS_LEG_MIN)
+        //             {
+        //                 current = CHASSIS_LEG_MIN;
+        //             }
+        //         }
+        //         chassis_move_control->chassis_leg_filter_set.out = current;
+        //         chassis_move_control->chassis_leg_set = current;
+        //         chassis_move_control->chassis_left_leg_set = current;
+        //         chassis_move_control->chassis_right_leg_set = current;
+        //
+        //         // 到达最短后停止
+        //         if (current <= CHASSIS_LEG_MIN + 0.01)
+        //         {
+        //             if (chassis_move_control->step_up_phase == STEP_UP_CONTACT ||
+        //                 chassis_move_control->step_up_phase == STEP_UP_RETRACT ||
+        //                 chassis_move_control->step_up_phase == STEP_UP_STAND ||
+        //                 chassis_move_control->step_up_phase == STEP_UP_EXTEND ||
+        //                 chassis_move_control->step_up_phase == STEP_UP_RETRACT_2ND ||
+        //                 chassis_move_control->step_up_phase == STEP_UP_CONTACT_2ND ||
+        //                 chassis_move_control->step_up_phase == STEP_UP_STAND_2ND)
+        //             {
+        //                 //chassis_move_control->state = CHASSIS_NORMAL;
+        //             }
+        //             else
+        //             {
+        //                 // 如果还在上台阶，就让状态保持在原处，由上台阶的任务逻辑在最后统一切换回 NORMAL
+        //                 chassis_move_control->state = CHASSIS_NORMAL;
+        //             }
+        //             landing_retract_active = false;
+        //         }
+        //     }
+        //
+        //     prev_left_off = cur_left_off;
+        //     prev_right_off = cur_right_off;
+        // }
 
         // 一级台阶 EXTEND 阶段：x_set 冻结不积分，配合行为层固定 0.1 m/s 前推
         if (chassis_move_control->step_up_phase == STEP_UP_EXTEND)

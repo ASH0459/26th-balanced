@@ -227,6 +227,9 @@ static fp32 chassis_update_small_gyro_d_yaw(bool_t small_gyro_enable, bool_t har
     if(chassis_small_gyro_d_yaw_set <= 40.0f) {
         chassis_small_gyro_d_yaw_set = 40.0f;
     }
+    else if (chassis_small_gyro_d_yaw_set >= 55.0f) {
+        chassis_small_gyro_d_yaw_set = 55.0f;
+    }
     const fp32 target_d_yaw = clamp_abs_fp32(chassis_small_gyro_d_yaw_set, CHASSIS_D_YAW_MAX);
 
     if (hard_reset)
