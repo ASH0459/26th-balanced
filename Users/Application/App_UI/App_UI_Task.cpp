@@ -47,6 +47,10 @@ extern "C" void _ui_init_normal_StaticTextGroup1_3(void);
 extern "C" void _ui_init_normal_StaticTextGroup1_4(void);
 extern "C" void _ui_init_normal_StaticTextGroup1_5(void);
 extern "C" void _ui_init_normal_StaticTextGroup1_6(void);
+extern "C" void _ui_init_normal_offset_text_0(void);
+extern "C" void _ui_init_normal_offset_text_1(void);
+extern "C" void _ui_remove_normal_offset_text_0(void);
+extern "C" void _ui_remove_normal_offset_text_1(void);
 extern "C" void _ui_remove_normal_StaticTextGroup1_0(void);
 extern "C" void _ui_remove_normal_StaticTextGroup1_1(void);
 extern "C" void _ui_remove_normal_StaticTextGroup1_2(void);
@@ -89,6 +93,16 @@ static const UI_Action k_ui_remove_normal_static_text_group1_actions[] = {
     _ui_remove_normal_StaticTextGroup1_2,
     _ui_remove_normal_StaticTextGroup1_1,
     _ui_remove_normal_StaticTextGroup1_0,
+};
+
+static const UI_Action k_ui_init_normal_offset_text_actions[] = {
+    _ui_init_normal_offset_text_0,
+    _ui_init_normal_offset_text_1,
+};
+
+static const UI_Action k_ui_remove_normal_offset_text_actions[] = {
+    _ui_remove_normal_offset_text_1,
+    _ui_remove_normal_offset_text_0,
 };
 
 static const UI_Action k_ui_init_start_graphic_actions[] = {
@@ -222,6 +236,20 @@ static void UI_Play_Start_Frame(void)
                          UI_START_FRAME_GROUP_INTERVAL_MS);
 }
 
+static void UI_Init_Normal_OffsetText(void)
+{
+  UI_Run_Text_Actions(k_ui_init_normal_offset_text_actions,
+                      sizeof(k_ui_init_normal_offset_text_actions) /
+                          sizeof(k_ui_init_normal_offset_text_actions[0]));
+}
+
+static void UI_Remove_Normal_OffsetText(void)
+{
+  UI_Run_Text_Actions(k_ui_remove_normal_offset_text_actions,
+                      sizeof(k_ui_remove_normal_offset_text_actions) /
+                          sizeof(k_ui_remove_normal_offset_text_actions[0]));
+}
+
 /**
  * @brief 初始化裁判系统客户端UI图形。
  * @note 按动态图形、静态图形、静态文字、腿部动态图形的顺序发送，发送间隔用于降低串口拥塞。
@@ -237,7 +265,7 @@ static void UI_Init(void)
   osDelay(500);
   ui_init_normal_LegDynamicGroup();
   osDelay(500);
-  ui_init_normal_offset_text();
+  UI_Init_Normal_OffsetText();
   osDelay(500);
 }
 
@@ -389,7 +417,7 @@ static void UI_Clear_All(void)
 {
   UI_Reset_Dynamic_Warnings();
   UI_Remove_Normal_StaticTextGroup1();
-  ui_remove_normal_offset_text();
+  UI_Remove_Normal_OffsetText();
   ui_remove_normal_LegDynamicGroup();
   ui_remove_normal_DynamicGroup1();
   ui_remove_normal_StaticGroup1();

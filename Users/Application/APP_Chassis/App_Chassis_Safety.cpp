@@ -63,9 +63,6 @@ bool_t chassis_theta_loss_of_control_check(Chassis_Move *chassis_move)
 // 持续超限周期数（@ 1kHz），超过则释放 yaw 跟踪。
 #define CHASSIS_YAW_STUCK_TICKS 300U
 
-// 触发后冷却周期数，期间持续锁住 yaw_set，防止外部指令覆盖导致循环触发。
-#define CHASSIS_YAW_STUCK_COOLDOWN_TICKS 500U
-
 bool_t chassis_yaw_stuck_check(Chassis_Move *chassis_move)
 {
     if (chassis_move == NULL)
@@ -74,23 +71,11 @@ bool_t chassis_yaw_stuck_check(Chassis_Move *chassis_move)
     }
 
     static uint32_t yaw_stuck_ticks = 0;
-    static uint32_t yaw_cooldown_ticks = 0;
 
     if (!chassis_is_balancing_state(chassis_move->state))
     {
         yaw_stuck_ticks = 0;
-        yaw_cooldown_ticks = 0;
         return 0;
-    }
-
-    // 冷却期内持续锁住 yaw_set，忽略外部 yaw 指令
-    if (yaw_cooldown_ticks > 0U)
-    {
-        yaw_cooldown_ticks--;
-        chassis_move->chassis_yaw_set = chassis_move->chassis_yaw;
-        chassis_move->chassis_yaw_err = 0.0f;
-        chassis_move->chassis_d_yaw_set = 0.0f;
-        return 1;
     }
 
     if (fabsf(chassis_move->chassis_yaw_err) > CHASSIS_YAW_STUCK_ERR_THRESHOLD)
@@ -103,7 +88,6 @@ bool_t chassis_yaw_stuck_check(Chassis_Move *chassis_move)
             chassis_move->chassis_yaw_err = 0.0f;
             chassis_move->chassis_d_yaw_set = 0.0f;
             yaw_stuck_ticks = 0;
-            yaw_cooldown_ticks = CHASSIS_YAW_STUCK_COOLDOWN_TICKS;
             return 1;
         }
     }
