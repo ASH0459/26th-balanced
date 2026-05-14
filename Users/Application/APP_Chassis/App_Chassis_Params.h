@@ -18,13 +18,15 @@
 
 /* -------------------- 指令速度配置 -------------------- */
 // 行为层 v_set 目标的主限幅。
-#define CHASSIS_KEY_MAX_SPEED 2.0f
-#define CHASSIS_KEY_BACK_MAX_SPEED 2.0f
-#define CHASSIS_LEG_MAX_SPEED 1.5f
+#define CHASSIS_KEY_MAX_SPEED 2.3f
+#define CHASSIS_KEY_BACK_MAX_SPEED 2.3f
+#define CHASSIS_LEG_MAX_SPEED 1.9f
 
 /* -------------------- 腿长斜坡参数 -------------------- */
 // 跨步/状态切换时的通用腿长变化速率。
 #define CHASSIS_LEG_STEP_RAMP_SPEED 0.3f
+// 落地收腿斜坡速率 (m/s)：从当前腿长收拢到最短的速度。
+#define CHASSIS_LEG_RETRACT_RAMP_SPEED 0.7f
 
 /* -------------------- Normal切入触地保持 -------------------- */
 // 刚切入 CHASSIS_NORMAL 后，短时间内强制认为双腿触地，抑制支持力判定抖动。
@@ -35,7 +37,7 @@
 
 /* -------------------- 初始化自扶正参数 -------------------- */
 // 初始化自扶正阶段的腿部旋转速度设定。
-#define CHASSIS_INIT_LEVEL_ROTATE_SPEED 0.8f
+#define CHASSIS_INIT_LEVEL_ROTATE_SPEED 1.4f
 
 // 初始化自扶正阶段的腿部旋转速度硬限幅。8/
 #define CHASSIS_INIT_LEVEL_SPEED_LIMIT 1.5f
@@ -89,8 +91,8 @@
 #define CHASSIS_DIRECTION_VX_BRAKE_ACCEL 5.0f
 
 // v_set 加速阶段增益: 先急后缓（起步用 FAST，接近目标逐步过渡到 SLOW）。
-#define CHASSIS_DIRECTION_VX_ACCEL_FAST_GAIN 30.0f
-#define CHASSIS_DIRECTION_VX_ACCEL_SLOW_GAIN 1.0f
+#define CHASSIS_DIRECTION_VX_ACCEL_FAST_GAIN 15.0f
+#define CHASSIS_DIRECTION_VX_ACCEL_SLOW_GAIN 5.0f
 // 加速增益切换速度阈值：低于此值用 FAST_GAIN，高于此值用 SLOW_GAIN。
 #define CHASSIS_VX_ACCEL_SWITCH_SPEED 1.5f
 #define CHASSIS_VX_ACCEL_LEG_SWITCH_SPEED 1.0f
