@@ -62,16 +62,19 @@
 #define CHASSIS_LEG_MAX 0.36f
 #define CHASSIS_LEG_MIN 0.165f
 
+// LQR_K 腿长切换阈值：低于此值用激进参数，高于此值用拟合参数。
+#define LQR_K_BLEND_LEG_THRESHOLD 0.2f
+
 // 初始化收腿目标角度 (rad)，原始坐标系下为-1.26rad，换算到0~2π下为2π-1.26.
 #define CHASSIS_INIT_LEG_ANGLE_TARGET_RAW (-1.26f)
 #define CHASSIS_INIT_LEG_ANGLE_TARGET_360 5.1f
 // 初始化收腿角度到位阈值 (rad)
 #define CHASSIS_INIT_LEG_ANGLE_THRESHOLD (0.16f)
 // 初始化收腿PID参数
-#define INIT_LEG_ANGLE_PID_KP 5.0f
+#define INIT_LEG_ANGLE_PID_KP 8.0f
 #define INIT_LEG_ANGLE_PID_KI 0.0f
 #define INIT_LEG_ANGLE_PID_KD 10.0f
-#define INIT_LEG_ANGLE_PID_MAX_OUT 20.0f
+#define INIT_LEG_ANGLE_PID_MAX_OUT 30.0f
 #define INIT_LEG_ANGLE_PID_MAX_IOUT 0.0f
 
 // RESERVED 模式速度 PID 参数
@@ -95,7 +98,7 @@
 #define CHASSIS_ROLL_LEVEL_THRESHOLD 0.7f
 
 #define CHASSIS_NORMAL_LEG_TARGET CHASSIS_LEG_MIN
-#define CHASSIS_LEG_1_TARGET 0.28f
+#define CHASSIS_LEG_1_TARGET 0.26f
 #define CHASSIS_LEG_2_TARGET CHASSIS_LEG_MAX
 #define CHASSIS_INIT_RETRACT_LEG_TARGET CHASSIS_NORMAL_LEG_TARGET
 #define CHASSIS_JUMP_TAKEOFF_TARGET 0.3f
@@ -137,7 +140,7 @@
 
 // 初始化时机体未水平的自扶正腿部旋转参数
 #define CHASSIS_INIT_LEVEL_ANGLE_STEP 0.8f             // 机体未水平时腿部旋转角度 (rad/s)
-#define CHASSIS_INIT_LEVEL_TORQUE_LIMIT 15.0f          // 机体未水平时腿部旋转力矩限制 (Nm)
+#define CHASSIS_INIT_LEVEL_TORQUE_LIMIT 20.0f          // 机体未水平时腿部旋转力矩限制 (Nm)
 #define CHASSIS_INIT_LEVEL_SYNC_ANGLE 0.5f             // 机体未水平时两条腿的同步旋转角度差阈值 (rad)
 #define CHASSIS_INIT_LEVEL_SYNC_MIN_RATIO 0.0f         // 机体未水平时两条腿的同步旋转最小速度比例
 #define CHASSIS_INIT_WHEEL_TARGET_THETA 0.20f          // INIT腿收短后，轮毂输出参考的正常站立theta

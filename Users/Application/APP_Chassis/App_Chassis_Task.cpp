@@ -38,100 +38,102 @@ extern "C"
 #endif
 
     // 拟合矩阵K，A，B
-//     fp32 fitted_matrix_K[40][6] = {{
-//         -2.2736, 0.88021, -3.492, -1.8243, 1.3745, 4.2346},
-// {-4.2755, 3.1327, -3.8005, -2.6373, -2.7974, 7.0795},
-// {-8.5214, -7.6251, 6.8139, 10.756, -0.28482, -9.2613},
-// {-0.65132, -0.83146, 0.79543, 1.0898, -0.037155, -0.99676},
-// {-4.3708, -37.952, 6.8068, 25.578, 6.58, 0.33538},
-// {-0.74454, -6.5463, 0.77292, 3.2483, 0.31764, 0.57698},
-// {-1.8586, 15.381, -58.217, -14.981, 12.913, 49.579},
-// {-0.083267, 2.5539, -11.384, -2.6427, 1.7658, 9.0786},
-// {-42.768, 85.609, 54.595, -63.969, -72.251, -14.706},
-// {-4.7486, 9.6281, 6.1407, -7.2562, -8.0907, -1.7024},
-// {-2.2736, -3.492, 0.88021, 4.2346, 1.3745, -1.8243},
-// {-4.2755, -3.8005, 3.1327, 7.0795, -2.7974, -2.6373},
-// {8.5214, -6.8139, 7.6251, 9.2613, 0.28482, -10.756},
-// {0.65132, -0.79543, 0.83146, 0.99676, 0.037155, -1.0898},
-// {-1.8586, -58.217, 15.381, 49.579, 12.913, -14.981},
-// {-0.083267, -11.384, 2.5539, 9.0786, 1.7658, -2.6427},
-// {-4.3708, 6.8068, -37.952, 0.33538, 6.58, 25.578},
-// {-0.74454, 0.77292, -6.5463, 0.57698, 0.31764, 3.2483},
-// {-42.768, 54.595, 85.609, -14.706, -72.251, -63.969},
-// {-4.7486, 6.1407, 9.6281, -1.7024, -8.0907, -7.2562},
-// {20.45, -20.458, -65.584, 2.4515, 50.324, 45.926},
-// {37.098, -36.805, -121.63, -0.65202, 104.43, 85.158},
-// {-22.01, 73.978, 29.623, -108.83, 29.01, -53.095},
-// {-1.7146, 6.3822, 2.0398, -9.0975, 2.6565, -3.493},
-// {132.37, -150.59, -50.071, 109.59, 169.81, 20.117},
-// {31.926, -59.503, -2.0618, 51.293, 21.975, -3.9987},
-// {32.617, -160.73, -157.87, 166.16, -116.49, 191.19},
-// {5.7319, -33.144, -29.07, 35.886, -20.269, 41.173},
-// {-74.558, -1406, 333.52, 1590.8, 330.94, -465.89},
-// {-8.922, -160.53, 39.792, 182.94, 36.211, -54.879},
-// {20.45, -65.584, -20.458, 45.926, 50.324, 2.4515},
-// {37.098, -121.63, -36.805, 85.158, 104.43, -0.65202},
-// {22.01, -29.623, -73.978, 53.095, -29.01, 108.83},
-// {1.7146, -2.0398, -6.3822, 3.493, -2.6565, 9.0975},
-// {32.617, -157.87, -160.73, 191.19, -116.49, 166.16},
-// {5.7319, -29.07, -33.144, 41.173, -20.269, 35.886},
-// {132.37, -50.071, -150.59, 20.117, 169.81, 109.59},
-// {31.926, -2.0618, -59.503, -3.9987, 21.975, 51.293},
-// {-74.558, 333.52, -1406, -465.89, 330.94, 1590.8},
-// {-8.922, 39.792, -160.53, -54.879, 36.211, 182.94}};
-
 fp32 fitted_matrix_K[40][6] = {{
-        -1.413, 0.74128, -1.7207, -1.2224, 0.45953, 2.2212},
-{-4.4371, 3.2081, -3.791, -3.4279, -1.8045, 6.4263},
-{-8.5166, -7.3055, 6.4832, 10.33, -0.27192, -8.8434},
-{-0.68724, -0.86404, 0.82249, 1.1345, -0.039643, -1.0311},
-{-5.1959, -39.177, 8.602, 25.608, 5.1208, -0.94499},
-{-0.69938, -6.0212, 0.80476, 1.9528, -0.055396, 0.45643},
-{-2.1328, 17.538, -62.106, -17.007, 11.965, 53.066},
-{-0.14496, 2.5025, -10.187, -2.6504, 1.4909, 6.8831},
-{-41.683, 83.335, 55.693, -64.975, -69.536, -20.791},
-{-4.6192, 9.3669, 6.2719, -7.3657, -7.7955, -2.4025},
-{-1.413, -1.7207, 0.74128, 2.2212, 0.45953, -1.2224},
-{-4.4371, -3.791, 3.2081, 6.4263, -1.8045, -3.4279},
-{8.5166, -6.4832, 7.3055, 8.8434, 0.27192, -10.33},
-{0.68724, -0.82249, 0.86404, 1.0311, 0.039643, -1.1345},
-{-2.1328, -62.106, 17.538, 53.066, 11.965, -17.007},
-{-0.14496, -10.187, 2.5025, 6.8831, 1.4909, -2.6504},
-{-5.1959, 8.602, -39.177, -0.94499, 5.1208, 25.608},
-{-0.69938, 0.80476, -6.0212, 0.45643, -0.055396, 1.9528},
-{-41.683, 55.693, 83.335, -20.791, -69.536, -64.975},
-{-4.6192, 6.2719, 9.3669, -2.4025, -7.7955, -7.3657},
-{9.9128, -13.576, -31.011, 9.0509, 21.009, 23.534},
-{30.048, -40.128, -95.276, 24.518, 69.392, 71.805},
-{-21.897, 73.377, 27.401, -107.03, 25.196, -48.846},
-{-1.8061, 6.6549, 2.0936, -9.4769, 2.6165, -3.592},
-{149.22, -234.45, 1.9632, 204.36, 184.27, -40.08},
-{26.532, -53.029, 0.91735, 53.188, 17.258, -5.9304},
-{27.532, -192.87, -159.6, 218.95, -166.86, 250.2},
-{4.3856, -31.803, -20.836, 36.451, -21.532, 33.219},
-{-98.467, -1336.9, 378.84, 1559.6, 294.09, -541.41},
-{-11.622, -152.62, 44.783, 179.2, 32.364, -63.466},
-{9.9128, -31.011, -13.576, 23.534, 21.009, 9.0509},
-{30.048, -95.276, -40.128, 71.805, 69.392, 24.518},
-{21.897, -27.401, -73.377, 48.846, -25.196, 107.03},
-{1.8061, -2.0936, -6.6549, 3.592, -2.6165, 9.4769},
-{27.532, -159.6, -192.87, 250.2, -166.86, 218.95},
-{4.3856, -20.836, -31.803, 33.219, -21.532, 36.451},
-{149.22, 1.9632, -234.45, -40.08, 184.27, 204.36},
-{26.532, 0.91735, -53.029, -5.9304, 17.258, 53.188},
-{-98.467, 378.84, -1336.9, -541.41, 294.09, 1559.6},
-{-11.622, 44.783, -152.62, -63.466, 32.364, 179.2}};
+        -0.9331, 0.56599, -0.96795, -0.85476, 0.15219, 1.3131},
+{-3.4919, 2.8062, -2.3863, -2.6118, -2.1972, 4.7772},
+{-8.5173, -7.1916, 6.3698, 10.217, -0.24711, -8.7537},
+{-0.68732, -0.81705, 0.77573, 1.078, -0.032318, -0.98199},
+{-5.1768, -39.455, 8.4796, 28.632, 6.6375, -1.4381},
+{-0.6294, -5.7082, 0.7414, 2.4544, 0.47612, 0.31463},
+{-1.6308, 16.559, -63.819, -15.767, 11.911, 58.794},
+{-0.07388, 2.1678, -9.6031, -2.2669, 1.6288, 7.2458},
+{-35.869, 69.614, 45.383, -51.414, -58.984, -12.99},
+{-4.1272, 8.1724, 5.3223, -6.1137, -6.8853, -1.5773},
+{-0.9331, -0.96795, 0.56599, 1.3131, 0.15219, -0.85476},
+{-3.4919, -2.3863, 2.8062, 4.7772, -2.1972, -2.6118},
+{8.5173, -6.3698, 7.1916, 8.7537, 0.24711, -10.217},
+{0.68732, -0.77573, 0.81705, 0.98199, 0.032318, -1.078},
+{-1.6308, -63.819, 16.559, 58.794, 11.911, -15.767},
+{-0.07388, -9.6031, 2.1678, 7.2458, 1.6288, -2.2669},
+{-5.1768, 8.4796, -39.455, -1.4381, 6.6375, 28.632},
+{-0.6294, 0.7414, -5.7082, 0.31463, 0.47612, 2.4544},
+{-35.869, 45.383, 69.614, -12.99, -58.984, -51.414},
+{-4.1272, 5.3223, 8.1724, -1.5773, -6.8853, -6.1137},
+{5.1034, -7.8527, -15.679, 7.1644, 10.038, 10.361},
+{18.249, -27.413, -57.098, 23.395, 39.83, 37.985},
+{-21.933, 73.74, 27.575, -108.22, 26.917, -49.534},
+{-1.8077, 6.4914, 2.2879, -9.3425, 2.8291, -3.9438},
+{168.11, -275.6, 18.741, 212.68, 210.85, -63.46},
+{26.311, -52.816, 2.2006, 48.244, 21.14, -8.0311},
+{27.911, -188.95, -190.09, 222.43, -196.97, 297.78},
+{4.2041, -27.973, -23.625, 33.556, -24.614, 35.352},
+{-66.748, -1138.6, 284.55, 1290.7, 253.53, -389.44},
+{-8.3273, -137.17, 35.663, 156.81, 29.331, -48.442},
+{5.1034, -15.679, -7.8527, 10.361, 10.038, 7.1644},
+{18.249, -57.098, -27.413, 37.985, 39.83, 23.395},
+{21.933, -27.575, -73.74, 49.534, -26.917, 108.22},
+{1.8077, -2.2879, -6.4914, 3.9438, -2.8291, 9.3425},
+{27.911, -190.09, -188.95, 297.78, -196.97, 222.43},
+{4.2041, -23.625, -27.973, 35.352, -24.614, 33.556},
+{168.11, 18.741, -275.6, -63.46, 210.85, 212.68},
+{26.311, 2.2006, -52.816, -8.0311, 21.14, 48.244},
+{-66.748, 284.55, -1138.6, -389.44, 253.53, 1290.7},
+{-8.3273, 35.663, -137.17, -48.442, 29.331, 156.81}};
+
+// fp32 fitted_matrix_K[40][6] = {{
+//         -1.413, 0.74128, -1.7207, -1.2224, 0.45953, 2.2212},
+// {-4.4371, 3.2081, -3.791, -3.4279, -1.8045, 6.4263},
+// {-8.5166, -7.3055, 6.4832, 10.33, -0.27192, -8.8434},
+// {-0.68724, -0.86404, 0.82249, 1.1345, -0.039643, -1.0311},
+// {-5.1959, -39.177, 8.602, 25.608, 5.1208, -0.94499},
+// {-0.69938, -6.0212, 0.80476, 1.9528, -0.055396, 0.45643},
+// {-2.1328, 17.538, -62.106, -17.007, 11.965, 53.066},
+// {-0.14496, 2.5025, -10.187, -2.6504, 1.4909, 6.8831},
+// {-41.683, 83.335, 55.693, -64.975, -69.536, -20.791},
+// {-4.6192, 9.3669, 6.2719, -7.3657, -7.7955, -2.4025},
+// {-1.413, -1.7207, 0.74128, 2.2212, 0.45953, -1.2224},
+// {-4.4371, -3.791, 3.2081, 6.4263, -1.8045, -3.4279},
+// {8.5166, -6.4832, 7.3055, 8.8434, 0.27192, -10.33},
+// {0.68724, -0.82249, 0.86404, 1.0311, 0.039643, -1.1345},
+// {-2.1328, -62.106, 17.538, 53.066, 11.965, -17.007},
+// {-0.14496, -10.187, 2.5025, 6.8831, 1.4909, -2.6504},
+// {-5.1959, 8.602, -39.177, -0.94499, 5.1208, 25.608},
+// {-0.69938, 0.80476, -6.0212, 0.45643, -0.055396, 1.9528},
+// {-41.683, 55.693, 83.335, -20.791, -69.536, -64.975},
+// {-4.6192, 6.2719, 9.3669, -2.4025, -7.7955, -7.3657},
+// {9.9128, -13.576, -31.011, 9.0509, 21.009, 23.534},
+// {30.048, -40.128, -95.276, 24.518, 69.392, 71.805},
+// {-21.897, 73.377, 27.401, -107.03, 25.196, -48.846},
+// {-1.8061, 6.6549, 2.0936, -9.4769, 2.6165, -3.592},
+// {149.22, -234.45, 1.9632, 204.36, 184.27, -40.08},
+// {26.532, -53.029, 0.91735, 53.188, 17.258, -5.9304},
+// {27.532, -192.87, -159.6, 218.95, -166.86, 250.2},
+// {4.3856, -31.803, -20.836, 36.451, -21.532, 33.219},
+// {-98.467, -1336.9, 378.84, 1559.6, 294.09, -541.41},
+// {-11.622, -152.62, 44.783, 179.2, 32.364, -63.466},
+// {9.9128, -31.011, -13.576, 23.534, 21.009, 9.0509},
+// {30.048, -95.276, -40.128, 71.805, 69.392, 24.518},
+// {21.897, -27.401, -73.377, 48.846, -25.196, 107.03},
+// {1.8061, -2.0936, -6.6549, 3.592, -2.6165, 9.4769},
+// {27.532, -159.6, -192.87, 250.2, -166.86, 218.95},
+// {4.3856, -20.836, -31.803, 33.219, -21.532, 36.451},
+// {149.22, 1.9632, -234.45, -40.08, 184.27, 204.36},
+// {26.532, 0.91735, -53.029, -5.9304, 17.258, 53.188},
+// {-98.467, 378.84, -1336.9, -541.41, 294.09, 1559.6},
+// {-11.622, 44.783, -152.62, -63.466, 32.364, 179.2}};
 
     fp32 fitted_matrix_A[15][6];
     fp32 fitted_matrix_B[20][6];
 
-    // 调试用参数
-    fp32 LQR_K[4][10] = {
-        {-1.5237, -4.405, -8.6505, -0.69389, -8.3565, -1.3013, -7.8293, -1.1931, -23.466, -2.567},
-{-1.5237, -4.405, 8.6505, 0.69389, -7.8293, -1.1931, -8.3565, -1.3013, -23.466, -2.567},
-{4.2248, 12.714, -4.1115, -0.24574, 109.38, 17.839, -19.648, -2.6449, -214.3, -24.664},
-{4.2248, 12.714, 4.1115, 0.24574, -19.648, -2.6449, 109.38, 17.839, -214.3, -24.664},
+    // 激进参数：腿长最短时使用，响应快
+    static const fp32 LQR_K_AGGRESSIVE[4][10] = {
+        {-1.0695, -3.1732, -6.1172, -0.63232, -6.7518, -0.99194, -6.3466, -0.90583, -18.789, -2.0415},
+{-1.0695, -3.1732, 6.1172, 0.63232, -6.3466, -0.90583, -6.7518, -0.99194, -18.789, -2.0415},
+{4.6084, 14.169, -4.0078, -0.3024, 123.87, 20.438, -17.922, -2.397, -201.08, -23.176},
+{4.6084, 14.169, 4.0078, 0.3024, -17.922, -2.397, 123.87, 20.438, -201.08, -23.176},
     };
+    // 当前生效的 LQR_K（每帧由腿长插值计算）
+    fp32 LQR_K[4][10];
 
     // 最好的参数1
     //      fp32 LQR_K[4][10] = {
@@ -896,64 +898,63 @@ fp32 fitted_matrix_K[40][6] = {{
         }
 
         // 离地→触地边沿检测：落地后斜坡收腿到最短，维持落地平衡
-        // {
-        //     static bool_t prev_left_off = false;
-        //     static bool_t prev_right_off = false;
-        //     static bool_t landing_retract_active = false;
-        //     const bool_t cur_left_off =
-        //         (chassis_move_control->chassis_left_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND);
-        //     const bool_t cur_right_off =
-        //         (chassis_move_control->chassis_right_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND);
-        //
-        //     // 任一腿从离地变为触地，激活落地收腿
-        //     if ((prev_left_off && !cur_left_off) || (prev_right_off && !cur_right_off))
-        //     {
-        //         landing_retract_active = true;
-        //     }
-        //
-        //     // 斜坡收腿：逐步逼近最短腿长
-        //     if (landing_retract_active)
-        //     {
-        //         const fp32 max_step = CHASSIS_LEG_RETRACT_RAMP_SPEED * CHASSIS_CONTROL_TIME;
-        //         fp32 current = chassis_move_control->chassis_leg_filter_set.out;
-        //         if (current > CHASSIS_LEG_MIN)
-        //         {
-        //             current -= max_step;
-        //             if (current < CHASSIS_LEG_MIN)
-        //             {
-        //                 current = CHASSIS_LEG_MIN;
-        //             }
-        //         }
-        //         chassis_move_control->chassis_leg_filter_set.out = current;
-        //         chassis_move_control->chassis_leg_set = current;
-        //         chassis_move_control->chassis_left_leg_set = current;
-        //         chassis_move_control->chassis_right_leg_set = current;
-        //
-        //         // 到达最短后停止
-        //         if (current <= CHASSIS_LEG_MIN + 0.01)
-        //         {
-        //             if (chassis_move_control->step_up_phase == STEP_UP_CONTACT ||
-        //                 chassis_move_control->step_up_phase == STEP_UP_RETRACT ||
-        //                 chassis_move_control->step_up_phase == STEP_UP_STAND ||
-        //                 chassis_move_control->step_up_phase == STEP_UP_EXTEND ||
-        //                 chassis_move_control->step_up_phase == STEP_UP_RETRACT_2ND ||
-        //                 chassis_move_control->step_up_phase == STEP_UP_CONTACT_2ND ||
-        //                 chassis_move_control->step_up_phase == STEP_UP_STAND_2ND)
-        //             {
-        //                 //chassis_move_control->state = CHASSIS_NORMAL;
-        //             }
-        //             else
-        //             {
-        //                 // 如果还在上台阶，就让状态保持在原处，由上台阶的任务逻辑在最后统一切换回 NORMAL
-        //                 chassis_move_control->state = CHASSIS_NORMAL;
-        //             }
-        //             landing_retract_active = false;
-        //         }
-        //     }
-        //
-        //     prev_left_off = cur_left_off;
-        //     prev_right_off = cur_right_off;
-        // }
+
+            static bool_t prev_left_off = false;
+            static bool_t prev_right_off = false;
+            static bool_t landing_retract_active = false;
+            const bool_t cur_left_off =
+                (chassis_move_control->chassis_left_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND);
+            const bool_t cur_right_off =
+                (chassis_move_control->chassis_right_control.chassis_off_ground_detection == CHASSIS_OFF_GROUND);
+
+            // 任一腿从离地变为触地，激活落地收腿
+            if ((prev_left_off && !cur_left_off) || (prev_right_off && !cur_right_off))
+            {
+                landing_retract_active = true;
+            }
+
+            // 斜坡收腿：逐步逼近最短腿长
+            if (landing_retract_active)
+            {
+                const fp32 max_step = CHASSIS_LEG_RETRACT_RAMP_SPEED * CHASSIS_CONTROL_TIME;
+                fp32 current = chassis_move_control->chassis_leg_filter_set.out;
+                if (current > CHASSIS_LEG_MIN)
+                {
+                    current -= max_step;
+                    if (current < CHASSIS_LEG_MIN)
+                    {
+                        current = CHASSIS_LEG_MIN;
+                    }
+                }
+                chassis_move_control->chassis_leg_filter_set.out = current;
+                chassis_move_control->chassis_leg_set = current;
+                chassis_move_control->chassis_left_leg_set = current;
+                chassis_move_control->chassis_right_leg_set = current;
+
+                // 到达最短后停止
+                if (current <= CHASSIS_LEG_MIN + 0.01)
+                {
+                    if (chassis_move_control->step_up_phase == STEP_UP_CONTACT ||
+                        chassis_move_control->step_up_phase == STEP_UP_RETRACT ||
+                        chassis_move_control->step_up_phase == STEP_UP_STAND ||
+                        chassis_move_control->step_up_phase == STEP_UP_EXTEND ||
+                        chassis_move_control->step_up_phase == STEP_UP_RETRACT_2ND ||
+                        chassis_move_control->step_up_phase == STEP_UP_CONTACT_2ND ||
+                        chassis_move_control->step_up_phase == STEP_UP_STAND_2ND)
+                    {
+                        //chassis_move_control->state = CHASSIS_NORMAL;
+                    }
+                    else
+                    {
+                        // 如果还在上台阶，就让状态保持在原处，由上台阶的任务逻辑在最后统一切换回 NORMAL
+                        chassis_move_control->state = CHASSIS_NORMAL;
+                    }
+                    landing_retract_active = false;
+                }
+            }
+
+            prev_left_off = cur_left_off;
+            prev_right_off = cur_right_off;
 
         // 一级台阶 EXTEND 阶段：x_set 冻结不积分，配合行为层固定 0.1 m/s 前推
         if (chassis_move_control->step_up_phase == STEP_UP_EXTEND)
@@ -1141,19 +1142,23 @@ fp32 fitted_matrix_K[40][6] = {{
         // 右轮地面支持力
         chassis_move_update->chassis_right_control.Fwn = chassis_move_update->chassis_right_control.wbr_control.Fbl_r * arm_cos_f32(chassis_move_update->chassis_right_control.wbr_control.theta_l) + MASS_OF_LEG * (GRAVITY_ACCELERATION + chassis_move_update->chassis_accel_n_z - (1 - chassis_move_update->chassis_right_control.eta) * chassis_move_update->chassis_right_control.dd_L_lowpass * arm_cos_f32(chassis_move_update->chassis_right_control.wbr_control.theta_l)) + right_leg_limit_fd + Get_FeedForward_Force(chassis_move_update->chassis_right_control.wbr_control.L) + chassis_move_update->chassis_right_control.leg_pid_control.Iout;
 
-        // Fwn = P + m_wheel * (g + a_wheel)
-        // P = Fbl_r*cos(theta) + Tbl_r*sin(theta)/L
-        // a_wheel = a_body - d²(L*cos(theta))/dt²
-        // d²(L*cos(theta))/dt² = ddL*cos(θ) - 2*dL*dθ*sin(θ) - L*ddθ*sin(θ) - L*dθ²*cos(θ)
-        // chassis_move_update->chassis_left_control.Fwn =
-        //     chassis_move_update->chassis_left_control.wbr_control.Fbl_r * arm_cos_f32(chassis_move_update->chassis_left_control.wbr_control.theta_l) + (chassis_move_update->chassis_left_control.wbr_control.Tbl_r * arm_sin_f32(chassis_move_update->chassis_left_control.wbr_control.theta_l)) / chassis_move_update->chassis_left_control.wbr_control.L + MASS_OF_WHEEL * (GRAVITY_ACCELERATION + chassis_move_update->chassis_accel_n_z - chassis_move_update->chassis_left_control.dd_L_lowpass * arm_cos_f32(chassis_move_update->chassis_left_control.wbr_control.theta_l) + 2 * chassis_move_update->chassis_left_control.wbr_control.d_L * chassis_move_update->chassis_left_control.wbr_control.d_theta_l * arm_sin_f32(chassis_move_update->chassis_left_control.wbr_control.theta_l) + chassis_move_update->chassis_left_control.wbr_control.L * chassis_move_update->chassis_left_control.wbr_control.dd_theta_l * arm_sin_f32(chassis_move_update->chassis_left_control.wbr_control.theta_l) + chassis_move_update->chassis_left_control.wbr_control.L * chassis_move_update->chassis_left_control.wbr_control.d_theta_l * chassis_move_update->chassis_left_control.wbr_control.d_theta_l * arm_cos_f32(chassis_move_update->chassis_left_control.wbr_control.theta_l)) + Get_FeedForward_Force(chassis_move_update->chassis_left_control.wbr_control.L) + chassis_move_update->chassis_left_control.leg_pid_control.Iout;
-        //
-        // // 右轮地面支持力（同左轮公式，使用右腿参数）
-        // chassis_move_update->chassis_right_control.Fwn =
-        //     chassis_move_update->chassis_right_control.wbr_control.Fbl_r * arm_cos_f32(chassis_move_update->chassis_right_control.wbr_control.theta_l) + (chassis_move_update->chassis_right_control.wbr_control.Tbl_r * arm_sin_f32(chassis_move_update->chassis_right_control.wbr_control.theta_l)) / chassis_move_update->chassis_right_control.wbr_control.L + MASS_OF_WHEEL * (GRAVITY_ACCELERATION + chassis_move_update->chassis_accel_n_z - chassis_move_update->chassis_right_control.dd_L_lowpass * arm_cos_f32(chassis_move_update->chassis_right_control.wbr_control.theta_l) + 2 * chassis_move_update->chassis_right_control.wbr_control.d_L * chassis_move_update->chassis_right_control.wbr_control.d_theta_l * arm_sin_f32(chassis_move_update->chassis_right_control.wbr_control.theta_l) + chassis_move_update->chassis_right_control.wbr_control.L * chassis_move_update->chassis_right_control.wbr_control.dd_theta_l * arm_sin_f32(chassis_move_update->chassis_right_control.wbr_control.theta_l) + chassis_move_update->chassis_right_control.wbr_control.L * chassis_move_update->chassis_right_control.wbr_control.d_theta_l * chassis_move_update->chassis_right_control.wbr_control.d_theta_l * arm_cos_f32(chassis_move_update->chassis_right_control.wbr_control.theta_l)) + Get_FeedForward_Force(chassis_move_update->chassis_right_control.wbr_control.L) + chassis_move_update->chassis_right_control.leg_pid_control.Iout;
+        // 计算拟合矩阵K，按腿长在激进参数和拟合参数之间插值
+            fp32 fitted_K[4][10];
+            decompose_fitted_matrix_to_K(&chassis_move_update->chassis_left_control.wbr_control, &chassis_move_update->chassis_right_control.wbr_control, fitted_matrix_K, fitted_K);
 
-        // 计算矩阵K，A，B
-        decompose_fitted_matrix_to_K(&chassis_move_update->chassis_left_control.wbr_control, &chassis_move_update->chassis_right_control.wbr_control, fitted_matrix_K, LQR_K);
+            // 用双腿平均腿长计算混合因子：0=激进，1=拟合
+            const fp32 avg_L = 0.5f * (chassis_move_update->chassis_left_control.wbr_control.L +
+                                        chassis_move_update->chassis_right_control.wbr_control.L);
+            fp32 blend = (avg_L - CHASSIS_LEG_MIN) / (LQR_K_BLEND_LEG_THRESHOLD - CHASSIS_LEG_MIN);
+            blend = float_constrain(blend, 0.0f, 1.0f);
+
+            for (int i = 0; i < 4; i++)
+            {
+                for (int j = 0; j < 10; j++)
+                {
+                    LQR_K[i][j] = LQR_K_AGGRESSIVE[i][j] * (1.0f - blend) + fitted_K[i][j] * blend;
+                }
+            }
         //    decompose_fitted_matrix_to_A(&chassis_move_update->chassis_left_control.wbr_control, &chassis_move_update->chassis_right_control.wbr_control, fitted_matrix_A, LQR_A);
         //    decompose_fitted_matrix_to_B(&chassis_move_update->chassis_left_control.wbr_control, &chassis_move_update->chassis_right_control.wbr_control, fitted_matrix_B, LQR_B);
 
